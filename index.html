@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stock Idle</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<style>
+:root{--bg:#0e1116;--card:#171c24;--line:#262d38;--tx:#e6edf3;--mu:#8b97a6;--up:#2ecc71;--dn:#ff5c5c;--ac:#4c9aff}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:clamp(11px,2.9vw,14px)/1.3 system-ui,sans-serif;display:flex;justify-content:center}
+#app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;padding:6px;gap:6px}
+header{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nw{font-size:1.5em;font-weight:700;font-variant-numeric:tabular-nums}
+.mu{color:var(--mu);font-size:.85em}
+.up{color:var(--up)}.dn{color:var(--dn)}
+nav{display:flex;gap:4px}
+nav button,.btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;cursor:pointer}
+nav button{flex:1}
+nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn:hover:not(:disabled){border-color:var(--ac)}
+.btn:disabled{opacity:.4;cursor:default}
+main{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;min-height:0}
+.row{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 9px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.row.lock{opacity:.5}
+.sym{font-weight:700}
+.px{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.acts{grid-column:1/-1;display:flex;gap:4px;align-items:center}
+.acts .btn{padding:3px 8px;flex:0 0 auto}
+.acts .own{margin-left:auto;text-align:right}
+svg.sp{width:56px;height:20px;vertical-align:middle;margin-left:6px}
+.hide{display:none}
+.up-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#toast{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:6px 10px;border-radius:8px;max-width:92%;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center}
+#toast.show{opacity:1}
+.foot{display:flex;gap:4px;justify-content:space-between}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
+    <div style="text-align:right"><div class="mu">Cash</div><div id="cash" style="font-weight:600">$0</div><div class="mu" id="mood"></div></div>
+  </header>
+  <nav><button id="t-m" class="on">Market</button><button id="t-u">Upgrades</button></nav>
+  <main id="main"><div id="market"></div><div id="ups" class="hide"></div></main>
+  <div class="foot"><button class="btn" id="pop">Pop out</button><button class="btn" id="reset">Reset</button></div>
+</div>
+<div id="toast"></div>
+<script>
+const KEY='stockidle.v1';
+// sym, name, price, volatility, beta(market sensitivity), unlock net worth
+const STOCKS=[
+['KO','Coca-Cola',62,.003,.5,0],['F','Ford',12,.006,1.1,0],['DIS','Disney',100,.005,1,1500],
+['AAPL','Apple',190,.005,1,4000],['MSFT','Microsoft',420,.005,1,10000],['TSLA','Tesla',250,.012,1.6,25000],
+['AMZN','Amazon',180,.006,1.2,60000],['NVDA','Nvidia',900,.010,1.5,150000],['NFLX','Netflix',650,.008,1.3,400000]];
+const UPS=[
+{id:'fee',n:'Broker Discount',d:'-0.1% trade fee per level (starts 1%)',base:150,g:1.7,max:10},
+{id:'div',n:'Dividends',d:'Holdings pay you every tick',base:400,g:1.8,max:15},
+{id:'int',n:'Savings Account',d:'Idle cash earns interest',base:250,g:1.8,max:15},
+{id:'bot',n:'Auto-Trader',d:'Buys dips, sells peaks, faster and bigger per level',base:1200,g:2,max:8},
+{id:'spd',n:'Faster Market',d:'Ticks come quicker (all income too)',base:800,g:2.2,max:5},
+{id:'ins',n:'Market Insight',d:'1: trend arrows  2: market mood  3: news alerts',base:600,g:3,max:3}];
+const $=s=>document.querySelector(s);
+const fmt=n=>n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e4?'$'+Math.round(n).toLocaleString():'$'+n.toFixed(2);
+let S;
+function fresh(){const s={cash:1000,hold:{},up:{},max:1000,mood:0,tick:0,last:Date.now(),start:1000,p:{}};
+  STOCKS.forEach(x=>s.p[x[0]]={p:x[2],fair:x[2],h:Array(40).fill(x[2])});return s}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  if(!S||!S.p)S=fresh();STOCKS.forEach(x=>{if(!S.p[x[0]])S.p[x[0]]={p:x[2],fair:x[2],h:Array(40).fill(x[2])}})}
+function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const lv=id=>S.up[id]||0;
+const feeRate=()=>Math.max(0,.01-.001*lv('fee'));
+const interval=()=>1000-120*lv('spd');
+const hv=()=>Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p,0);
+const nw=()=>S.cash+hv();
+const gauss=()=>{let u=0;for(let i=0;i<4;i++)u+=Math.random();return (u-2)*1.73};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2600)}
+
+function tick(){
+  S.tick++;
+  S.mood=S.mood*.97+gauss()*.0012;
+  STOCKS.forEach(([s,,,vol,beta])=>{
+    const o=S.p[s];o.fair*=1.00003;
+    const pull=(o.fair-o.p)/o.p*.01;
+    o.p=Math.max(1,o.p*Math.exp(S.mood*beta+vol*gauss()+pull));
+    o.h.push(o.p);if(o.h.length>40)o.h.shift();});
+  if(S.tick%45===0){const un=STOCKS.filter(x=>S.max>=x[5]);const x=un[Math.random()*un.length|0];
+    const mv=(Math.random()<.5?-1:1)*(.03+Math.random()*.06);S.p[x[0]].p*=1+mv;
+    if(lv('ins')>=3)toast((mv>0?'📈 ':'📉 ')+x[1]+' '+(mv>0?'surges ':'drops ')+Math.abs(mv*100).toFixed(1)+'%');}
+  S.cash+=S.cash*lv('int')*.00002+hv()*lv('div')*.00003;
+  const bl=lv('bot');if(bl&&S.tick%Math.max(2,10-bl)===0)bot(bl);
+  S.max=Math.max(S.max,nw());
+  draw();
+}
+function bot(l){
+  const un=STOCKS.filter(x=>S.max>=x[5]);let best=null,worst=null;
+  un.forEach(x=>{const o=S.p[x[0]],a=o.h.reduce((q,w)=>q+w,0)/o.h.length,d=o.p/a-1;
+    if(d<-.012&&(!best||d<best.d))best={s:x[0],d};
+    if(d>.012&&S.hold[x[0]]&&(!worst||d>worst.d))worst={s:x[0],d}});
+  if(worst){const h=S.hold[worst.s];sell(worst.s,Math.max(1,Math.ceil(h.n*.5)),true)}
+  if(best){const p=S.p[best.s].p;buy(best.s,Math.floor(S.cash*(.1+.04*l)/(p*(1+feeRate()))),true)}
+}
+function buy(s,q,silent){const p=S.p[s].p,f=1+feeRate();
+  q=Math.min(q,Math.floor(S.cash/(p*f)));if(q<1){if(!silent)toast('Not enough cash');return}
+  S.cash-=q*p*f;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*p)/(h.n+q);h.n+=q;draw()}
+function sell(s,q,silent){const h=S.hold[s];if(!h)return;q=Math.min(q,h.n);if(q<1)return;
+  S.cash+=q*S.p[s].p*(1-feeRate());h.n-=q;if(h.n<=0)delete S.hold[s];draw()}
+
+function build(){
+  $('#market').innerHTML=STOCKS.map(([s,n])=>`<div class="row" data-s="${s}">
+    <div><span class="sym">${s}</span> <span class="mu">${n}</span><svg class="sp" viewBox="0 0 56 20"><polyline fill="none" stroke-width="1.6" points=""/></svg></div>
+    <div class="px"><span class="v"></span> <span class="c mu"></span></div>
+    <div class="acts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button>
+    <button class="btn" data-a="s1">Sell 1</button><button class="btn" data-a="sa">Sell all</button><span class="own mu"></span></div></div>`).join('');
+  $('#ups').innerHTML=UPS.map(u=>`<div class="row" data-u="${u.id}"><div><b>${u.n}</b> <span class="mu l"></span><div class="mu">${u.d}</div></div><button class="btn"></button></div>`).join('');
+}
+function draw(){
+  const w=nw();$('#nw').textContent=fmt(w);$('#cash').textContent=fmt(S.cash);
+  const d=w-S.start;$('#chg').textContent=(d>=0?'+':'')+fmt(Math.abs(d)).replace('$','$')+' all-time';$('#chg').className='mu '+(d>=0?'up':'dn');
+  const m=S.mood*1e3;$('#mood').textContent=lv('ins')>=2?'Market: '+(m>.6?'bullish 🐂':m<-.6?'bearish 🐻':'calm'):'';
+  document.querySelectorAll('.row[data-s]').forEach(r=>{
+    const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=S.max>=x[5],h=S.hold[x[0]];
+    r.classList.toggle('lock',!open);r.querySelector('.acts').classList.toggle('hide',!open);
+    const ch=o.p/o.h[0]-1,arrow=lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
+    r.querySelector('.v').textContent=open?'$'+o.p.toFixed(2):'🔒 '+fmt(x[5]);
+    const c=r.querySelector('.c');c.textContent=open?arrow+' '+(ch>=0?'+':'')+(ch*100).toFixed(1)+'%':'';c.className='c '+(ch>=0?'up':'dn');
+    const mn=Math.min(...o.h),mx=Math.max(...o.h)||1,pts=o.h.map((v,i)=>(i*56/39).toFixed(1)+','+(18-(v-mn)/((mx-mn)||1)*16).toFixed(1)).join(' ');
+    const pl=r.querySelector('polyline');pl.setAttribute('points',pts);pl.setAttribute('stroke',ch>=0?'#2ecc71':'#ff5c5c');
+    r.querySelector('.own').textContent=h?`${h.n} sh · ${(o.p/h.c-1>=0?'+':'')+((o.p/h.c-1)*100).toFixed(1)}%`:'';
+    r.querySelector('[data-a=s1]').disabled=r.querySelector('[data-a=sa]').disabled=!h;
+  });
+  document.querySelectorAll('.row[data-u]').forEach(r=>{
+    const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),cost=Math.round(u.base*Math.pow(u.g,l));
+    r.querySelector('.l').textContent='Lv '+l+'/'+u.max;
+    const b=r.querySelector('button');b.textContent=l>=u.max?'MAX':fmt(cost);b.disabled=l>=u.max||S.cash<cost;});
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const r=b.closest('.row');
+  if(r&&r.dataset.s){const s=r.dataset.s,a=b.dataset.a,p=S.p[s].p*(1+feeRate());
+    if(a==='b1')buy(s,1);if(a==='b10')buy(s,10);if(a==='bm')buy(s,Math.floor(S.cash/p));
+    if(a==='s1')sell(s,1);if(a==='sa')sell(s,1e12)}
+  else if(r&&r.dataset.u){const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),c=Math.round(u.base*Math.pow(u.g,l));
+    if(l<u.max&&S.cash>=c){S.cash-=c;S.up[u.id]=l+1;clearTimeout(loop.t);loop();draw();save()}}
+});
+function tab(m){$('#market').classList.toggle('hide',!m);$('#ups').classList.toggle('hide',m);$('#t-m').classList.toggle('on',m);$('#t-u').classList.toggle('on',!m)}
+$('#t-m').onclick=()=>tab(true);$('#t-u').onclick=()=>tab(false);
+$('#reset').onclick=()=>{if(confirm('Reset all progress?')){localStorage.removeItem(KEY);load();loop.t&&clearTimeout(loop.t);start()}};
+$('#pop').onclick=()=>{const w=360,h=520;window.open(location.href.split('?')[0]+'?mini','stockidle',
+  `popup=yes,width=${w},height=${h},left=${screen.availLeft+screen.availWidth-w-10},top=${screen.availTop+screen.availHeight-h-40}`)};
+function loop(){tick();loop.t=setTimeout(loop,interval())}
+function offline(){const sec=Math.min((Date.now()-S.last)/1000,8*3600);
+  if(sec>30){const g=(hv()*lv('div')*.00003+S.cash*lv('int')*.00002)*(sec/(interval()/1000))*.25;
+    if(g>=.01){S.cash+=g;setTimeout(()=>toast('While away you earned '+fmt(g)),400)}}}
+function start(){build();draw();offline();loop()}
+load();start();
+setInterval(save,5000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+window.addEventListener('beforeunload',save);
+</script>
+</body>
+</html>
