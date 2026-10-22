@@ -1,7 +1,7 @@
 {
-  "name": "stock-idle",
+  "name": "idle-stocks",
   "version": "1.0.0",
-  "description": "Tiny idle stock market simulator that fits in a small corner window",
+  "description": "Idle Stocks: a tiny idle stock market simulator that fits in a small corner window",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "engines": { "node": ">=18" },
