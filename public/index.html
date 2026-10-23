@@ -191,12 +191,10 @@ details.lk[open] summary{color:var(--tx)}
  radial-gradient(ellipse 100% 42% at 50% 108%,color-mix(in srgb,var(--up) 15%,transparent),transparent 70%),var(--bg)}
 #gbg::before{content:"";position:absolute;inset:0;background-image:linear-gradient(color-mix(in srgb,var(--tx) 5%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--tx) 5%,transparent) 1px,transparent 1px);background-size:2.2rem 2.2rem;-webkit-mask-image:linear-gradient(#000,transparent 80%);mask-image:linear-gradient(#000,transparent 80%)}
 #gbg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 50%,color-mix(in srgb,var(--bg) 70%,#000) 130%)}
-#gbg svg{position:absolute;left:0;bottom:0;height:64%;width:auto;animation:gbgs 160s linear infinite;will-change:transform}
-@keyframes gbgs{to{transform:translateX(-50%)}}
-@media(prefers-reduced-motion:reduce){#gbg svg{animation:none}}
-#app header,#app .row,#app .foot,#app nav button:not(.on),#app .chip:not(.on){background:color-mix(in srgb,var(--card) 78%,transparent)}
-#app .btn:not(.on):not(.main){background-color:color-mix(in srgb,var(--card) 70%,transparent)}
-#app .foot .btn{background:transparent}
+#app header,#app .row{background:color-mix(in srgb,var(--card) 93%,transparent)}
+#gbg canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+html[data-theme=light] #gbg::after{display:none}
+
 @media(max-height:34rem){#title svg.logo{width:3rem;height:3rem}.wm b{font-size:2.5em}#title .tag2{display:none}}
 
 /* graph dialog header */
@@ -645,14 +643,34 @@ function bump(k){G[k]=(G[k]||0)+1;const o=GSo();o[k]=(o[k]||0)+1}
 function bmax(k,v){G[k]=Math.max(G[k]||0,v);const o=GSo();o[k]=Math.max(o[k]||0,v)}
 const GK='stockidle.ach';let G={a:{},trades:0,ticks:0,best:0};
 try{Object.assign(G,JSON.parse(rd(GK)))}catch(e){}if(!G.a)G.a={};
-function buildBg(){let seed=11;const r=()=>(seed=seed*16807%2147483647)/2147483647,N=40,W=30,start=210;let p=start;const cs=[];
-  for(let i=0;i<N;i++){const o=p;p=Math.max(90,Math.min(330,p+(r()-.5)*52));if(i>=N-8)p+=(start-p)*((i-(N-8)+1)/8);
-    cs.push({x:i*W+W/2,o,c:p,h:Math.min(o,p)-r()*20,l:Math.max(o,p)+r()*20})}
-  const can=cs.map(k=>{const up=k.c<=k.o,col=up?'var(--up)':'var(--dn)',t=Math.min(k.o,k.c),h=Math.max(3,Math.abs(k.c-k.o));
-    return `<path d="M${k.x} ${k.h.toFixed(1)}V${k.l.toFixed(1)}" stroke="${col}" stroke-width="2" opacity=".3"/><rect x="${k.x-9}" y="${t.toFixed(1)}" width="18" height="${h.toFixed(1)}" rx="2" fill="${col}" opacity=".28"/>`}).join('');
-  const line=cs.map((k,i)=>(i?'L':'M')+k.x+' '+k.c.toFixed(1)).join('');
-  const one=`<g>${can}<path d="${line}L${N*W} 400H${W/2}Z" fill="url(#gbgA)" opacity=".5"/><path d="${line}" fill="none" stroke="var(--up)" stroke-opacity=".55" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></g>`;
-  $('#gbg').innerHTML=`<svg viewBox="0 0 2400 400" preserveAspectRatio="xMinYMax slice"><defs><linearGradient id="gbgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity=".22"/><stop offset="1" stop-color="var(--up)" stop-opacity="0"/></linearGradient></defs>${one}<g transform="translate(1200 0)">${one.replace('id="gbgA"','')}</g></svg>`}
+// In-game background: three smooth parallax price curves on a canvas. They drift slowly and shift from green toward red when you are under your starting money.
+const BG={on:false,t0:0,last:0,tint:0,L:[],w:0,h:0,dpr:1,cv:null,cx:null,mo:matchMedia('(prefers-reduced-motion:reduce)')};
+function bgRGB(c){c=(c||'').trim();let m=/^#([0-9a-f]{6})$/i.exec(c);if(m){const n=parseInt(m[1],16);return[n>>16,n>>8&255,n&255]}
+  m=/^#([0-9a-f]{3})$/i.exec(c);if(m){const q=m[1];return[...q].map(x=>parseInt(x+x,16))}return[46,204,113]}
+function buildBg(){const el=$('#gbg');if(!BG.cv){BG.cv=document.createElement('canvas');el.appendChild(BG.cv);BG.cx=BG.cv.getContext('2d')}
+  const w=innerWidth,h=innerHeight,d=Math.min(2,devicePixelRatio||1);BG.w=w;BG.h=h;BG.dpr=d;BG.cv.width=Math.round(w*d);BG.cv.height=Math.round(h*d);
+  const step=Math.max(46,w/7),per=Math.max(w*1.5,900),N=Math.ceil(per/step);let seed=23;const r=()=>(seed=seed*16807%2147483647)/2147483647;
+  const mk=(c,amp,sp,fa,sa,lw)=>{const v=[];let x=0;for(let i=0;i<=N;i++){x+=(r()-.5)*.9;x*=.9;v.push(x)}
+    const dr=v[N]-v[0];for(let i=0;i<=N;i++)v[i]-=dr*i/N; // wrap seamlessly
+    const m=Math.max(...v.map(Math.abs))||1;return{v:v.slice(0,N).map(q=>q/m),N,step,per:N*step,c,amp,sp,fa,sa,lw}};
+  BG.L=[mk(.58,.11,4,.07,.14,1.5),mk(.71,.10,8,.09,.2,1.8),mk(.84,.075,14,.12,.3,2)];
+  bgDraw(BG.t0)}
+function bgDraw(t){const{cx,w,h,dpr,L}=BG;if(!cx)return;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
+  const u=bgRGB(colUp),dn=bgRGB(colDn),k=BG.tint,col=u.map((q,i)=>Math.round(q+(dn[i]-q)*k)),rgb=a=>`rgba(${col[0]},${col[1]},${col[2]},${a})`;
+  L.forEach((l,li)=>{const off=(t*l.sp)%l.per,base=Math.floor(off/l.step),fr=off-base*l.step,y0=l.c*h,A=l.amp*h,pts=[];
+    for(let i=0;(i-2)*l.step-fr<w+l.step*2;i++){const idx=(((base+i-2)%l.N)+l.N)%l.N;pts.push([(i-2)*l.step-fr,y0-l.v[idx]*A])}
+    cx.beginPath();cx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length-1;i++){const mx=(pts[i][0]+pts[i+1][0])/2,my=(pts[i][1]+pts[i+1][1])/2;cx.quadraticCurveTo(pts[i][0],pts[i][1],mx,my)}
+    const lp=pts[pts.length-1];cx.lineTo(lp[0],lp[1]);
+    cx.save();cx.lineJoin='round';cx.lineCap='round';cx.strokeStyle=rgb(l.sa*.8);cx.lineWidth=l.lw+.5;cx.stroke();cx.restore();
+    cx.lineTo(lp[0],h);cx.lineTo(pts[0][0],h);cx.closePath();
+    const g=cx.createLinearGradient(0,y0-A,0,h);g.addColorStop(0,rgb(l.fa));g.addColorStop(1,rgb(0));cx.fillStyle=g;cx.fill()})}
+function bgFrame(now){if(!BG.on)return;if(document.hidden||!live()){BG.on=false;return}
+  requestAnimationFrame(bgFrame);const dt=Math.min(.05,(now-BG.last)/1000||0);BG.last=now;BG.t0+=dt;
+  let tg=0;try{tg=Math.max(0,Math.min(1,(S.start-nw())/(S.start*.15)))}catch(e){}BG.tint+=(tg-BG.tint)*Math.min(1,dt*.8);bgDraw(BG.t0)}
+function bgStart(){if(BG.on)return;if(BG.mo.matches){bgDraw(BG.t0);return}BG.on=true;BG.last=performance.now();requestAnimationFrame(bgFrame)}
+let bgRz;addEventListener('resize',()=>{clearTimeout(bgRz);bgRz=setTimeout(()=>{buildBg();if(!BG.on)bgDraw(BG.t0)},150)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&live())bgStart()});
 let NOTES={};
 function note(kind,title,body,o={}){sfx(kind==='inf'?'alert':kind==='dn'?'down':kind==='ach'?'ach':'up');if(!CFG.alerts)return null;const el=document.createElement('div');el.className='note '+kind;
   el.innerHTML=(kind==='ach'?'<svg class="ico ni"><use href="#i-medal"/></svg>':'')+'<b></b><div></div><small class="mu"></small>';if(kind==='ach')el.classList.add('pop');const ch=[...el.children].filter(x=>x.tagName!=='svg');ch[0].textContent=title;ch[1].textContent=body;
@@ -1122,7 +1140,7 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){sfx('start');$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+function play(){sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){const c=S.tick>0;
   $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
   views(false);$('#title').classList.remove('hide')}
