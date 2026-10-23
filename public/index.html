@@ -143,13 +143,13 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 .wm small{font-size:1.05em;letter-spacing:.65em;margin-right:-.65em;color:var(--mu);font-weight:600;text-transform:uppercase}
 .wm b{font-size:3.3em;letter-spacing:.07em;margin-right:-.07em;font-weight:600;background:linear-gradient(180deg,var(--tx) 35%,color-mix(in srgb,var(--tx) 55%,var(--ac)));-webkit-background-clip:text;background-clip:text;color:transparent}
 .tag2{color:var(--mu);font-size:.85em;letter-spacing:.04em}
-#ts{background:var(--card);border:1px solid var(--line);border-radius:2rem;padding:.25rem .8rem;font-size:.82em;max-width:100%}
+#ts{background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.7rem;padding:.4rem .8rem;font-size:.82em;line-height:1.35;max-width:100%;text-align:center;text-wrap:balance;overflow-wrap:anywhere}
 .tbtn{display:flex;align-items:center;justify-content:center;gap:.55rem}
 .tbtn .ico{width:1.15em;height:1.15em;vertical-align:0}
 #title .btn.main{box-shadow:0 .3rem 1.2rem color-mix(in srgb,var(--ac) 45%,transparent)}
 #title .btn.main:hover{filter:brightness(1.1)}
 .trow{display:flex;gap:.4286rem;width:15rem}
-#tmain .trow .btn{width:auto;flex:1;font-size:1.05em;padding:.5rem .3rem;min-width:0}
+#tmain .trow .btn{width:auto;flex:1;font-size:.92em;padding:.5rem .3rem;min-width:0}
 #tmain>.btn{width:15rem}
 /* ---- save slots ---- */
 .shead{display:flex;align-items:center;gap:.6rem;width:100%}
@@ -267,7 +267,12 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 
 #market.srt:not(.hide){display:flex;flex-direction:column}
 #market.srt>:not(.row){order:-1}
-.chip.srtb{margin-left:auto;border-style:dashed}
+.chip.srtb{margin-left:auto;border-style:dashed;display:inline-flex;align-items:center;gap:.3rem}
+.chip{white-space:nowrap;flex:0 0 auto}
+.chip .ico{width:1em;height:1em;vertical-align:0}
+#privbox:not(:empty){margin-bottom:.5rem}
+#privbox .sec{padding:.2rem .2rem .4rem;line-height:1.35}
+#privbox .row{margin-bottom:.3571rem}
 .chip.srtb.on{border-style:solid}
 </style>
 </head>
@@ -302,6 +307,8 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3.5 17l5-5.5 4 3.5 7.5-8.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5 19a1.5 1.5 0 0 0 1.3 2.2h11.4A1.5 1.5 0 0 0 19 19l-5.5-9.5v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 11V7.8a3.5 3.5 0 0 1 6.8-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
 </svg>
 
@@ -408,8 +415,8 @@ let fsec='',fup='Trading',srtU=false;try{srtU=localStorage.getItem('stockidle.so
 function applyUp(){document.querySelectorAll('#ups .row[data-u]').forEach(r=>r.style.display=r.dataset.cat===fup?'':'none');
   document.querySelectorAll('#upchips .chip').forEach(b=>b.classList.toggle('on',b.dataset.uc===fup))}
 function applyFilter(){let shown=0;
-  {const m=$('#market');m.classList.toggle('srt',srtU);m.querySelectorAll('.row').forEach(r=>{r.style.order=srtU&&!isOpen(SM[r.dataset.s])?1:0});const sb=m.querySelector('[data-srt]');if(sb){sb.classList.toggle('on',srtU);sb.textContent=(srtU?'✓ ':'')+'🔓 Unlocked first';sb.setAttribute('aria-pressed',srtU)}}
-  document.querySelectorAll('#market .row').forEach(r=>{const h=S.hold[r.dataset.s],ok=!(S.priv&&S.priv[r.dataset.s])&&(!fsec||(fsec==='__own'?!!(h&&h.n>0):r.dataset.sec===fsec));r.style.display=ok?'':'none';if(ok)shown++});
+  {const m=$('#market');m.classList.toggle('srt',srtU);m.querySelectorAll('.row[data-s]').forEach(r=>{r.style.order=srtU&&!isOpen(SM[r.dataset.s])?1:0});const sb=m.querySelector('[data-srt]');if(sb){sb.classList.toggle('on',srtU);sb.innerHTML=(srtU?IC('check'):'')+IC('unlock')+'<span>Unlocked first</span>';sb.setAttribute('aria-pressed',srtU)}}
+  document.querySelectorAll('#market .row[data-s]').forEach(r=>{const h=S.hold[r.dataset.s],ok=!(S.priv&&S.priv[r.dataset.s])&&(!fsec||(fsec==='__own'?!!(h&&h.n>0):r.dataset.sec===fsec));r.style.display=ok?'':'none';if(ok)shown++});
   const ne=$('#noown');if(ne)ne.style.display=fsec==='__own'&&!shown?'':'none';
   document.querySelectorAll('#market .chip:not(.srtb)').forEach(b=>b.classList.toggle('on',b.dataset.sec===fsec))}
 // Mutual funds: same fields + fixed growth per tick (index 7) and optional yield per tick (index 8). Slower, steadier, rare crashes.
@@ -1003,7 +1010,7 @@ function build(){
     <div class="ulk hide"><button class="btn" data-a="ul"></button></div>
     <div class="acts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button>
     <button class="btn" data-a="s1">Sell 1</button><button class="btn" data-a="sa">Sell all</button><span class="own mu"></span></div></div>`;
-  $('#market').innerHTML='<div id="privbox"></div><div class="chips">'+[['','All'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])].map(([k,l])=>`<button class="btn chip" data-sec="${k}">${l}</button>`).join('')+'<button class="btn chip srtb" data-srt="1">🔓 Unlocked first</button></div><div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div>'+ST.map(srow).join('');
+  $('#market').innerHTML='<div id="privbox"></div><div class="chips">'+[['','All'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])].map(([k,l])=>`<button class="btn chip" data-sec="${k}">${l}</button>`).join('')+'<button class="btn chip srtb" data-srt="1">'+IC('unlock')+'<span>Unlocked first</span></button></div><div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div>'+ST.map(srow).join('');
   privSig='';applyFilter();
   $('#funds').innerHTML='<div class="sec">Mutual funds: slower growth, much steadier, rarely crash. Gold tends to hold up when stocks fall.</div>'+FD.map(srow).join('');
   $('#crypto').innerHTML='<div class="sec">Crypto: huge swings and frequent deep crashes.</div>'+CR.map(srow).join('');
