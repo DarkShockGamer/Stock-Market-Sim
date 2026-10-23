@@ -163,6 +163,9 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 .sm{min-width:0}
 .sm .t1{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
 .sm .big{font-size:1.25em;font-weight:700;font-variant-numeric:tabular-nums}
+.row.nolive{display:none!important}
+body.live-mode #t-c,body.live-mode #t-s,body.live-mode #t-k,body.live-mode #t-u,body.live-mode #rp{display:none}
+.pill2.lv{background:var(--up,#2ecc71);color:#06210f}
 .pill2{font-size:.68em;letter-spacing:.06em;text-transform:uppercase;padding:.05rem .45rem;border-radius:1rem;background:var(--ac);color:#fff;font-weight:700}
 .sstats{display:flex;flex-wrap:wrap;gap:.15rem .7rem;font-size:.78em;color:var(--mu)}
 .sstats span{display:inline-flex;align-items:center;gap:.25rem;white-space:nowrap}
@@ -327,7 +330,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.2.3</div>
+<div id="title"><div id="ver">v0.3.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -439,7 +442,7 @@ GOOGL:8e-05,INTC:2e-05,ORCL:6e-05,CRM:7e-05,ADBE:5e-05,IBM:3e-05,QCOM:5e-05,MU:7
 BTC:.00008,ETH:.00008,SOL:.00009,DOGE:.00004};
 const gro=x=>x[7]!==undefined?x[7]:GR[x[0]];
 const stars=(n,c,e)=>c.repeat(n)+e.repeat(5-n);
-function propTxt(x){const g=gro(x),v=x[3],gl=g<.00003?1:g<.00005?2:g<.00007?3:g<.00009?4:5,vl=v<.004?1:v<.006?2:v<.009?3:v<.014?4:5,cm=x[6]||1;
+function propTxt(x){if(isLive())return 'Real market price, updated live';const g=gro(x),v=x[3],gl=g<.00003?1:g<.00005?2:g<.00007?3:g<.00009?4:5,vl=v<.004?1:v<.006?2:v<.009?3:v<.014?4:5,cm=x[6]||1;
   return 'Growth '+stars(gl,'★','☆')+' · Volatility '+stars(vl,'●','○')+' · Beta '+x[4]+' · Crash risk '+(cm>=2?'High':cm>1?'Elevated':'Normal')}
 const isC=x=>x[9]==='c';
 const STOCKS=ST.concat(FD,CR),SM=Object.fromEntries(STOCKS.map(x=>[x[0],x]));
@@ -448,7 +451,7 @@ const MC={KO:270,F:45,WMT:560,DIS:180,MCD:210,AAPL:3000,NKE:150,SBUX:105,V:550,M
 XOM:480,JNJ:380,PFE:160,DAL:35,UAL:25,CVX:290,BA:120,JPM:600,HD:370,CAT:170,LMT:120,CCL:25,COST:400,UBER:150,STRL:50,LLY:700,SPCX:350,
 GOOGL:2100,INTC:110,ORCL:480,CRM:260,ADBE:210,IBM:190,QCOM:180,MU:120,SHOP:110,SNOW:55,TSM:800,AVGO:1000,ARM:130,MA:430,PYPL:75,BAC:300,GS:170,SQ:45,BRKB:900,SPOT:90,WBD:25,CMCSA:150,RBLX:30,PEP:230,PG:390,KHC:40,TGT:70,LULU:45,CMG:80,GM:55,TM:250,RIVN:15,UNH:500,MRK:280,ABBV:310,MRNA:15,COP:130,NEE:150,ENPH:12,GE:200,DE:110,HON:135,UPS:100,RTX:150,MAR:70,BKNG:130,T:130,VZ:170,TMUS:250,RKLB:12,
 IDX:500,BND:300,GLD:250,TECH:200,DIV:100,BTC:1800,ETH:400,SOL:80,DOGE:60};
-const maxSh=x=>Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
+const maxSh=x=>S&&S.mode==='live'&&S.p[x[0]]?Math.max(1,Math.round(MC[x[0]]*1e9/Math.max(.01,S.p[x[0]].p))):Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
 const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
 valGap=x=>{const o=S.p[x[0]];return o.p/o.fair-1}, // below 0 = cheaper than fair value, and cheap stocks drift back up faster
 momOf=x=>S.p[x[0]].m||0, // each security's own hidden bull/bear mood, which pushes its price every second
@@ -459,7 +462,7 @@ capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</spa
   return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+sigChips(x)+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
 heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
 const fmtMc=v=>v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(0)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v).toLocaleString();
-const isF=x=>x[7]!==undefined,isOpen=x=>x[5]===0||!!S.unl[x[0]];
+const isF=x=>x[7]!==undefined,isOpen=x=>x[5]===0||!!S.unl[x[0]]||(S.mode==='live'&&!!(S.p[x[0]]||{}).live);
 const NST0=ST.length,NALL0=STOCKS.length,BASEK=new Set(Object.keys(SM));
 function regStock(d){const x=[d.s,d.n,START,d.vol,d.beta,0,d.cm];ST.push(x);STOCKS.push(x);SM[d.s]=x;MC[d.s]=d.mc;GR[d.s]=d.g;SEC[d.s]=d.sec} // a startup that went public becomes a normal stock
 function regGrads(list,lst){ST.length=NST0;STOCKS.length=NALL0;
@@ -697,8 +700,9 @@ function applyCfg(){const h=document.documentElement;h.dataset.theme=CFG.theme;
   h.style.setProperty('--sc',CFG.scale/100);
   const cs=getComputedStyle(h);colUp=cs.getPropertyValue('--up').trim()||'#2ecc71';colDn=cs.getPropertyValue('--dn').trim()||'#ff5c5c'}
 const mk=x=>({p:x[2],fair:x[2],fp:x[2],h:Array(40).fill(x[2]),g:[x[2]],gs:1,n:0,r:[x[2]],m:0,gm:.8+Math.random()*.4});
-function fresh(){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],lt:{},p:{},ach:{},gs:{}};
-  STOCKS.forEach(x=>s.p[x[0]]=mk(x));return s}
+function fresh(mode){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],lt:{},p:{},ach:{},gs:{}};
+  STOCKS.forEach(x=>s.p[x[0]]=mk(x));if(mode==='live'){s.mode='live';s.cash=s.start=s.max=10000}
+  return s}
 function migrate(){ // old saves: rebase every price to the new $10 start, with shares scaled so your holdings keep the same value
   if(S.ver===2)return;
   for(const k in S.p){const o=S.p[k],op=OLDP[k];if(!o||!op)continue;const f=START/op;
@@ -721,7 +725,8 @@ function load(n){slot=n;S=peek(n);
   refundOld()}
 function save(){S.last=Date.now();wr(SK(slot),JSON.stringify(S));wr(GK,JSON.stringify(G))}
 const lv=id=>Math.min(S.up[id]||0,UPM[id]||99);
-const feeRate=()=>Math.max(0,.005-.001*lv('fee'));
+const isLive=()=>!!S&&S.mode==='live';
+const feeRate=()=>isLive()?0:Math.max(0,.005-.001*lv('fee')); // paper trading: no fees in Live mode
 const interval=()=>1000;
 const hv=()=>Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p,0);
 const sv=()=>S.su&&S.su.list?S.su.list.reduce((a,l)=>a+l.n*l.p,0):0;
@@ -733,8 +738,36 @@ function toast(m,force){if(!CFG.toasts&&!force)return;const t=$('#toast');t.text
 function checkRP(){let g=0,why=[];
   NWM.forEach(([t,r])=>{const id='nw'+t;if(S.max>=t&&!S.ms[id]){S.ms[id]=1;g+=r;why.push('net worth '+fmt(t))}});
   if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+(why.length===1?' · '+why[0]:' · milestones'));sfx('rp')}}
+// ---- Live Market mode: real prices from the server's /api/quotes (Finnhub). Prices are paper-traded: no fees, no price impact, no events. ----
+const NOLIVE=new Set(['STRL','SPCX','BTC','ETH','SOL','DOGE']); // private companies and crypto have no live quote here
+const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
+function lvApply(j){
+  if(!isLive())return;
+  if(!j||!j.ok){LV.err=j&&j.error==='nokey'?'nokey':'bad';return}
+  LV.err='';LV.at=Date.now();LV.total=j.total;LV.ready=j.ready;
+  for(const k in j.quotes){const q=j.quotes[k],o=S.p[k];if(!o||!(q.c>0))continue;
+    if(q.t)LV.maxT=Math.max(LV.maxT,q.t);
+    if(!o.live){o.live=1;o.p=o.tgt=o.fair=o.fp=q.c;o.h=Array(40).fill(q.c);o.g=[q.c];o.gs=1;o.n=0;o.r=[q.c]}
+    else if(Math.abs(q.c-o.tgt)>1e-9){o.tgt=q.c;o.h.push(q.c);if(o.h.length>40)o.h.shift();o.r.push(q.c);if(o.r.length>900)o.r.shift();
+      o.g.push(q.c);if(o.g.length>1200){o.g=o.g.filter((_,i)=>i%2===0);o.gs*=2}}
+    o.pc=q.pc}}
+async function lvFetch(){if(!isLive())return;
+  const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]),held=Object.keys(S.hold).filter(k=>!NOLIVE.has(k));
+  try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}}
+function lvStart(){clearInterval(lvT);if(!isLive())return;lvFetch();lvT=setInterval(()=>{if(live()&&isLive())lvFetch()},8000)}
+function lvStatus(){
+  if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
+  if(LV.err)return '⚠ Cannot reach the price server';
+  if(!LV.at)return 'Connecting to live prices…';
+  const got=STOCKS.filter(x=>(S.p[x[0]]||{}).live).length;
+  if(LV.ready<LV.total*.9&&got<LV.total*.9)return 'Loading live prices… '+got+'/'+LV.total;
+  return Date.now()/1000-LV.maxT<1500?'🟢 LIVE · market open':'🌙 Market closed · last close';}
+function lvTick(){
+  STOCKS.forEach(x=>{const o=S.p[x[0]];if(o&&o.live&&o.tgt>0){o.p+=(o.tgt-o.p)*.3;if(Math.abs(o.tgt-o.p)<.004)o.p=o.tgt}}); // ease toward the latest real quote
+  S.max=Math.max(S.max,nw());bump('ticks');if(S.tick%5===0)checkAch();draw()}
 function tick(){
   S.tick++;
+  if(isLive()){lvTick();return}
   const nz=1-.4/(1+S.max/20000); // calmer random jitter early (x0.6 at the start) so a fresh buy is not a coin flip
   const boost=1+7/(1+S.max/20000); // x8 at the start, x4.5 at $20k, x2 at $100k, ~x1 past $1M
   S.mood=S.mood*.97+gauss()*.0004; // overall market mood: only a small influence now
@@ -924,13 +957,14 @@ function unlock(s){const x=SM[s];if(isOpen(x))return;
 // Your own trades move prices. Impact grows with the share of the company you trade (square-root law), you pay slippage,
 // and big moves attract momentum traders ("hype").
 const IMP=.30,HYPE=.035,REV_T=120;
-const impOf=(s,q)=>Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))), // how far your trade moves the market price
+const impOf=(s,q)=>isLive()?0:Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))), // how far your trade moves the market price
   fillOf=i=>i*(1-.15*lv('block')); // Block Trading Desk: the part of that move you actually pay for in slippage
 function planBuy(s,q,imp){const o=S.p[s],f=1+feeRate(),room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
   q=Math.min(q,Math.floor(S.cash/(o.p*f)),room);let i=0,pe=o.p;
   for(let k=0;k<8&&q>=1;k++){i=imp?impOf(s,q):0;{const e=fillOf(i);pe=e>1e-9?o.p*(Math.exp(e)-1)/e:o.p}const c=q*pe*f;if(c<=S.cash)break;q=Math.floor(q*S.cash/c*.999)}
   return q>=1?{q,i,pe}:{q:0,i:0,pe:o.p}}
 function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, then momentum and sector ripple
+  if(isLive())return; // real prices: your trades do not move them
   const o=S.p[s];o.p=Math.max(.5,o.p*Math.exp(dir*i));
   if(i<.01)return;
   o.m=(o.m||0)+dir*i*HYPE*(1+.25*lv('pump'))*(dir>0?1:.85);
@@ -1040,8 +1074,9 @@ function drawRP(){
   $('#rpo').innerHTML='More RP: unlock achievements on the <svg class="ico"><use href="#i-medal"/></svg> screen';
 }
 function draw(){
+  document.body.classList.toggle('live-mode',isLive());
   const w=nw();$('#nw').textContent=fmt(w);$('#cash').textContent=fmt(S.cash);
-  $('#pay').textContent='💼 Payday in '+Math.max(0,S.payn-S.tick)+'s · '+fmt(S.paid)+' earned';
+  $('#pay').textContent=isLive()?lvStatus():'💼 Payday in '+Math.max(0,S.payn-S.tick)+'s · '+fmt(S.paid)+' earned';
   const d=w-S.start;$('#chg').textContent=(d>=0?'+':'')+fmt(Math.abs(d)).replace('$','$')+' all-time';$('#chg').className='mu '+(d>=0?'up':'dn');
   const us=ST.filter(isOpen);
   {let t='';if(lv('ins')>=2&&us.length){const ch=us.reduce((a,x)=>valGap(x)<valGap(a)?x:a),g=valGap(ch);t=g<=-.02?'Cheapest: '+ch[0]+' '+Math.round(g*100)+'%':'No bargains now';
@@ -1049,9 +1084,9 @@ function draw(){
    $('#mood').textContent=t}
   document.querySelectorAll('.row[data-s]').forEach(r=>{
     const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=isOpen(x),h=S.hold[x[0]];
-    r.classList.toggle('lock',!open);r.querySelector('.acts').classList.toggle('hide',!open);
+    r.classList.toggle('lock',!open);r.classList.toggle('nolive',isLive()&&!o.live);r.querySelector('.acts').classList.toggle('hide',!open);
     const ul=r.querySelector('.ulk');ul.classList.toggle('hide',open);const ub=ul.querySelector('button');ub.textContent='Unlock · 🔬 '+x[5]+' RP';ub.disabled=S.rp<x[5];
-    const ch=o.p/o.h[0]-1,arrow=lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
+    const ch=isLive()&&o.pc>0?o.p/o.pc-1:o.p/o.h[0]-1,arrow=isLive()?(ch>=0?'▲':'▼'):lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
     {const h=capChips(x);const e=r.querySelector('.cap');if(e.dataset.h!==h){e.dataset.h=h;e.innerHTML=h}}
     ['b1','b10','bm'].forEach(a=>r.querySelector('[data-a='+a+']').disabled=!!(h&&h.n>=maxSh(x)));
     r.querySelector('[data-a=bm]').textContent='Max ('+maxBuy(x[0])+')';
@@ -1123,18 +1158,19 @@ function views(sl){$('#tmain').classList.toggle('hide',sl);$('#tslots').classLis
 const ago=t=>{const d=(Date.now()-t)/1000;if(d<60)return 'just now';if(d<3600)return Math.floor(d/60)+' min ago';if(d<86400)return Math.floor(d/3600)+' h ago';if(d<604800)return Math.floor(d/86400)+' d ago';return new Date(t).toLocaleDateString([],{month:'short',day:'numeric'})};
 function renderSlots(msg){
   $('#slist').innerHTML=Array.from({length:SLOTS},(_,i)=>i+1).map(n=>{const o=peek(n),cur=n===slot;
-    if(!o)return `<div class="slot empty ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">Empty slot</span>${cur?'<span class="pill2">Selected</span>':''}</div><div class="sstats"><span>Start fresh with $2,000</span></div></div><div class="sb"><button class="btn go" data-sa="new">${IC('plus')}New game</button></div></div>`;
+    if(!o)return `<div class="slot empty ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">Empty slot</span>${cur?'<span class="pill2">Selected</span>':''}</div><div class="sstats"><span>Classic: $2,000 · Live: real prices, $10,000</span></div></div><div class="sb"><button class="btn go" data-sa="new">${IC('plus')}Classic</button><button class="btn go" data-sa="newlive">${IC('chart')}Live</button></div></div>`;
     const hn=Object.keys(o.hold||{}).length,nwv=slotNW(o),gain=nwv-(o.start||2000);
-    return `<div class="slot ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">${fmt(nwv)}</span><span class="${gain>=0?'up':'dn'}" style="font-size:.8em">${gain>=0?'▲':'▼'} ${fmt(Math.abs(gain))}</span>${cur?'<span class="pill2">Selected</span>':''}</div>
+    return `<div class="slot ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">${fmt(nwv)}</span>${o.mode==='live'?'<span class="pill2 lv">Live</span>':''}<span class="${gain>=0?'up':'dn'}" style="font-size:.8em">${gain>=0?'▲':'▼'} ${fmt(Math.abs(gain))}</span>${cur?'<span class="pill2">Selected</span>':''}</div>
       <div class="sstats"><span>${IC('clock')}${fmtT(o.tick||0)} played</span><span>${IC('chart')}${hn} holding${hn===1?'':'s'}</span><span>${IC('flask')}${o.rpt||0} RP earned</span>${o.ach?`<span>${IC('medal')}${Object.keys(o.ach).length}/${ACHV.length}</span>`:''}</div>
       <div class="sstats"><span>Last played ${ago(o.last||Date.now())}</span></div></div>
       <div class="sb"><button class="btn go" data-sa="load">${IC('play')}Load</button><button class="btn ghost" data-sa="del" title="Delete this save">${IC('trash')}</button></div></div>`}).join('');
   $('#smsg').textContent=msg||''}
 function enter(){clearNotes();build();draw();closeD();tab(true);play()}
-function startNew(n){slot=n;S=fresh();save();sfx('start');enter()}
+function startNew(n,mode){slot=n;S=fresh(mode);save();sfx('start');enter()}
 $('#slist').onclick=e=>{const b=e.target.closest('button[data-sa]');if(!b)return;const n=+b.closest('[data-n]').dataset.n,a=b.dataset.sa;
   if(a==='load'){load(n);sfx('start');enter()}
   else if(a==='new')startNew(n);
+  else if(a==='newlive')startNew(n,'live');
   else if(a==='del'){
     if(!b.dataset.arm){b.dataset.arm=1;b.dataset.h=b.innerHTML;b.textContent='Sure?';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.innerHTML=b.dataset.h}},3000);return}
     rm(SK(n));sfx('delete');if(n===slot){S=fresh();build();draw()}renderSlots()}else sfx('click')};
@@ -1148,7 +1184,7 @@ $('#pop').onclick=()=>{const w=360,h=520,L=(screen.availLeft||0)+screen.availWid
   closeD();clearNotes();save();clearTimeout(loop.t);showTitle();
   $('#ts').textContent='The game is open in the mini window. Close it to continue here.'};
 function loop(){tick();loop.t=setTimeout(loop,interval())}
-function offline(){const sec=Math.min((Date.now()-S.last)/1000,(8+2*lv('off'))*3600);
+function offline(){if(isLive())return;const sec=Math.min((Date.now()-S.last)/1000,(8+2*lv('off'))*3600);
   if(sec>30){const ym=1+.15*lv('yld'),fy=Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p*(SM[k][8]||0),0)+pvI();
     const k=Math.floor(sec*(.25+.1*lv('off'))/PAYT);S.paid+=k*PAYC;
     const g=(hv()*lv('div')*DIVR+S.cash*lv('int')*INTR+fy)*ym*sec*(.25+.1*lv('off'))+k*PAYC;
@@ -1157,7 +1193,7 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+function play(){lvStart();sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){const c=S.tick>0;
   $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
   views(false);$('#title').classList.remove('hide')}
