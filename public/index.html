@@ -180,7 +180,7 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 #title .sstats svg.ico{width:1em;height:1em}
 #tmain .trow .btn{gap:.35rem;letter-spacing:.04em}
 
-/* ---- v0.2.1: achievement lists + in-game background ---- */
+/* ---- v0.2.2: achievement lists + in-game background ---- */
 .alist2{display:flex;flex-direction:column;gap:.3571rem;margin-top:.3rem}
 details.lk{margin-top:.4rem}
 details.lk summary{cursor:pointer;color:var(--mu);padding:.35rem .2rem;font-size:.9em;user-select:none}
@@ -259,6 +259,8 @@ html[data-theme=light] .upg .eff .pill.mx{color:#9a7400}
 
 .cap{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.3rem}
 .cc{display:inline-flex;align-items:baseline;gap:.3rem;background:var(--bg);border:1px solid var(--line);border-radius:.45rem;padding:.08rem .45rem;font-size:.74em;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cc.sg.up{border-color:var(--up);color:var(--up)}
+.cc.sg.dn{border-color:var(--dn);color:var(--dn)}
 .cc i{font-style:normal;font-weight:500;font-size:.9em;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
 .cc.own{background:color-mix(in srgb,var(--ac) 16%,transparent);border-color:transparent;color:var(--ac)}
 .cc.own b{font-weight:700}
@@ -325,7 +327,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.2.1</div>
+<div id="title"><div id="ver">v0.2.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -448,8 +450,14 @@ GOOGL:2100,INTC:110,ORCL:480,CRM:260,ADBE:210,IBM:190,QCOM:180,MU:120,SHOP:110,S
 IDX:500,BND:300,GLD:250,TECH:200,DIV:100,BTC:1800,ETH:400,SOL:80,DOGE:60};
 const maxSh=x=>Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
 const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
+valGap=x=>{const o=S.p[x[0]];return o.p/o.fair-1}, // below 0 = cheaper than fair value, and cheap stocks drift back up faster
+momOf=x=>S.p[x[0]].m||0, // each security's own hidden bull/bear mood, which pushes its price every second
+sigChips=x=>{if(!isOpen(x)||lv('ins')<2)return '';const g=valGap(x),m=momOf(x),sg=(k,l,v)=>`<span class="cc sg ${k}"><i>${l}</i>${v}</span>`;let h='';
+  if(g<=-.02)h+=sg('up','Value','Cheap '+Math.round(g*100)+'%');else if(g>=.02)h+=sg('dn','Value','Rich +'+Math.round(g*100)+'%');
+  if(lv('ins')>=3){if(m>.0028)h+=sg('up','Momentum','Hot ▲▲');else if(m>.0012)h+=sg('up','Momentum','Rising ▲');else if(m<-.0028)h+=sg('dn','Momentum','Cold ▼▼');else if(m<-.0012)h+=sg('dn','Momentum','Fading ▼')}
+  return h},
 capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</span>`;
-  return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
+  return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+sigChips(x)+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
 heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
 const fmtMc=v=>v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(0)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v).toLocaleString();
 const isF=x=>x[7]!==undefined,isOpen=x=>x[5]===0||!!S.unl[x[0]];
@@ -471,12 +479,12 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'int',cat:'Income',ic:'🏦',n:'Savings Account',d:'Idle cash earns interest',base:2,g:1.5,max:5,fx:l=>'+'+(l*INTR*360000).toFixed(1)+'% of cash per hour'},
 {id:'yld',cat:'Income',ic:'👑',n:'Dividend Aristocrat',d:'Boosts all dividends, interest and fund yield',base:3,g:1.7,max:4,fx:l=>'+'+15*l+'% income'},
 {id:'off',cat:'Income',ic:'🌙',n:'Overnight Analysts',d:'Earn more while you are away',base:2,g:1.6,max:5,fx:l=>(25+10*l)+'% offline rate, '+(8+2*l)+'h max'},
-{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'See more of what the market is doing',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ market breadth','+ alerts for ones you do not own'][l]},
+{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and hot stocks before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheap / Rich tags and a cheapest-stock pick','+ Momentum tags and alerts for ones you do not own'][l]},
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
 {id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]},
 {id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going longer',base:3,g:1.7,max:4,fx:l=>'+'+25*l+'% follow-through'},
-{id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Large orders move the price less, so getting in and out costs less (but pumps are weaker)',base:2,g:1.7,max:4,fx:l=>'-'+10*l+'% price impact'},
+{id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Get better fills on big orders. You pay less slippage, but your trades still move the market just as much, so pumps stay strong',base:2,g:1.7,max:4,fx:l=>'-'+15*l+'% slippage on large orders'},
 ].map(u=>({rp:1,...u}));
 // Big company events: [symbol, event, good outcome, bad outcome, chance of good, typical move]
 const EV=[
@@ -917,10 +925,11 @@ function unlock(s){const x=SM[s];if(isOpen(x))return;
 // Your own trades move prices. Impact grows with the share of the company you trade (square-root law), you pay slippage,
 // and big moves attract momentum traders ("hype").
 const IMP=.30,HYPE=.035,REV_T=120;
-const impOf=(s,q)=>Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))*(1-.1*lv('block')));
+const impOf=(s,q)=>Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))), // how far your trade moves the market price
+  fillOf=i=>i*(1-.15*lv('block')); // Block Trading Desk: the part of that move you actually pay for in slippage
 function planBuy(s,q,imp){const o=S.p[s],f=1+feeRate(),room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
   q=Math.min(q,Math.floor(S.cash/(o.p*f)),room);let i=0,pe=o.p;
-  for(let k=0;k<8&&q>=1;k++){i=imp?impOf(s,q):0;pe=i>1e-9?o.p*(Math.exp(i)-1)/i:o.p;const c=q*pe*f;if(c<=S.cash)break;q=Math.floor(q*S.cash/c*.999)}
+  for(let k=0;k<8&&q>=1;k++){i=imp?impOf(s,q):0;{const e=fillOf(i);pe=e>1e-9?o.p*(Math.exp(e)-1)/e:o.p}const c=q*pe*f;if(c<=S.cash)break;q=Math.floor(q*S.cash/c*.999)}
   return q>=1?{q,i,pe}:{q:0,i:0,pe:o.p}}
 function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, then momentum and sector ripple
   const o=S.p[s];o.p=Math.max(.5,o.p*Math.exp(dir*i));
@@ -954,7 +963,7 @@ function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.p
   el.innerHTML=k.length?'<div class="sec">🏢 Private companies: you own 100%, so they are off the stock market. They pay you income, and you can sell one to take it public again.</div>'+k.map(q=>{const p=S.priv[q],x=SM[q];return `<div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><div><span class="sym">${q}</span> <span class="mu">${x[1]}</span><span class="tag">PRIVATE</span><div class="mu" style="font-size:.75em">Value ${fmt(p.v)} · earns ${fmt(p.v*PRIV_Y*3600)}/hr · ${p.n.toLocaleString()} sh</div></div><button class="btn" data-pv="${q}">Sell company</button></div>`}).join(''):''}
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
-  const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),ps=i>1e-9?p*(1-Math.exp(-i))/i:p,pr=q*(ps*(1-f)-h.c);
+  const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),e=fillOf(i),ps=e>1e-9?p*(1-Math.exp(-e))/e:p,pr=q*(ps*(1-f)-h.c);
   S.cash+=q*ps*(1-f);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
   if(!silent)sfx(pr>0?'sell':'loss');
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
@@ -987,7 +996,7 @@ function drawD(){
   const pr=o.p*(1+feeRate());
   const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
   {const b10=planBuy(cur,10,true).q?planBuy(cur,10,true).i:0,bm=planBuy(cur,1e15,true).i;
-    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price and attract followers. Pump it, then sell into the hype.'}
+    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price and attract followers. Pump it, then sell into the hype.'+(lv('block')?'<br>Block desk: you pay '+15*lv('block')+'% less slippage on this move.':'')}
   $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   document.querySelectorAll('#dacts [data-a^=b]').forEach(b=>b.disabled=S.cash<pr||full);
@@ -1035,8 +1044,10 @@ function draw(){
   const w=nw();$('#nw').textContent=fmt(w);$('#cash').textContent=fmt(S.cash);
   $('#pay').textContent='💼 Payday in '+Math.max(0,S.payn-S.tick)+'s · '+fmt(S.paid)+' earned';
   const d=w-S.start;$('#chg').textContent=(d>=0?'+':'')+fmt(Math.abs(d)).replace('$','$')+' all-time';$('#chg').className='mu '+(d>=0?'up':'dn');
-  const us=ST.filter(isOpen),upf=us.filter(x=>S.p[x[0]].p>=S.p[x[0]].h[0]).length/us.length;
-  $('#mood').textContent=lv('ins')>=2?'Stocks: '+(upf>.65?'mostly up 🐂':upf<.35?'mostly down 🐻':'mixed')+' ('+Math.round(upf*100)+'% up)':'';
+  const us=ST.filter(isOpen);
+  {let t='';if(lv('ins')>=2&&us.length){const ch=us.reduce((a,x)=>valGap(x)<valGap(a)?x:a),g=valGap(ch);t=g<=-.02?'Cheapest: '+ch[0]+' '+Math.round(g*100)+'%':'No bargains now';
+    if(lv('ins')>=3){const hot=us.reduce((a,x)=>momOf(x)>momOf(a)?x:a);if(momOf(hot)>.0012)t+=' · Hot: '+hot[0]}}
+   $('#mood').textContent=t}
   document.querySelectorAll('.row[data-s]').forEach(r=>{
     const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=isOpen(x),h=S.hold[x[0]];
     r.classList.toggle('lock',!open);r.querySelector('.acts').classList.toggle('hide',!open);
