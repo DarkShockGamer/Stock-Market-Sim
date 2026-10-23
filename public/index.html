@@ -214,6 +214,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
   <div class="gw" id="dgw"><svg id="dg" viewBox="0 0 300 150" preserveAspectRatio="none"></svg><span class="gh" id="dhi"></span><span class="gl" id="dlo"></span></div>
   <div id="dtip"></div>
   <div id="dacts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button><button class="btn" data-a="s1">Sell 1</button><button class="btn" data-a="sa">Sell all</button></div>
+  <div id="dimp" class="mu" style="font-size:.78em;line-height:1.35;padding:.2rem .1rem"></div>
   <div id="down"></div>
 </div></div>
 <div id="set" class="hide"><div class="card">
@@ -323,7 +324,7 @@ const RP_OWN=3,PRIV_Y=.00002; // RP for taking a controlling (>50%) stake, once 
 const pvI=()=>Object.values((S&&S.priv)||{}).reduce((a,p)=>a+p.v*PRIV_Y,0);
 const DIVR=.000008,INTR=.000008,chunk=()=>150+.04*S.max;
 const SAL=100000,PAYT=180,PAYC=Math.round(SAL/26); // $100k/yr, one $3,846 check every 180s (3 minutes)
-const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭']];
+const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭'],['Shadow','🕶️']];
 const UPS=[ // Bought with Research Points. None of these change how prices behave; they only help the player.
 {id:'fee',cat:'Trading',ic:'💱',n:'Broker Discount',d:'Lower fee on every buy and sell',base:2,g:1.5,max:5,fx:l=>Math.max(0,.5-.1*l).toFixed(1)+'% trade fee'},
 {id:'bot',cat:'Trading',ic:'🤖',n:'Auto-Trader',d:'Buys dips and sells peaks in stocks for you',base:4,g:1.55,max:6,fx:l=>l?'acts every '+Math.max(2,10-l)+'s, up to '+(10+4*l)+'% of cash':'off'},
@@ -334,7 +335,9 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'See more of what the market is doing',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ market breadth','+ alerts for ones you do not own'][l]},
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
-{id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]}
+{id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]},
+{id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going longer',base:3,g:1.7,max:4,fx:l=>'+'+25*l+'% follow-through'},
+{id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Large orders move the price less, so getting in and out costs less (but pumps are weaker)',base:2,g:1.7,max:4,fx:l=>'-'+10*l+'% price impact'},
 ].map(u=>({rp:1,...u}));
 // Big company events: [symbol, event, good outcome, bad outcome, chance of good, typical move]
 const EV=[
@@ -516,7 +519,7 @@ function applyCfg(){const h=document.documentElement;h.dataset.theme=CFG.theme;
   h.style.setProperty('--sc',CFG.scale/100);
   const cs=getComputedStyle(h);colUp=cs.getPropertyValue('--up').trim()||'#2ecc71';colDn=cs.getPropertyValue('--dn').trim()||'#ff5c5c'}
 const mk=x=>({p:x[2],fair:x[2],fp:x[2],h:Array(40).fill(x[2]),g:[x[2]],gs:1,n:0,r:[x[2]],m:0,gm:.8+Math.random()*.4});
-function fresh(){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],p:{}};
+function fresh(){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],lt:{},p:{}};
   STOCKS.forEach(x=>s.p[x[0]]=mk(x));return s}
 function migrate(){ // old saves: rebase every price to the new $10 start, with shares scaled so your holdings keep the same value
   if(S.ver===2)return;
@@ -530,7 +533,7 @@ function suFix(){const u=S.su;if(!S.grads)S.grads=[];if(u&&u.list)return; // old
 function load(n){slot=n;S=peek(n);
   if(!S)S=fresh();migrate();suFix();regGrads(S.grads,S.su.list);if(!S.ev)S.ev=[];
   if(S.paid===undefined){S.paid=0;S.payn=(S.tick||0)+PAYT}
-  if(!S.priv)S.priv={};if(!S.ctrl)S.ctrl={};if(!S.ct)S.ct={list:[],next:0,done:0,earned:0,id:0};STOCKS.forEach(x=>{if(!S.p[x[0]])S.p[x[0]]=mk(x);const o=S.p[x[0]];if(!o.g){o.g=[o.p];o.gs=1;o.n=0}if(!o.r)o.r=[o.p];if(o.m===undefined)o.m=0;if(o.gm===undefined)o.gm=.8+Math.random()*.4;});
+  if(!S.priv)S.priv={};if(!S.ctrl)S.ctrl={};if(!S.lt)S.lt={};if(!S.ct)S.ct={list:[],next:0,done:0,earned:0,id:0};STOCKS.forEach(x=>{if(!S.p[x[0]])S.p[x[0]]=mk(x);const o=S.p[x[0]];if(!o.g){o.g=[o.p];o.gs=1;o.n=0}if(!o.r)o.r=[o.p];if(o.m===undefined)o.m=0;if(o.gm===undefined)o.gm=.8+Math.random()*.4;});
   if(!S.ms){S.rp=0;S.rpt=0;S.prof=0;S.psell=0;S.ms={};S.unl={};
     const old={DIS:3000,AAPL:7000,MSFT:15000,TSLA:25000,AMZN:60000,NVDA:150000,NFLX:400000};
     for(const k in old)if(S.max>=old[k]||(S.hold[k]&&S.hold[k].n))S.unl[k]=1}
@@ -604,7 +607,9 @@ const ACHV=[
 ['ct1','Hired Gun','Complete a contract',1,()=>(G.contracts||0)>=1],['ct10','Reliable Contractor','Complete 10 contracts',2,()=>(G.contracts||0)>=10],['ct50','Trusted Advisor','Complete 50 contracts',4,()=>(G.contracts||0)>=50],
 ['su1','Angel Investor','Invest in a startup',1,()=>(G.sinv||0)>=1],['su2','Unicorn Hunter','Own shares when a startup hits $10 and goes public',3,()=>(G.sgrad||0)>=1],
 ['su3','Total Wipeout','Back a startup that goes bankrupt',1,()=>(G.sbust||0)>=1],['su4','Venture Capitalist','Earn $10,000 net profit from startups',3,()=>!!S.su&&S.su.net>=1e4],
-['t1','Patient Investor','Play for 1 hour in total',1,()=>G.ticks>=3600],['t10','In It for the Long Haul','Play for 10 hours in total',3,()=>G.ticks>=36000]
+['t1','Patient Investor','Play for 1 hour in total',1,()=>G.ticks>=3600],['t10','In It for the Long Haul','Play for 10 hours in total',3,()=>G.ticks>=36000],
+['mm1','Market Mover','Move a stock 5% with a single trade',2,()=>(G.moved||0)>=.05],['mm2','Mover and Shaker','Move a stock 15% with a single trade',4,()=>(G.moved||0)>=.15],
+['pd1','Pump and Dump','Sell for a profit right after pumping a stock',3,()=>(G.pd||0)>=1],['pd2','Pump Syndicate','Pull off 10 pump-and-dumps',5,()=>(G.pd||0)>=10]
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
 function checkAch(){const got=[];ACHV.forEach(a=>{if(!G.a[a.id]&&a.f()){G.a[a.id]=Date.now();S.rp+=a.rp;S.rpt+=a.rp;got.push(a)}});
   if(!got.length)return;wr(GK,JSON.stringify(G));
@@ -727,11 +732,36 @@ function drawCt(){const el=$('#contracts');if(el.classList.contains('hide'))retu
   `<div class="mu" style="padding:.4rem .3rem">Completed ${C.done} · Earned ${fmt(C.earned)}</div>`}
 function unlock(s){const x=SM[s];if(isOpen(x))return;
   if(S.rp>=x[5]){S.rp-=x[5];S.unl[s]=1;toast('🔓 Unlocked '+x[1],1);sfx('unlock');draw();save()}else toast('Need '+x[5]+' Research Points',1)}
-function buy(s,q,silent){const p=S.p[s].p,f=1+feeRate();
+// ===== Market impact & manipulation =====
+// Your own trades move prices. Impact grows with the share of the company you trade (square-root law), you pay slippage,
+// and big moves attract momentum traders ("hype").
+const IMP=.30,HYPE=.035,REV_T=120;
+const impOf=(s,q)=>Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))*(1-.1*lv('block')));
+function planBuy(s,q,imp){const o=S.p[s],f=1+feeRate(),room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
+  q=Math.min(q,Math.floor(S.cash/(o.p*f)),room);let i=0,pe=o.p;
+  for(let k=0;k<8&&q>=1;k++){i=imp?impOf(s,q):0;pe=i>1e-9?o.p*(Math.exp(i)-1)/i:o.p;const c=q*pe*f;if(c<=S.cash)break;q=Math.floor(q*S.cash/c*.999)}
+  return q>=1?{q,i,pe}:{q:0,i:0,pe:o.p}}
+function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, then momentum and sector ripple
+  const o=S.p[s];o.p=Math.max(.5,o.p*Math.exp(dir*i));
+  if(i<.01)return;
+  o.m=(o.m||0)+dir*i*HYPE*(1+.25*lv('pump'))*(dir>0?1:.85);
+  if(i>=.02){const sc=SEC[s];if(sc)STOCKS.forEach(x=>{if(x[0]!==s&&SEC[x[0]]===sc&&S.p[x[0]])S.p[x[0]].m=(S.p[x[0]].m||0)+dir*i*.004})}}
+function manip(s,dir,i,q){ // returns true when this trade reverses a recent market-moving trade (pump & dump pattern)
+  if(!S.lt)S.lt={};if(i<.01)return false;
+  G.moved=Math.max(G.moved||0,i);
+  const lt=S.lt[s],rev=!!(lt&&lt.d!==dir&&S.tick-lt.t<REV_T&&lt.i>=.01);
+  S.lt[s]={d:dir,t:S.tick,i};
+  if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market and attract followers.',1)}
+  return rev}
+function buy(s,q,silent){
   const room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
   if(room<1){if(!silent)toast('👑 You already own 100% of '+SM[s][1],1);return}
-  q=Math.min(q,Math.floor(S.cash/(p*f)),room);if(q<1){if(!silent)toast('Not enough cash',1);return}
-  S.cash-=q*p*f;if(!silent)G.trades++;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*p)/(h.n+q);h.n+=q;ctHook('buy',s,q);if(!ownCheck(s)&&!silent)sfx('buy');draw()}
+  const f=1+feeRate(),pl=planBuy(s,q,!silent);q=pl.q;if(q<1){if(!silent)toast('Not enough cash',1);return}
+  const pe=pl.pe,i=pl.i;
+  S.cash-=q*pe*f;if(!silent)G.trades++;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;ctHook('buy',s,q);
+  const own=ownCheck(s); // takeover check uses the price before your own buying pushes it up
+  if(!silent&&!own&&S.hold[s]){marketMove(s,1,i);manip(s,1,i,q);if(i>=.015)toast('📈 Your buy pushed '+SM[s][1]+' up '+(i*100).toFixed(1)+'%')}
+  if(!own&&!silent)sfx('buy');draw()}
 function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n*2>maxSh(x)&&!S.ctrl[s]){S.ctrl[s]=1;S.rp+=RP_OWN;S.rpt+=RP_OWN;msg='👑 You now control '+x[1]+' (over 50%)! 🔬 +'+RP_OWN+' Research Points'}
   if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
@@ -741,14 +771,16 @@ function sellPriv(s){const p=S.priv[s];if(!p)return;S.cash+=p.v;delete S.priv[s]
 let privSig='';
 function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.priv);const sig=k.map(q=>q+S.priv[q].v).join();if(sig===privSig)return;privSig=sig;
   el.innerHTML=k.length?'<div class="sec">🏢 Private companies: you own 100%, so they are off the stock market. They pay you income, and you can sell one to take it public again.</div>'+k.map(q=>{const p=S.priv[q],x=SM[q];return `<div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><div><span class="sym">${q}</span> <span class="mu">${x[1]}</span><span class="tag">PRIVATE</span><div class="mu" style="font-size:.75em">Value ${fmt(p.v)} · earns ${fmt(p.v*PRIV_Y*3600)}/hr · ${p.n.toLocaleString()} sh</div></div><button class="btn" data-pv="${q}">Sell company</button></div>`}).join(''):''}
-function sell(s,q,silent){const h=S.hold[s];if(!h)return;q=Math.min(q,h.n);if(q<1)return;
-  const p=S.p[s].p,f=feeRate(),pr=q*(p*(1-f)-h.c);
-  S.cash+=q*p*(1-f);if(!silent)G.trades++;h.n-=q;if(h.n<=0)delete S.hold[s];
+function sell(s,q,silent){const h=S.hold[s];if(!h)return;
+  q=Math.min(q,h.n);if(q<1)return;
+  const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),ps=i>1e-9?p*(1-Math.exp(-i))/i:p,pr=q*(ps*(1-f)-h.c);
+  S.cash+=q*ps*(1-f);if(!silent)G.trades++;h.n-=q;if(h.n<=0)delete S.hold[s];
   if(!silent)sfx(pr>0?'sell':'loss');
   if(pr>0){G.best=Math.max(G.best||0,pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
+  if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){G.pd=(G.pd||0)+1;toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
+    else if(i>=.015)toast('📉 Your sell pushed '+SM[s][1]+' down '+(i*100).toFixed(1)+'%')}
   draw()}
-
 let cur=null,dpts=[],dts=[],rng=0;
 const fmtT=t=>{t=Math.round(t);const h=t/3600|0,m=(t%3600)/60|0;return h?h+'h '+m+'m':m?m+'m '+(t%60)+'s':t+'s'};
 function openD(s){if(!cur)sfx('pop');cur=s;$('#dlg').classList.remove('hide');drawD()}
@@ -759,7 +791,7 @@ function series(o){
   else{const k=rng>0?Math.ceil(rng/o.gs)+1:o.g.length,a=Math.max(0,o.g.length-k);p=o.g.slice(a);t=p.map((_,j)=>(a+j)*o.gs);
     if(t[t.length-1]<o.n){p.push(o.p);t.push(o.n)}}
   return [p,t]}
-function maxBuy(s){const p=S.p[s].p*(1+feeRate()),h=S.hold[s];return Math.max(0,Math.min(Math.floor(S.cash/p),maxSh(SM[s])-(h?h.n:0)))}
+function maxBuy(s){return planBuy(s,1e15,true).q}
 function drawD(){
   if(!cur)return;const x=STOCKS.find(q=>q[0]===cur),o=S.p[cur],h=S.hold[cur];
   const [pts,ts]=series(o);dpts=pts;dts=ts;
@@ -773,6 +805,8 @@ function drawD(){
   $('#dhi').textContent='High $'+mx.toFixed(2);$('#dlo').textContent='Low $'+mn.toFixed(2);
   const pr=o.p*(1+feeRate());
   const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
+  {const b10=planBuy(cur,10,true).q?planBuy(cur,10,true).i:0,bm=planBuy(cur,1e15,true).i;
+    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price and attract followers. Pump it, then sell into the hype.'}
   $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   document.querySelectorAll('#dacts [data-a^=b]').forEach(b=>b.disabled=S.cash<pr||full);
