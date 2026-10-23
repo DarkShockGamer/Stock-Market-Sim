@@ -451,7 +451,7 @@ const MC={KO:270,F:45,WMT:560,DIS:180,MCD:210,AAPL:3000,NKE:150,SBUX:105,V:550,M
 XOM:480,JNJ:380,PFE:160,DAL:35,UAL:25,CVX:290,BA:120,JPM:600,HD:370,CAT:170,LMT:120,CCL:25,COST:400,UBER:150,STRL:50,LLY:700,SPCX:350,
 GOOGL:2100,INTC:110,ORCL:480,CRM:260,ADBE:210,IBM:190,QCOM:180,MU:120,SHOP:110,SNOW:55,TSM:800,AVGO:1000,ARM:130,MA:430,PYPL:75,BAC:300,GS:170,SQ:45,BRKB:900,SPOT:90,WBD:25,CMCSA:150,RBLX:30,PEP:230,PG:390,KHC:40,TGT:70,LULU:45,CMG:80,GM:55,TM:250,RIVN:15,UNH:500,MRK:280,ABBV:310,MRNA:15,COP:130,NEE:150,ENPH:12,GE:200,DE:110,HON:135,UPS:100,RTX:150,MAR:70,BKNG:130,T:130,VZ:170,TMUS:250,RKLB:12,
 IDX:500,BND:300,GLD:250,TECH:200,DIV:100,BTC:1800,ETH:400,SOL:80,DOGE:60};
-const maxSh=x=>S&&S.mode==='live'&&S.p[x[0]]?Math.max(1,Math.round(MC[x[0]]*1e9/Math.max(.01,S.p[x[0]].p))):Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
+const maxSh=x=>S&&S.mode==='live'&&S.p[x[0]]?Math.max(1,Math.round((LMC[x[0]]||MC[x[0]])*1e9/Math.max(.01,S.p[x[0]].p))):Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
 const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
 valGap=x=>{const o=S.p[x[0]];return o.p/o.fair-1}, // below 0 = cheaper than fair value, and cheap stocks drift back up faster
 momOf=x=>S.p[x[0]].m||0, // each security's own hidden bull/bear mood, which pushes its price every second
@@ -739,7 +739,8 @@ function checkRP(){let g=0,why=[];
   NWM.forEach(([t,r])=>{const id='nw'+t;if(S.max>=t&&!S.ms[id]){S.ms[id]=1;g+=r;why.push('net worth '+fmt(t))}});
   if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+(why.length===1?' · '+why[0]:' · milestones'));sfx('rp')}}
 // ---- Live Market mode: real prices from the server's /api/quotes (Finnhub). Prices are paper-traded: no fees, no price impact, no events. ----
-const NOLIVE=new Set(['STRL','SPCX','BTC','ETH','SOL','DOGE']); // private companies and crypto have no live quote here
+const NOLIVE=new Set(['STRL','BTC','ETH','SOL','DOGE']); // Starlink (not listed) and crypto have no live quote here
+const LMC={SPCX:2000}; // real market caps in $B where the classic-mode number is not realistic (SpaceX IPO'd at ~$2T)
 const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
 function lvApply(j){
   if(!isLive())return;
