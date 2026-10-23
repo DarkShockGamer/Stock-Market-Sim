@@ -742,20 +742,28 @@ function checkRP(){let g=0,why=[];
 const NOLIVE=new Set(['STRL','BTC','ETH','SOL','DOGE']); // Starlink (not listed) and crypto have no live quote here
 const LMC={SPCX:2000}; // real market caps in $B where the classic-mode number is not realistic (SpaceX IPO'd at ~$2T)
 const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
+const HD={},LH={pending:-1,busy:false}; // HD: ticker -> {t:[epoch s],c:[daily closes]} (about 1 year); loaded from the server each session, not saved with the game
+function lvSeedH(k){const o=S.p[k],d=HD[k];if(!o||!d)return;const c=d.c.slice(-39);c.push(o.live?o.p:c[c.length-1]);while(c.length<40)c.unshift(c[0]);o.h=c} // list sparkline = last ~40 trading days
+async function lvHist(){if(!isLive()||LH.busy||LH.pending===0)return;LH.busy=true;
+  try{const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]);
+    const r=await fetch('/api/history?s='+syms.join(',')+'&have='+Object.keys(HD).join(','),{cache:'no-store'}),j=await r.json();
+    if(isLive()&&j&&j.ok){LH.pending=j.pending;for(const k in j.hist){const d=j.hist[k];if(d&&d.c&&d.c.length>1){HD[k]={t:d.t.map(x=>x*86400),c:d.c};lvSeedH(k)}}if(isLive())draw()}}
+  catch(e){}finally{LH.busy=false}}
 function lvApply(j){
   if(!isLive())return;
   if(!j||!j.ok){LV.err=j&&(j.error==='nokey'||j.error==='badkey')?j.error:'bad';return}
   LV.err='';LV.at=Date.now();LV.total=j.total;LV.ready=j.ready;
   for(const k in j.quotes){const q=j.quotes[k],o=S.p[k];if(!o||!(q.c>0))continue;
     if(q.t)LV.maxT=Math.max(LV.maxT,q.t);
-    if(!o.live){o.live=1;o.p=o.tgt=o.fair=o.fp=q.c;o.h=Array(40).fill(q.c);o.g=[q.c];o.gs=1;o.n=0;o.r=[q.c]}
+    if(!o.live){o.live=1;o.p=o.tgt=o.fair=o.fp=q.c;o.h=Array(40).fill(q.c);o.g=[q.c];o.gs=1;o.n=0;o.r=[q.c];if(HD[k])lvSeedH(k)}
     else if(Math.abs(q.c-o.tgt)>1e-9){o.tgt=q.c;o.h.push(q.c);if(o.h.length>40)o.h.shift();o.r.push(q.c);if(o.r.length>900)o.r.shift();
       o.g.push(q.c);if(o.g.length>1200){o.g=o.g.filter((_,i)=>i%2===0);o.gs*=2}}
     o.pc=q.pc}}
 async function lvFetch(){if(!isLive())return;
   const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]),held=Object.keys(S.hold).filter(k=>!NOLIVE.has(k));
-  try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}}
-function lvStart(){clearInterval(lvT);if(!isLive())return;lvFetch();lvT=setInterval(()=>{if(live()&&isLive())lvFetch()},8000)}
+  try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}
+  lvHist()}
+function lvStart(){clearInterval(lvT);if(!isLive())return;LH.pending=-1;lvFetch();lvT=setInterval(()=>{if(live()&&isLive())lvFetch()},8000)}
 function lvStatus(){
   if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
   if(LV.err==='badkey')return '⚠ Finnhub rejected the API key (check FINNHUB_API_KEY)';
@@ -1006,12 +1014,14 @@ function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){bump('pd');toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
     else if(i>=.015)toast('📉 Your sell pushed '+SM[s][1]+' down '+(i*100).toFixed(1)+'%')}
   draw()}
-let cur=null,dpts=[],dts=[],rng=0;
+let cur=null,dpts=[],dts=[],rng=0,lrng=0;const LR=[7,30,90,365,0],LL=['1W','1M','3M','1Y','All'],CL=['1m','5m','15m','1h','All'],lhOn=s=>isLive()&&!!HD[s];
+const spanTxt=s=>{const d=Math.round(s/86400);return d<45?d+'d':d<330?Math.round(d/30.4)+'mo':(+(d/365.25).toFixed(1))+'y'},dayTxt=t=>new Date(t*1000).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
 const fmtT=t=>{t=Math.round(t);const h=t/3600|0,m=(t%3600)/60|0;return h?h+'h '+m+'m':m?m+'m '+(t%60)+'s':t+'s'};
 function openD(s){if(!cur)sfx('pop');cur=s;$('#dlg').classList.remove('hide');drawD()}
 function closeD(){if(cur)sfx('close');cur=null;$('#dlg').classList.add('hide')}
-function series(o){
+function series(o,s){
   let p,t;
+  if(lhOn(s)){const d=HD[s],cut=lrng>0?Date.now()/1000-lrng*86400:0;let a=d.t.findIndex(x=>x>=cut);if(a<0)a=d.t.length-2;a=Math.max(0,Math.min(a,d.t.length-2));p=d.c.slice(a);t=d.t.slice(a);if(o.live){p.push(o.p);t.push(Date.now()/1000)}return [p,t]}
   if(rng>0&&rng<=900){const k=Math.min(rng+1,o.r.length);p=o.r.slice(-k);t=p.map((_,i)=>o.n-(k-1-i))}
   else{const k=rng>0?Math.ceil(rng/o.gs)+1:o.g.length,a=Math.max(0,o.g.length-k);p=o.g.slice(a);t=p.map((_,j)=>(a+j)*o.gs);
     if(t[t.length-1]<o.n){p.push(o.p);t.push(o.n)}}
@@ -1019,14 +1029,14 @@ function series(o){
 function maxBuy(s){return planBuy(s,1e15,true).q}
 function drawD(){
   if(!cur)return;const x=STOCKS.find(q=>q[0]===cur),o=S.p[cur],h=S.hold[cur];
-  const [pts,ts]=series(o);dpts=pts;dts=ts;
+  const [pts,ts]=series(o,cur);dpts=pts;dts=ts;
   const n=pts.length,mn=Math.min(...pts),mx=Math.max(...pts),W=300,H=150,rg=(mx-mn)||1;
   const X=i=>(i*W/((n-1)||1)).toFixed(1),Y=v=>(H-6-(v-mn)/rg*(H-12)).toFixed(1);
   const line=pts.map((v,i)=>X(i)+','+Y(v)).join(' '),ch=o.p/pts[0]-1,col=ch>=0?colUp:colDn;
   $('#dg').innerHTML=`<polygon points="0,${H} ${line} ${W},${H}" fill="${col}" opacity=".15"/><line x1="0" x2="${W}" y1="${Y(pts[0])}" y2="${Y(pts[0])}" stroke="#8b97a6" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".5"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`;
-  document.querySelectorAll('#rng .btn').forEach(b=>b.classList.toggle('on',+b.dataset.r===rng));
+  const LHd=lhOn(cur);document.querySelectorAll('#rng .btn').forEach((b,i)=>{b.textContent=LHd?LL[i]:CL[i];b.classList.toggle('on',LHd?LR[i]===lrng:+b.dataset.r===rng)});
   $('#dt').innerHTML=`<span class="tk">${cur}</span><span class="nm">${x[1]}</span>`;$('#dp').textContent='$'+o.p.toFixed(2);
-  $('#di').innerHTML=`<span class="pill ${ch>=0?'up':'dn'}">${ch>=0?'▲ +':'▼ '}${(ch*100).toFixed(1)}%<small>over ${n>1?fmtT(ts[n-1]-ts[0]):'0s'}</small></span>`;
+  $('#di').innerHTML=`<span class="pill ${ch>=0?'up':'dn'}">${ch>=0?'▲ +':'▼ '}${(ch*100).toFixed(1)}%<small>over ${n>1?(LHd?spanTxt(ts[n-1]-ts[0]):fmtT(ts[n-1]-ts[0])):'0s'}</small></span>`;
   $('#dhi').textContent='High $'+mx.toFixed(2);$('#dlo').textContent='Low $'+mn.toFixed(2);
   const pr=o.p*(1+feeRate());
   const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
@@ -1041,8 +1051,8 @@ function drawD(){
   if(!drawD.hold)$('#dtip').textContent='Touch or hover the chart to inspect · dashed line = start of range';
 }
 (()=>{const g=$('#dgw');
-  const inspect=e=>{const r=g.getBoundingClientRect(),n=dpts.length,i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*(n-1)))),v=dpts[i],o=S.p[cur],ago=o.n-dts[i];
-    const pc=(v/dpts[0]-1)*100;drawD.hold=true;$('#dtip').innerHTML=`<b>$${v.toFixed(2)}</b> · <span class="${pc>=0?'up':'dn'}">${pc>=0?'+':''}${pc.toFixed(1)}%</span> vs range start · ${ago>0?fmtT(ago)+' ago':'now'}`};
+  const inspect=e=>{const r=g.getBoundingClientRect(),n=dpts.length,i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*(n-1)))),v=dpts[i],o=S.p[cur],ago=o.n-dts[i],lh=lhOn(cur);
+    const pc=(v/dpts[0]-1)*100;drawD.hold=true;$('#dtip').innerHTML=`<b>$${v.toFixed(2)}</b> · <span class="${pc>=0?'up':'dn'}">${pc>=0?'+':''}${pc.toFixed(1)}%</span> vs range start · ${lh?dayTxt(dts[i]):ago>0?fmtT(ago)+' ago':'now'}`};
   g.addEventListener('pointermove',inspect);g.addEventListener('pointerdown',inspect);
   g.addEventListener('pointerleave',()=>{drawD.hold=false;drawD()});})();
 $('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg'||e.target.id==='dx')closeD()});
@@ -1116,7 +1126,7 @@ document.addEventListener('click',e=>{
   if(b.dataset.sec!==undefined){fsec=b.dataset.sec;applyFilter();return}
   if(b.dataset.uc!==undefined){fup=b.dataset.uc;applyUp();draw();return}
   const r=b.closest('.row'),inD=b.closest('#dlg');
-  if(b.dataset.r!==undefined){rng=+b.dataset.r;drawD()}
+  if(b.dataset.r!==undefined){if(lhOn(cur))lrng=LR[[...b.parentNode.children].indexOf(b)];else rng=+b.dataset.r;drawD()}
   else if(inD&&!b.dataset.a){}
   else if((r&&r.dataset.s)||(inD&&cur)){const s=inD?cur:r.dataset.s,a=b.dataset.a,p=S.p[s].p*(1+feeRate());
     if(a==='b1')buy(s,1);if(a==='b10')buy(s,10);if(a==='bm')buy(s,maxBuy(s));
