@@ -744,7 +744,7 @@ const LMC={SPCX:2000}; // real market caps in $B where the classic-mode number i
 const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
 function lvApply(j){
   if(!isLive())return;
-  if(!j||!j.ok){LV.err=j&&j.error==='nokey'?'nokey':'bad';return}
+  if(!j||!j.ok){LV.err=j&&(j.error==='nokey'||j.error==='badkey')?j.error:'bad';return}
   LV.err='';LV.at=Date.now();LV.total=j.total;LV.ready=j.ready;
   for(const k in j.quotes){const q=j.quotes[k],o=S.p[k];if(!o||!(q.c>0))continue;
     if(q.t)LV.maxT=Math.max(LV.maxT,q.t);
@@ -758,6 +758,7 @@ async function lvFetch(){if(!isLive())return;
 function lvStart(){clearInterval(lvT);if(!isLive())return;lvFetch();lvT=setInterval(()=>{if(live()&&isLive())lvFetch()},8000)}
 function lvStatus(){
   if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
+  if(LV.err==='badkey')return '⚠ Finnhub rejected the API key (check FINNHUB_API_KEY)';
   if(LV.err)return '⚠ Cannot reach the price server';
   if(!LV.at)return 'Connecting to live prices…';
   const got=STOCKS.filter(x=>(S.p[x[0]]||{}).live).length;
