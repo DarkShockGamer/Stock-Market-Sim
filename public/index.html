@@ -107,6 +107,74 @@ html[data-ns] .sp{display:none}
 #contracts:not(.hide){display:flex;flex-direction:column;gap:.3571rem}
 nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 #startups{display:block}#startups.hide{display:none}#startups:not(.hide){display:flex;flex-direction:column;gap:.3571rem}
+
+/* graph dialog header */
+.dhead{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.dhead .dname{font-size:1.15em;font-weight:700;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.dhead .dname .tk{background:var(--ac);color:#fff;border-radius:.4rem;padding:.05rem .45rem;font-size:.9em;letter-spacing:.04em}
+.dhead .dname .nm{color:var(--mu);font-weight:500;font-size:.85em}
+.dpr{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap}
+.dpr .nw{font-size:1.7em;line-height:1.1}
+.pill{display:inline-block;border-radius:1rem;padding:.08rem .55rem;font-size:.82em;font-weight:600;font-variant-numeric:tabular-nums;background:var(--line);color:var(--mu)}
+.pill.up{background:color-mix(in srgb,var(--up) 18%,transparent);color:var(--up)}
+.pill.dn{background:color-mix(in srgb,var(--dn) 18%,transparent);color:var(--dn)}
+.pill small{font-weight:500;opacity:.8;margin-left:.25rem}
+.dstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:.3rem}
+.dstats:empty,#dprop:empty,#down:empty{display:none}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:.55rem;padding:.3rem .5rem;min-width:0}
+.stat span{display:block;font-size:.68em;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)}
+.stat b{display:block;font-size:.95em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dprop{font-size:.85em;line-height:1.4;color:var(--tx);opacity:.9;background:var(--bg);border-left:.25rem solid var(--ac);border-radius:.4rem;padding:.35rem .55rem}
+#dtip{font-size:.82em;text-align:center;min-height:1.2em;color:var(--mu);font-variant-numeric:tabular-nums}
+#dtip b{color:var(--tx)}
+#down{display:flex;flex-wrap:wrap;gap:.25rem .8rem;justify-content:space-between;font-size:.85em;border-top:1px solid var(--line);padding-top:.45rem;color:var(--mu)}
+#down b{color:var(--tx);font-weight:600}
+/* upgrade rows */
+.upg .utt{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.upg .utt b{font-size:1.05em}
+.upg .ud{color:var(--mu);font-size:.85em;line-height:1.35;margin:.15rem 0 .3rem}
+.upg .eff{display:flex;align-items:center;flex-wrap:wrap;gap:.3rem;opacity:1;font-size:.82em}
+.upg .eff .lbl{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin-right:.15rem}
+.upg .eff .ar{color:var(--mu)}
+.upg .eff .pill.now{background:var(--line);color:var(--tx)}
+.upg .eff .pill.nx{background:color-mix(in srgb,var(--up) 18%,transparent);color:var(--up)}
+.upg .eff .pill.mx{background:color-mix(in srgb,#f1c40f 22%,transparent);color:#f1c40f}
+html[data-theme=light] .upg .eff .pill.mx{color:#9a7400}
+.pips{font-size:.7em}
+
+.rsc{display:flex!important;flex-direction:column;align-items:stretch;gap:.55rem;padding:.7rem .8rem}
+.rtop{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.rlbl{font-size:.75em;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);font-weight:600}
+.rbig{display:flex;align-items:baseline;gap:.4rem}
+.rbig span{font-size:2em;font-weight:700;line-height:1.1;color:var(--ac);font-variant-numeric:tabular-nums}
+.rbig small{color:var(--mu);font-size:.85em}
+.rprog .rph{display:flex;justify-content:space-between;gap:.5rem;font-size:.8em;color:var(--mu)}
+.rprog .rph b{color:var(--tx);font-variant-numeric:tabular-nums}
+.rsc .bar{height:.6rem;margin:.25rem 0 0}
+.rsc .bar i{background:linear-gradient(90deg,var(--ac),var(--up));transition:width .4s}
+.rinfo{display:flex;align-items:center;gap:.45rem;font-size:.82em;color:var(--mu);background:var(--bg);border:1px solid var(--line);border-radius:.55rem;padding:.3rem .5rem}
+.rinfo b{color:var(--tx)}
+.rinfo .pill{margin-left:.2rem}
+
+/* keep long share counts / percents inside the screen */
+.row{min-width:0}.row>div{min-width:0}
+.acts{flex-wrap:wrap;row-gap:.25rem}
+.acts .btn{padding:.2143rem .45rem;white-space:nowrap}
+.acts .own{flex:1 1 auto;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+@media (max-width:480px){.acts .own{flex-basis:100%;margin-left:0;text-align:right}}
+#dacts{flex-wrap:wrap}
+#dacts .btn{min-width:0;padding:.4286rem .2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dacts .btn[data-a=bm]{flex:1.6}
+.card{min-width:0}
+.dstats .stat b{white-space:normal;overflow-wrap:anywhere}
+
+.cap{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.3rem}
+.cc{display:inline-flex;align-items:baseline;gap:.3rem;background:var(--bg);border:1px solid var(--line);border-radius:.45rem;padding:.08rem .45rem;font-size:.74em;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cc i{font-style:normal;font-weight:500;font-size:.9em;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+.cc.own{background:color-mix(in srgb,var(--ac) 16%,transparent);border-color:transparent;color:var(--ac)}
+.cc.own b{font-weight:700}
+.cc.maj{background:color-mix(in srgb,#f1c40f 22%,transparent);color:#f1c40f}
+html[data-theme=light] .cc.maj{color:#9a7400}
 </style>
 </head>
 <body>
@@ -134,15 +202,14 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
   <div id="tslots" class="tcol hide"><b>Save slots</b><div id="slist"></div><div class="mu" id="smsg"></div><button class="btn" id="tb">Back</button></div>
 </div>
 <div id="dlg" class="hide"><div class="card">
-  <div class="up-row"><div><b id="dt"></b><div class="nw" id="dp" style="font-size:1.3em"></div></div><button class="btn" id="dx">✕</button></div>
+  <div class="up-row"><div class="dhead"><div class="dname" id="dt"></div><div class="dpr"><span class="nw" id="dp"></span><span id="di"></span></div></div><button class="btn" id="dx">✕</button></div>
   <div class="rng" id="rng"><button class="btn" data-r="60">1m</button><button class="btn" data-r="300">5m</button><button class="btn" data-r="900">15m</button><button class="btn" data-r="3600">1h</button><button class="btn" data-r="0">All</button></div>
-  <div class="mu" id="di"></div>
-  <div class="mu" id="dcap"></div>
-  <div class="mu" id="dprop"></div>
+  <div class="dstats" id="dcap"></div>
+  <div id="dprop"></div>
   <div class="gw" id="dgw"><svg id="dg" viewBox="0 0 300 150" preserveAspectRatio="none"></svg><span class="gh" id="dhi"></span><span class="gl" id="dlo"></span></div>
-  <div class="mu" id="dtip"></div>
+  <div id="dtip"></div>
   <div id="dacts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button><button class="btn" data-a="s1">Sell 1</button><button class="btn" data-a="sa">Sell all</button></div>
-  <div class="mu" id="down"></div>
+  <div id="down"></div>
 </div></div>
 <div id="set" class="hide"><div class="card">
   <div class="up-row"><b>⚙ Settings</b><button class="btn" id="sx">✕</button></div>
@@ -234,7 +301,10 @@ XOM:480,JNJ:380,PFE:160,DAL:35,UAL:25,CVX:290,BA:120,JPM:600,HD:370,CAT:170,LMT:
 GOOGL:2100,INTC:110,ORCL:480,CRM:260,ADBE:210,IBM:190,QCOM:180,MU:120,SHOP:110,SNOW:55,TSM:800,AVGO:1000,ARM:130,MA:430,PYPL:75,BAC:300,GS:170,SQ:45,BRKB:900,SPOT:90,WBD:25,CMCSA:150,RBLX:30,PEP:230,PG:390,KHC:40,TGT:70,LULU:45,CMG:80,GM:55,TM:250,RIVN:15,UNH:500,MRK:280,ABBV:310,MRNA:15,COP:130,NEE:150,ENPH:12,GE:200,DE:110,HON:135,UPS:100,RTX:150,MAR:70,BKNG:130,T:130,VZ:170,TMUS:250,RKLB:12,
 IDX:500,BND:300,GLD:250,TECH:200,DIV:100,BTC:1800,ETH:400,SOL:80,DOGE:60};
 const maxSh=x=>Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
-const heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
+const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
+capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</span>`;
+  return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
+heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
 const fmtMc=v=>v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(0)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v).toLocaleString();
 const isF=x=>x[7]!==undefined,isOpen=x=>x[5]===0||!!S.unl[x[0]];
 const NST0=ST.length,NALL0=STOCKS.length,BASEK=new Set(Object.keys(SM));
@@ -692,28 +762,29 @@ function drawD(){
   const line=pts.map((v,i)=>X(i)+','+Y(v)).join(' '),ch=o.p/pts[0]-1,col=ch>=0?colUp:colDn;
   $('#dg').innerHTML=`<polygon points="0,${H} ${line} ${W},${H}" fill="${col}" opacity=".15"/><line x1="0" x2="${W}" y1="${Y(pts[0])}" y2="${Y(pts[0])}" stroke="#8b97a6" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".5"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`;
   document.querySelectorAll('#rng .btn').forEach(b=>b.classList.toggle('on',+b.dataset.r===rng));
-  $('#dt').textContent=cur+' · '+x[1];$('#dp').textContent='$'+o.p.toFixed(2);
-  $('#di').innerHTML=`<span class="${ch>=0?'up':'dn'}">${ch>=0?'+':''}${(ch*100).toFixed(1)}%</span> over ${n>1?fmtT(ts[n-1]-ts[0]):'0s'}`;
+  $('#dt').innerHTML=`<span class="tk">${cur}</span><span class="nm">${x[1]}</span>`;$('#dp').textContent='$'+o.p.toFixed(2);
+  $('#di').innerHTML=`<span class="pill ${ch>=0?'up':'dn'}">${ch>=0?'▲ +':'▼ '}${(ch*100).toFixed(1)}%<small>over ${n>1?fmtT(ts[n-1]-ts[0]):'0s'}</small></span>`;
   $('#dhi').textContent='High $'+mx.toFixed(2);$('#dlo').textContent='Low $'+mn.toFixed(2);
   const pr=o.p*(1+feeRate());
-  $('#dcap').textContent='Market cap '+fmtMc(mcapOf(x))+' · '+maxSh(x).toLocaleString()+' shares total'+(h?' ('+h.n.toLocaleString()+' owned)':'')+(ownTxt(x)?' · '+ownTxt(x):'');
+  const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
+  $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   document.querySelectorAll('#dacts [data-a^=b]').forEach(b=>b.disabled=S.cash<pr||full);
   document.querySelectorAll('#dacts [data-a^=s]').forEach(b=>b.disabled=!h);
   $('#dacts [data-a=bm]').textContent='Max ('+maxBuy(cur)+')';
-  $('#down').textContent='Cash '+fmt(S.cash)+' · fee '+(feeRate()*100).toFixed(1)+'%'+(h?` · ${h.n} sh worth ${fmt(h.n*o.p)} (${(o.p/h.c-1>=0?'+':'')+((o.p/h.c-1)*100).toFixed(1)}%)`:' · none owned');
-  if(!drawD.hold)$('#dtip').textContent='Touch or hover the chart to inspect (dashed line = start of range)';
+  {const pl=h?o.p/h.c-1:0;$('#down').innerHTML=`<span>Cash <b>${fmt(S.cash)}</b></span><span>Fee <b>${(feeRate()*100).toFixed(1)}%</b></span>`+(h?`<span>Position <b>${fmt(h.n*o.p)}</b> <span class="${pl>=0?'up':'dn'}">(${pl>=0?'+':''}${(pl*100).toFixed(1)}%)</span></span>`:'<span>No position</span>')}
+  if(!drawD.hold)$('#dtip').textContent='Touch or hover the chart to inspect · dashed line = start of range';
 }
 (()=>{const g=$('#dgw');
   const inspect=e=>{const r=g.getBoundingClientRect(),n=dpts.length,i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*(n-1)))),v=dpts[i],o=S.p[cur],ago=o.n-dts[i];
-    drawD.hold=true;$('#dtip').textContent='$'+v.toFixed(2)+' · '+((v/dpts[0]-1)*100).toFixed(1)+'% vs range start · '+(ago>0?fmtT(ago)+' ago':'now')};
+    const pc=(v/dpts[0]-1)*100;drawD.hold=true;$('#dtip').innerHTML=`<b>$${v.toFixed(2)}</b> · <span class="${pc>=0?'up':'dn'}">${pc>=0?'+':''}${pc.toFixed(1)}%</span> vs range start · ${ago>0?fmtT(ago)+' ago':'now'}`};
   g.addEventListener('pointermove',inspect);g.addEventListener('pointerdown',inspect);
   g.addEventListener('pointerleave',()=>{drawD.hold=false;drawD()});})();
 $('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg'||e.target.id==='dx')closeD()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeD()});
 function build(){
   const srow=x=>`<div class="row" data-s="${x[0]}" data-sec="${SEC[x[0]]||''}">
-    <div><span class="sym">${x[0]}</span> <span class="mu">${x[1]}</span>${isF(x)?'<span class="tag">FUND</span>':isC(x)?'<span class="tag">CRYPTO</span>':''}<svg class="sp" viewBox="0 0 56 20"><polyline fill="none" stroke-width="1.6" points=""/></svg><div class="mu cap" style="font-size:.75em"></div></div>
+    <div><span class="sym">${x[0]}</span> <span class="mu">${x[1]}</span>${isF(x)?'<span class="tag">FUND</span>':isC(x)?'<span class="tag">CRYPTO</span>':''}<svg class="sp" viewBox="0 0 56 20"><polyline fill="none" stroke-width="1.6" points=""/></svg><div class="cap"></div></div>
     <div class="px"><span class="v"></span> <span class="c mu"></span></div>
     <div class="ulk hide"><button class="btn" data-a="ul"></button></div>
     <div class="acts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button>
@@ -722,19 +793,21 @@ function build(){
   privSig='';applyFilter();
   $('#funds').innerHTML='<div class="sec">Mutual funds: slower growth, much steadier, rarely crash. Gold tends to hold up when stocks fall.</div>'+FD.map(srow).join('');
   $('#crypto').innerHTML='<div class="sec">Crypto: huge swings and frequent deep crashes.</div>'+CR.map(srow).join('');
-  const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><b>${u.n}</b> <span class="pips"></span><div class="mu">${u.d}</div><div class="mu eff"></div></div><button class="btn"></button></div>`;
-  $('#ups').innerHTML=`<div class="row" style="display:block"><div><b>🔬 Research</b> <span class="mu" id="rpb"></span></div>
-    <div class="mu" id="rpn"></div><div class="bar"><i id="rpbar"></i></div><div class="mu" id="rpg"></div><div class="mu" id="rpo"></div></div>
+  const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><div class="utt"><b>${u.n}</b><span class="pips"></span></div><div class="ud">${u.d}</div><div class="eff"></div></div><button class="btn"></button></div>`;
+  $('#ups').innerHTML=`<div class="row rsc"><div class="rtop"><div><div class="rlbl">🔬 Research points</div><div class="rbig"><span id="rpa">0</span><small>RP available</small></div></div><span class="pill" id="rpb"></span></div>
+    <div class="rprog"><div class="rph"><span>Next RP from sales profit</span><b id="rpg"></b></div><div class="bar"><i id="rpbar"></i></div></div>
+    <div class="rinfo"><span class="ri">🎯</span><span id="rpn"></span></div>
+    <div class="rinfo"><span class="ri">🏆</span><span id="rpo"></span></div></div>
     <div class="chips" id="upchips">${UCATS.map(c=>`<button class="btn chip" data-uc="${c[0]}">${c[1]} ${c[0]}</button>`).join('')}</div>`+UPS.filter(u=>u.rp).map(urow).join('');
   applyUp();$('#startups').dataset.sig='';
 }
 function drawRP(){
   $('#rp').textContent='🔬 '+S.rp+' RP';
   const nx=NWM.find(([t])=>!S.ms['nw'+t]),ck=chunk();
-  $('#rpb').textContent=S.rp+' available · '+S.rpt+' earned';
-  $('#rpn').textContent=nx?'Next milestone: net worth '+fmt(nx[0])+' (+'+nx[1]+' RP)':'All net worth milestones reached!';
+  $('#rpa').textContent=S.rp;$('#rpb').textContent=S.rpt+' earned total';
+  $('#rpn').innerHTML=nx?'Next milestone: net worth <b>'+fmt(nx[0])+'</b> <span class="pill up">+'+nx[1]+' RP</span>':'All net worth milestones reached!';
   $('#rpbar').style.width=Math.min(100,S.prof/ck*100)+'%';
-  $('#rpg').textContent='Profit from sales: '+fmt(S.prof)+' / '+fmt(ck)+' for the next RP';
+  $('#rpg').textContent=fmt(S.prof)+' / '+fmt(ck);
   $('#rpo').textContent='More RP: unlock achievements on the 🏆 screen';
 }
 function draw(){
@@ -748,7 +821,7 @@ function draw(){
     r.classList.toggle('lock',!open);r.querySelector('.acts').classList.toggle('hide',!open);
     const ul=r.querySelector('.ulk');ul.classList.toggle('hide',open);const ub=ul.querySelector('button');ub.textContent='Unlock · 🔬 '+x[5]+' RP';ub.disabled=S.rp<x[5];
     const ch=o.p/o.h[0]-1,arrow=lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
-    r.querySelector('.cap').textContent='Mkt cap '+fmtMc(mcapOf(x))+' · '+maxSh(x).toLocaleString()+' sh'+(ownTxt(x)?' · '+ownTxt(x):'');
+    {const h=capChips(x);const e=r.querySelector('.cap');if(e.dataset.h!==h){e.dataset.h=h;e.innerHTML=h}}
     ['b1','b10','bm'].forEach(a=>r.querySelector('[data-a='+a+']').disabled=!!(h&&h.n>=maxSh(x)));
     r.querySelector('[data-a=bm]').textContent='Max ('+maxBuy(x[0])+')';
     r.querySelector('.v').textContent=open?'$'+o.p.toFixed(2):'🔒 '+x[5]+' RP';
@@ -762,7 +835,7 @@ function draw(){
   document.querySelectorAll('.row[data-u]').forEach(r=>{
     const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),cost=Math.round(u.base*Math.pow(u.g,l));
     r.querySelector('.pips').textContent='●'.repeat(l)+'○'.repeat(u.max-l);
-    r.querySelector('.eff').textContent=l>=u.max?'Maxed: '+u.fx(l):'Now: '+u.fx(l)+'  →  Next: '+u.fx(l+1);
+    r.querySelector('.eff').innerHTML=l>=u.max?`<span class="lbl">Maxed</span><span class="pill mx">${u.fx(l)}</span>`:`<span class="lbl">Now</span><span class="pill now">${u.fx(l)}</span><span class="ar">→</span><span class="lbl">Next</span><span class="pill nx">${u.fx(l+1)}</span>`;
     const b=r.querySelector('button');b.textContent=l>=u.max?'MAX':u.rp?'🔬 '+cost:fmt(cost);b.disabled=l>=u.max||(u.rp?S.rp:S.cash)<cost;});
   document.querySelectorAll('#upchips .chip').forEach(b=>{const c=UCATS.find(q=>q[0]===b.dataset.uc);
     const can=UPS.some(u=>u.cat===c[0]&&lv(u.id)<u.max&&S.rp>=Math.round(u.base*Math.pow(u.g,lv(u.id))));b.textContent=c[1]+' '+c[0]+(can?' •':'')});
