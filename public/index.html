@@ -152,6 +152,8 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
   <div class="srow"><span>Big event alerts and achievement pop-ups</span><button class="btn tg" data-k="alerts"></button></div>
   <div class="srow"><span>Other notifications (RP, news, crashes)</span><button class="btn tg" data-k="toasts"></button></div>
   <div class="srow"><span>Mini charts in stock list</span><button class="btn tg" data-k="spark"></button></div>
+  <div class="srow"><span>Sound effects</span><button class="btn tg" data-k="sound"></button></div>
+  <div class="srow"><span>Volume <b id="volv"></b></span><input type="range" id="vol" min="0" max="100" step="5"></div>
   <div class="srow"><button class="btn" id="sreset">Reset settings</button><button class="btn warn" id="sdel">Delete all saves</button></div>
   <div class="mu">Settings are saved on this device and apply to every save slot.</div>
 </div></div>
@@ -365,13 +367,54 @@ const NWM=[[2250,1],[2500,1],[3000,1],[3500,1],[4000,1],[5000,2],[6000,1],[7500,
 const $=s=>document.querySelector(s);
 const fmt=n=>n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e4?'$'+Math.round(n).toLocaleString():'$'+n.toFixed(2);
 let S;
-const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true};
+const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60};
 let CFG={...CFG0},colUp='#2ecc71',colDn='#ff5c5c';
 try{Object.assign(CFG,JSON.parse(rd(CFGK)))}catch(e){}
+// ---- Sound: everything is synthesized with Web Audio, so there are no audio files to host ----
+const SFX=(()=>{let ac=null,mg=null;const last={};
+  const ctx=()=>{if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{ac=new A();mg=ac.createGain();mg.connect(ac.destination)}catch(e){ac=null;return null}}
+    if(ac.state==='suspended')ac.resume().catch(()=>{});return ac};
+  function tone(t0,f,d,o={}){const{type='sine',v=.2,to=null,at=.006}=o,t=ac.currentTime+t0,os=ac.createOscillator(),g=ac.createGain();
+    os.type=type;os.frequency.setValueAtTime(f,t);if(to)os.frequency.exponentialRampToValueAtTime(to,t+d);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    os.connect(g);g.connect(mg);os.start(t);os.stop(t+d+.05)}
+  function noise(t0,d,v,f=400){const t=ac.currentTime+t0,n=Math.max(1,Math.floor(ac.sampleRate*d)),b=ac.createBuffer(1,n,ac.sampleRate),a=b.getChannelData(0);
+    for(let i=0;i<n;i++)a[i]=Math.random()*2-1;const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();
+    s.buffer=b;fl.type='lowpass';fl.frequency.setValueAtTime(f,t);fl.frequency.exponentialRampToValueAtTime(60,t+d);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);g.connect(mg);s.start(t)}
+  const arp=(fs,gap,d,o)=>fs.forEach((f,i)=>tone(i*gap,f,d,o));
+  const D={
+    click:()=>tone(0,900,.04,{type:'triangle',v:.07}),
+    pop:()=>tone(0,480,.07,{type:'triangle',v:.09,to:720}),
+    close:()=>tone(0,620,.06,{type:'triangle',v:.08,to:380}),
+    buy:()=>{tone(0,520,.08,{type:'square',v:.05});tone(.07,780,.12,{type:'square',v:.05})},
+    sell:()=>{tone(0,988,.06,{type:'square',v:.05});tone(.06,1319,.24,{type:'square',v:.05})},
+    loss:()=>tone(0,340,.16,{type:'sawtooth',v:.05,to:200}),
+    cash:()=>arp([1047,1319,1568,2093],.07,.2,{type:'triangle',v:.09}),
+    rp:()=>arp([1319,1568,2093,2637],.055,.22,{v:.08}),
+    upgrade:()=>{arp([392,523,659,784],.07,.16,{type:'triangle',v:.1});tone(.28,1047,.4,{type:'triangle',v:.09})},
+    unlock:()=>{tone(0,300,.25,{type:'sawtooth',v:.05,to:900});tone(.22,1047,.35,{v:.1});tone(.22,1319,.35,{v:.07})},
+    alert:()=>{tone(0,740,.07,{type:'square',v:.04});tone(.14,740,.07,{type:'square',v:.04})},
+    up:()=>arp([523,659,784,1047],.08,.2,{type:'triangle',v:.1}),
+    down:()=>{tone(0,392,.4,{type:'sawtooth',v:.06,to:150});noise(0,.4,.09,500)},
+    ach:()=>{tone(0,523,.12,{type:'triangle',v:.1});tone(.13,523,.12,{type:'triangle',v:.1});tone(.26,659,.12,{type:'triangle',v:.1});tone(.39,784,.5,{type:'triangle',v:.12});tone(.39,1047,.5,{v:.06})},
+    win:()=>{arp([392,523,659,784,1047],.09,.22,{type:'triangle',v:.1});[523,659,784,1047].forEach(f=>tone(.5,f,.7,{v:.05}))},
+    start:()=>arp([440,660,880],.07,.18,{v:.1}),
+    delete:()=>{tone(0,220,.25,{type:'sawtooth',v:.06,to:80});noise(0,.2,.05,300)}};
+  const f=function sfx(n,delay=0){if(typeof CFG==='undefined'||!CFG.sound||!D[n])return;
+    const c=ctx();if(!c)return;const now=performance.now();if(now-(last[n]||0)<45)return;last[n]=now;
+    mg.gain.value=Math.max(0,Math.min(1,(CFG.vol===undefined?60:CFG.vol)/100));
+    if(delay>0)setTimeout(()=>{try{D[n]()}catch(e){}},delay*1000);else{try{D[n]()}catch(e){}}};f.unlock=ctx;return f})();
+const sfx=SFX;
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{try{SFX.unlock()}catch(e){}},{once:true,capture:true}));
+// generic click for menus, tabs, chips, settings (trades, upgrades and slots have their own sounds)
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.a||b.dataset.su||b.dataset.pv||b.dataset.sa||b.closest('.row[data-u]')||b.id==='sdel')return;sfx('click')},true);
+
 const GK='stockidle.ach';let G={a:{},trades:0,ticks:0,best:0};
 try{Object.assign(G,JSON.parse(rd(GK)))}catch(e){}if(!G.a)G.a={};
 let NOTES={};
-function note(kind,title,body,o={}){if(!CFG.alerts)return null;const el=document.createElement('div');el.className='note '+kind;
+function note(kind,title,body,o={}){sfx(kind==='inf'?'alert':kind==='dn'?'down':kind==='ach'?'ach':'up');if(!CFG.alerts)return null;const el=document.createElement('div');el.className='note '+kind;
   el.innerHTML='<b></b><div></div><small class="mu"></small>';el.children[0].textContent=title;el.children[1].textContent=body;
   el.onclick=()=>{el.remove();if(o.s&&S&&isOpen(SM[o.s]))openD(o.s)};
   const box=$('#notes');box.appendChild(el);while(box.children.length>4)box.firstChild.remove();
@@ -414,7 +457,7 @@ function toast(m,force){if(!CFG.toasts&&!force)return;const t=$('#toast');t.text
 
 function checkRP(){let g=0,why=[];
   NWM.forEach(([t,r])=>{const id='nw'+t;if(S.max>=t&&!S.ms[id]){S.ms[id]=1;g+=r;why.push('net worth '+fmt(t))}});
-  if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+(why.length===1?' · '+why[0]:' · milestones'))}}
+  if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+(why.length===1?' · '+why[0]:' · milestones'));sfx('rp')}}
 function tick(){
   S.tick++;
   const nz=1-.4/(1+S.max/20000); // calmer random jitter early (x0.6 at the start) so a fresh buy is not a coin flip
@@ -435,7 +478,7 @@ function tick(){
   Object.entries(S.hold).forEach(([k,h])=>{const v=h.n*S.p[k].p;hvv+=v;fy+=v*(SM[k][8]||0)});fy+=pvI();
   S.cash+=(S.cash*lv('int')*INTR+hvv*lv('div')*DIVR+fy)*ym;
   const bl=lv('bot');if(bl&&S.tick%Math.max(2,10-bl)===0)bot(bl);
-  if(S.tick>=S.payn){S.payn+=PAYT;S.cash+=PAYC;S.paid+=PAYC;toast('💼 Paycheck +'+fmt(PAYC))}
+  if(S.tick>=S.payn){S.payn+=PAYT;S.cash+=PAYC;S.paid+=PAYC;toast('💼 Paycheck +'+fmt(PAYC));sfx('cash')}
   suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();G.ticks++;if(S.tick%5===0)checkAch();
   draw();
 }
@@ -501,10 +544,10 @@ function suSpawn(){const U=S.su,used=new Set(U.list.map(l=>l.name).concat((S.gra
   SEC[sym]=x[1];U.list.push(l)}
 function suBuy(id,pc){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1+feeRate(),q=Math.floor(S.cash*pc/100/(l.p*f));
   if(q<1){toast('Not enough cash',1);return}
-  S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;G.trades++;G.sinv=(G.sinv||0)+1;draw()}
+  S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;G.trades++;G.sinv=(G.sinv||0)+1;sfx('buy');draw()}
 function suSell(id,half){const l=S.su.list.find(q=>q.id===id);if(!l||l.n<1)return;
   const q=half?Math.max(1,Math.floor(l.n/2)):l.n,f=feeRate(),pr=q*(l.p*(1-f)-l.c);
-  S.cash+=q*l.p*(1-f);l.n-=q;G.trades++;S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}
+  S.cash+=q*l.p*(1-f);l.n-=q;G.trades++;S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
   if(pr>0){G.best=Math.max(G.best||0,pr);S.psell++;ctHook('sell',l.sym,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales')}}
   draw()}
@@ -582,32 +625,33 @@ function drawCt(){const el=$('#contracts');if(el.classList.contains('hide'))retu
    :'<div class="mu" style="padding:.6rem .3rem">A new contract is on its way...</div>')+
   `<div class="mu" style="padding:.4rem .3rem">Completed ${C.done} · Earned ${fmt(C.earned)}</div>`}
 function unlock(s){const x=SM[s];if(isOpen(x))return;
-  if(S.rp>=x[5]){S.rp-=x[5];S.unl[s]=1;toast('🔓 Unlocked '+x[1],1);draw();save()}else toast('Need '+x[5]+' Research Points',1)}
+  if(S.rp>=x[5]){S.rp-=x[5];S.unl[s]=1;toast('🔓 Unlocked '+x[1],1);sfx('unlock');draw();save()}else toast('Need '+x[5]+' Research Points',1)}
 function buy(s,q,silent){const p=S.p[s].p,f=1+feeRate();
   const room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
   if(room<1){if(!silent)toast('👑 You already own 100% of '+SM[s][1],1);return}
   q=Math.min(q,Math.floor(S.cash/(p*f)),room);if(q<1){if(!silent)toast('Not enough cash',1);return}
-  S.cash-=q*p*f;if(!silent)G.trades++;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*p)/(h.n+q);h.n+=q;ctHook('buy',s,q);ownCheck(s);draw()}
+  S.cash-=q*p*f;if(!silent)G.trades++;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*p)/(h.n+q);h.n+=q;ctHook('buy',s,q);if(!ownCheck(s)&&!silent)sfx('buy');draw()}
 function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n*2>maxSh(x)&&!S.ctrl[s]){S.ctrl[s]=1;S.rp+=RP_OWN;S.rpt+=RP_OWN;msg='👑 You now control '+x[1]+' (over 50%)! 🔬 +'+RP_OWN+' Research Points'}
   if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
     msg=(msg?msg+' · ':'')+'🏢 You bought out '+x[1]+'. It is now private and off the market, and pays you '+fmt(v*PRIV_Y*3600)+'/hr'}
-  if(msg)toast(msg,1)}
-function sellPriv(s){const p=S.priv[s];if(!p)return;S.cash+=p.v;delete S.priv[s];toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' · it is public again',1);draw()}
+  if(msg){toast(msg,1);sfx('win')}return !!msg}
+function sellPriv(s){const p=S.priv[s];if(!p)return;S.cash+=p.v;delete S.priv[s];toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' · it is public again',1);sfx('sell');draw()}
 let privSig='';
 function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.priv);const sig=k.map(q=>q+S.priv[q].v).join();if(sig===privSig)return;privSig=sig;
   el.innerHTML=k.length?'<div class="sec">🏢 Private companies: you own 100%, so they are off the stock market. They pay you income, and you can sell one to take it public again.</div>'+k.map(q=>{const p=S.priv[q],x=SM[q];return `<div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><div><span class="sym">${q}</span> <span class="mu">${x[1]}</span><span class="tag">PRIVATE</span><div class="mu" style="font-size:.75em">Value ${fmt(p.v)} · earns ${fmt(p.v*PRIV_Y*3600)}/hr · ${p.n.toLocaleString()} sh</div></div><button class="btn" data-pv="${q}">Sell company</button></div>`}).join(''):''}
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),pr=q*(p*(1-f)-h.c);
   S.cash+=q*p*(1-f);if(!silent)G.trades++;h.n-=q;if(h.n<=0)delete S.hold[s];
+  if(!silent)sfx(pr>0?'sell':'loss');
   if(pr>0){G.best=Math.max(G.best||0,pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
-    if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales')}}
+    if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
   draw()}
 
 let cur=null,dpts=[],dts=[],rng=0;
 const fmtT=t=>{t=Math.round(t);const h=t/3600|0,m=(t%3600)/60|0;return h?h+'h '+m+'m':m?m+'m '+(t%60)+'s':t+'s'};
-function openD(s){cur=s;$('#dlg').classList.remove('hide');drawD()}
-function closeD(){cur=null;$('#dlg').classList.add('hide')}
+function openD(s){if(!cur)sfx('pop');cur=s;$('#dlg').classList.remove('hide');drawD()}
+function closeD(){if(cur)sfx('close');cur=null;$('#dlg').classList.add('hide')}
 function series(o){
   let p,t;
   if(rng>0&&rng<=900){const k=Math.min(rng+1,o.r.length);p=o.r.slice(-k);t=p.map((_,i)=>o.n-(k-1-i))}
@@ -711,7 +755,7 @@ document.addEventListener('click',e=>{
     if(a==='b1')buy(s,1);if(a==='b10')buy(s,10);if(a==='bm')buy(s,maxBuy(s));
     if(a==='s1')sell(s,1);if(a==='sa')sell(s,1e12);if(a==='ul')unlock(s)}
   else if(r&&r.dataset.u){const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),c=Math.round(u.base*Math.pow(u.g,l));
-    if(l<u.max&&(u.rp?S.rp:S.cash)>=c){if(u.rp)S.rp-=c;else S.cash-=c;S.up[u.id]=l+1;draw();save()}}
+    if(l<u.max&&(u.rp?S.rp:S.cash)>=c){if(u.rp)S.rp-=c;else S.cash-=c;S.up[u.id]=l+1;sfx('upgrade');draw();save()}}
 });
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
@@ -721,7 +765,7 @@ function renderSet(){
   document.querySelectorAll('#set [data-k]').forEach(b=>{const k=b.dataset.k;
     if(b.dataset.v!==undefined)b.classList.toggle('on',CFG[k]===b.dataset.v);
     else{b.textContent=CFG[k]?'On':'Off';b.classList.toggle('on',!!CFG[k])}});
-  $('#sc').value=CFG.scale;$('#scv').textContent=CFG.scale+'%'}
+  $('#sc').value=CFG.scale;$('#scv').textContent=CFG.scale+'%';$('#vol').value=CFG.vol;$('#volv').textContent=CFG.vol+'%'}
 function cfgChanged(){wr(CFGK,JSON.stringify(CFG));applyCfg();renderSet();if(S)draw()}
 function openSet(){renderSet();$('#set').classList.remove('hide')}
 function closeSet(){$('#set').classList.add('hide')}
@@ -730,15 +774,16 @@ $('#trophy').onclick=$('#tach').onclick=()=>{renderAch();$('#ach').classList.rem
 $('#ach').addEventListener('click',e=>{if(e.target.id==='ach'||e.target.id==='ax')$('#ach').classList.add('hide')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#ach').classList.add('hide')});
 $('#sc').oninput=e=>{CFG.scale=+e.target.value;cfgChanged()};
+$('#vol').oninput=e=>{CFG.vol=+e.target.value;cfgChanged()};$('#vol').onchange=()=>sfx('buy');
 $('#set').addEventListener('click',e=>{
   if(e.target.id==='set'||e.target.id==='sx'){closeSet();return}
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.k){CFG[b.dataset.k]=b.dataset.v!==undefined?b.dataset.v:!CFG[b.dataset.k];cfgChanged()}
+  if(b.dataset.k){CFG[b.dataset.k]=b.dataset.v!==undefined?b.dataset.v:!CFG[b.dataset.k];cfgChanged();if(b.dataset.k==='sound'&&CFG.sound)sfx('click')}
   else if(b.id==='sreset'){CFG={...CFG0};cfgChanged()}
   else if(b.id==='sdel'){
     if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to erase ALL saves';clearTimeout(b.t);b.t=setTimeout(()=>{delete b.dataset.arm;b.textContent='Delete all saves'},3000);return}
     clearTimeout(b.t);delete b.dataset.arm;b.textContent='Delete all saves';
-    for(let n=1;n<=SLOTS;n++)rm(SK(n));
+    for(let n=1;n<=SLOTS;n++)rm(SK(n));sfx('delete');
     clearTimeout(loop.t);slot=1;S=fresh();build();draw();closeSet();closeD();tab(true);showTitle()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
 $('#menu').onclick=()=>{closeD();clearNotes();save();clearTimeout(loop.t);showTitle()};
@@ -751,13 +796,13 @@ function renderSlots(msg){
     return `<div class="row" data-n="${n}"><div><b>Slot ${n}</b>${n===slot?' <span class="up">● selected</span>':''}<div class="mu">${fmt(slotNW(o))} net worth · ${fmtT(o.tick||0)} played</div><div class="mu">Last played ${d}</div></div><div class="sb"><button class="btn" data-sa="load">Load</button><button class="btn" data-sa="del">🗑</button></div></div>`}).join('');
   $('#smsg').textContent=msg||''}
 function enter(){clearNotes();build();draw();closeD();tab(true);play()}
-function startNew(n){slot=n;S=fresh();save();enter()}
+function startNew(n){slot=n;S=fresh();save();sfx('start');enter()}
 $('#slist').onclick=e=>{const b=e.target.closest('button[data-sa]');if(!b)return;const n=+b.closest('.row').dataset.n,a=b.dataset.sa;
-  if(a==='load'){load(n);enter()}
+  if(a==='load'){load(n);sfx('start');enter()}
   else if(a==='new')startNew(n);
   else if(a==='del'){
     if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Sure?';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='🗑'}},3000);return}
-    rm(SK(n));if(n===slot){S=fresh();build();draw()}renderSlots()}};
+    rm(SK(n));sfx('delete');if(n===slot){S=fresh();build();draw()}renderSlots()}else sfx('click')};
 $('#tp').onclick=()=>play();
 $('#tl').onclick=()=>{renderSlots();views(true)};
 $('#tb').onclick=()=>{showTitle()};
@@ -772,12 +817,12 @@ function offline(){const sec=Math.min((Date.now()-S.last)/1000,(8+2*lv('off'))*3
   if(sec>30){const ym=1+.15*lv('yld'),fy=Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p*(SM[k][8]||0),0)+pvI();
     const k=Math.floor(sec*(.25+.1*lv('off'))/PAYT);S.paid+=k*PAYC;
     const g=(hv()*lv('div')*DIVR+S.cash*lv('int')*INTR+fy)*ym*sec*(.25+.1*lv('off'))+k*PAYC;
-    if(g>=.01){S.cash+=g;setTimeout(()=>toast('While away you earned '+fmt(g)),400)}}}
+    if(g>=.01){S.cash+=g;setTimeout(()=>{toast('While away you earned '+fmt(g));sfx('cash')},400)}}}
 const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+function play(){sfx('start');$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){const c=S.tick>0;
   $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
   views(false);$('#title').classList.remove('hide')}
