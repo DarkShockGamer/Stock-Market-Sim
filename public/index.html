@@ -115,7 +115,7 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
     <div style="text-align:right"><div class="mu">Cash</div><div id="cash" style="font-weight:600">$0</div><div class="mu" id="rp"></div><div class="mu" id="pay"></div><div class="mu" id="mood"></div></div>
   </header>
-  <nav><button id="t-m" class="on">Market</button><button id="t-f">Funds</button><button id="t-c">Crypto</button><button id="t-k">Contracts</button><button id="t-s">Startups</button><button id="t-u">Upgrades</button></nav>
+  <nav><button id="t-m" class="on">Market</button><button id="t-f">Funds</button><button id="t-c">Crypto</button><button id="t-s">Startups</button><button id="t-k">Contracts</button><button id="t-u">Upgrades</button></nav>
   <main id="main"><div id="market"></div><div id="funds" class="hide"></div><div id="crypto" class="hide"></div><div id="contracts" class="hide"></div><div id="startups" class="hide"></div><div id="ups" class="hide"></div></main>
   <div class="foot"><button class="btn" id="pop" title="Open the game in a small separate window you can park in a corner"><span class="ic">🗗</span><span>Mini window</span></button>
     <button class="btn" id="trophy" title="Achievements"><span class="ic">🏆</span><span>Achievements</span></button>
@@ -594,7 +594,7 @@ function ctHook(k,s,v){S.ct.list.forEach(c=>{
   else if(c.t==='buy'&&c.s===s)c.p+=v})}
 function genContract(){
   const w=nw(),C=S.ct,open=ST.filter(isOpen),secs=Object.keys(SECTORS).filter(k=>open.some(x=>SEC[x[0]]===k));
-  const pool=['profit','profit_sec','trades','buy','holdsec','nwgoal'].filter(t=>!C.list.some(c=>c.t===t)).sort(()=>Math.random()-.5);
+  const pool=['profit','profit_sec','trades','buy','holdsec','nwgoal','rise','gain'].filter(t=>!C.list.some(c=>c.t===t)).sort(()=>Math.random()-.5);
   const rd=(v,m)=>Math.max(m,Math.round(v/10)*10),pick=a=>a[Math.random()*a.length|0];
   for(const t of pool){const c={id:++C.id,t,p:0,exp:S.tick+600+(Math.random()*300|0)};
     if(t==='profit'){c.tg=rd(w*.03,100);c.rw=Math.round(c.tg*.5);c.d='Make '+fmt(c.tg)+' profit from selling'}
@@ -606,21 +606,29 @@ function genContract(){
     else if(t==='holdsec'){const opts=secs.filter(k=>open.filter(x=>SEC[x[0]]===k).length>=2);if(!opts.length)continue;
       c.sec=pick(opts);c.tg=open.filter(x=>SEC[x[0]]===c.sec).length>=3&&Math.random()<.5?3:2;if(ownSec(c.sec)>=c.tg)continue;
       c.rw=Math.max(60,Math.round(w*.012));c.d='Hold '+c.tg+' different '+c.sec+' stocks at once'}
+    else if(t==='rise'){const cand=open.filter(x=>!S.priv[x[0]]&&!isF(x)&&!isC(x));if(!cand.length)continue; // a stock must climb to a target price while you hold it
+      const x=pick(cand),p=S.p[x[0]].p,r=.06+Math.random()*.09;c.s=x[0];c.b=p;c.tg=Math.round(p*(1+r)*100)/100;
+      c.min=Math.max(1,Math.min(maxSh(x),Math.round(w*.03/p)));c.p=p;c.rw=Math.max(60,Math.round(w*.02+c.min*p*r*.5));c.exp=S.tick+600+(Math.random()*300|0);
+      c.d='Hold '+c.min+' share'+(c.min>1?'s':'')+' of '+x[1]+' when it reaches '+fmt(c.tg)+' (+'+Math.round(r*100)+'%)'}
+    else if(t==='gain'){const ug=ugain();c.tg=rd(ug+w*.03,50);c.rw=Math.max(60,Math.round(w*.015+c.tg*.15));c.p=ug;c.d='Have '+fmt(c.tg)+' in unrealized gains across your holdings'}
     else{c.tg=Math.round(w*1.05);c.rw=Math.max(50,Math.round(w*.015));c.exp=S.tick+480+(Math.random()*120|0);c.d='Reach '+fmt(c.tg)+' net worth'}
     C.list.push(c);return}}
+const ugain=()=>Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*(S.p[k].p-h.c),0);
 function ctTick(){const C=S.ct;
   C.list=C.list.filter(c=>{
     if(c.t==='holdsec')c.p=ownSec(c.sec);
     if(c.t==='nwgoal')c.p=nw();
-    if(c.p>=c.tg){S.cash+=c.rw;C.done++;C.earned+=c.rw;G.contracts=(G.contracts||0)+1;C.next=S.tick+30;
+    if(c.t==='rise')c.p=S.p[c.s].p;
+    if(c.t==='gain')c.p=ugain();
+    if(c.p>=c.tg&&(c.t!=='rise'||heldN(SM[c.s])>=c.min)){S.cash+=c.rw;C.done++;C.earned+=c.rw;G.contracts=(G.contracts||0)+1;C.next=S.tick+30;
       note('up','📜 Contract complete · +'+fmt(c.rw),c.d,{ttl:9000});return false}
     if(S.tick>=c.exp){C.next=S.tick+20;note('dn','📜 Contract expired',c.d,{ttl:7000});return false}
     return true});
   if(C.list.length<3&&S.tick>=C.next){genContract();C.next=S.tick+45}}
 function drawCt(){const el=$('#contracts');if(el.classList.contains('hide'))return;const C=S.ct;
   el.innerHTML='<div class="sec">Contracts pay cash when completed. New ones arrive over time and expire if you wait too long.</div>'+
-  (C.list.length?C.list.map(c=>{const pct=Math.min(100,c.p/c.tg*100),left=Math.max(0,Math.ceil((c.exp-S.tick)*interval()/1000)),
-    prog=(c.t==='profit'||c.t==='profit_sec'||c.t==='nwgoal')?fmt(c.p)+' / '+fmt(c.tg):Math.floor(c.p)+' / '+c.tg;
+  (C.list.length?C.list.map(c=>{const pct=Math.max(0,Math.min(100,c.t==='rise'?(c.p-c.b)/(c.tg-c.b)*100:c.p/c.tg*100)),left=Math.max(0,Math.ceil((c.exp-S.tick)*interval()/1000)),
+    prog=(c.t==='profit'||c.t==='profit_sec'||c.t==='nwgoal'||c.t==='gain')?fmt(c.p)+' / '+fmt(c.tg):c.t==='rise'?'Price '+fmt(c.p)+' / '+fmt(c.tg)+(heldN(SM[c.s])>=c.min?' · holding ✓':' · hold '+heldN(SM[c.s])+'/'+c.min+' shares'):Math.floor(c.p)+' / '+c.tg;
     return `<div class="row"><div><b>📜 ${c.d}</b><div class="bar"><i style="width:${pct}%"></i></div><div class="mu">${prog} · ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} left</div></div><div class="px up">+${fmt(c.rw)}</div></div>`}).join('')
    :'<div class="mu" style="padding:.6rem .3rem">A new contract is on its way...</div>')+
   `<div class="mu" style="padding:.4rem .3rem">Completed ${C.done} · Earned ${fmt(C.earned)}</div>`}
