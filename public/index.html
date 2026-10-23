@@ -452,8 +452,7 @@ const maxSh=x=>Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*
 const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
 valGap=x=>{const o=S.p[x[0]];return o.p/o.fair-1}, // below 0 = cheaper than fair value, and cheap stocks drift back up faster
 momOf=x=>S.p[x[0]].m||0, // each security's own hidden bull/bear mood, which pushes its price every second
-sigChips=x=>{if(!isOpen(x)||lv('ins')<2)return '';const g=valGap(x),m=momOf(x),sg=(k,l,v)=>`<span class="cc sg ${k}"><i>${l}</i>${v}</span>`;let h='';
-  if(g<=-.02)h+=sg('up','Value','Cheap '+Math.round(g*100)+'%');else if(g>=.02)h+=sg('dn','Value','Rich +'+Math.round(g*100)+'%');
+sigChips=x=>{if(!isOpen(x)||lv('ins')<2)return '';const m=momOf(x),sg=(k,l,v)=>`<span class="cc sg ${k}"><i>${l}</i>${v}</span>`;let h='';
   if(lv('ins')>=3){if(m>.0028)h+=sg('up','Momentum','Hot ▲▲');else if(m>.0012)h+=sg('up','Momentum','Rising ▲');else if(m<-.0028)h+=sg('dn','Momentum','Cold ▼▼');else if(m<-.0012)h+=sg('dn','Momentum','Fading ▼')}
   return h},
 capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</span>`;
@@ -479,7 +478,7 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'int',cat:'Income',ic:'🏦',n:'Savings Account',d:'Idle cash earns interest',base:2,g:1.5,max:5,fx:l=>'+'+(l*INTR*360000).toFixed(1)+'% of cash per hour'},
 {id:'yld',cat:'Income',ic:'👑',n:'Dividend Aristocrat',d:'Boosts all dividends, interest and fund yield',base:3,g:1.7,max:4,fx:l=>'+'+15*l+'% income'},
 {id:'off',cat:'Income',ic:'🌙',n:'Overnight Analysts',d:'Earn more while you are away',base:2,g:1.6,max:5,fx:l=>(25+10*l)+'% offline rate, '+(8+2*l)+'h max'},
-{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and hot stocks before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheap / Rich tags and a cheapest-stock pick','+ Momentum tags and alerts for ones you do not own'][l]},
+{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and hot stocks before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheapest-stock pick in the header','+ Momentum tags and alerts for ones you do not own'][l]},
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
 {id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]},
