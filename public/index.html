@@ -182,9 +182,22 @@ const ST=[
 ['BA','Boeing',190,.007,1.1,4,1.3],['JPM','JPMorgan Chase',210,.004,.9,4],['HD','Home Depot',360,.004,.8,4],
 ['CAT','Caterpillar',340,.005,1,4],['LMT','Lockheed Martin',480,.004,.5,4],['CCL','Carnival',18,.011,1.5,4],
 ['COST','Costco',900,.004,.6,5],['UBER','Uber',70,.008,1.2,5],['STRL','Starlink',95,.008,1.1,7],
-['LLY','Eli Lilly',780,.008,.8,8],['SPCX','SpaceX',180,.010,1.3,9,1.2]].sort((a,b)=>a[5]-b[5]);
-const SECTORS={Tech:'AAPL MSFT AMD NVDA META PLTR AMZN',Media:'DIS NFLX',Consumer:'KO WMT MCD NKE SBUX COST HD GME',Auto:'F TSLA',Finance:'V JPM',
-Health:'JNJ PFE LLY',Energy:'XOM CVX',Space:'SPCX STRL',Travel:'DAL UAL CCL UBER',Industrial:'BA CAT LMT'};
+['LLY','Eli Lilly',780,.008,.8,8],['SPCX','SpaceX',180,.010,1.3,9,1.2],
+['GOOGL','Alphabet',170,.006,1.1,4],['INTC','Intel',32,.008,1.2,2],['ORCL','Oracle',130,.005,1,3],['CRM','Salesforce',270,.006,1.1,4],
+['ADBE','Adobe',520,.006,1.1,4],['IBM','IBM',190,.004,.8,2],['QCOM','Qualcomm',170,.008,1.2,3],['MU','Micron',100,.012,1.5,5],
+['SHOP','Shopify',75,.012,1.5,5],['SNOW','Snowflake',150,.014,1.6,6],['TSM','TSMC',140,.008,1.2,6],['AVGO','Broadcom',1300,.008,1.3,7],
+['ARM','Arm Holdings',130,.015,1.6,8,1.3],['MA','Mastercard',450,.004,.8,4],['PYPL','PayPal',65,.009,1.3,3],['BAC','Bank of America',38,.005,1.1,2],
+['GS','Goldman Sachs',460,.006,1.2,4],['SQ','Block',70,.012,1.5,5],['BRKB','Berkshire Hathaway',420,.003,.6,5],['SPOT','Spotify',300,.01,1.3,5],
+['WBD','Warner Bros. Discovery',9,.01,1.3,2],['CMCSA','Comcast',40,.005,.8,2],['RBLX','Roblox',40,.014,1.5,5],['PEP','PepsiCo',170,.003,.5,1],
+['PG','Procter & Gamble',165,.003,.4,1],['KHC','Kraft Heinz',35,.003,.4,1],['TGT','Target',150,.007,1,2],['LULU','Lululemon',350,.009,1.2,4],
+['CMG','Chipotle',60,.007,1,4],['GM','General Motors',45,.006,1.1,2],['TM','Toyota',200,.004,.7,3],['RIVN','Rivian',12,.018,1.7,5,1.5],
+['UNH','UnitedHealth',520,.005,.7,4],['MRK','Merck',125,.004,.5,2],['ABBV','AbbVie',170,.004,.6,3],['MRNA','Moderna',100,.02,1.4,5,2],
+['COP','ConocoPhillips',115,.005,.8,3],['NEE','NextEra Energy',75,.004,.5,3],['ENPH','Enphase Energy',120,.016,1.5,5],['GE','GE Aerospace',160,.006,1.1,4],
+['DE','Deere & Company',390,.005,.9,3],['HON','Honeywell',200,.004,.8,2],['UPS','UPS',140,.005,.7,2],['RTX','RTX',110,.004,.6,3],
+['MAR','Marriott',240,.005,1,3],['BKNG','Booking Holdings',3800,.006,1.1,5],['T','AT&T',18,.003,.4,1],['VZ','Verizon',40,.003,.4,1],
+['TMUS','T-Mobile',170,.004,.6,3],['RKLB','Rocket Lab',6,.018,1.7,6,1.5]].sort((a,b)=>a[5]-b[5]);
+const SECTORS={Tech:'AAPL MSFT AMD NVDA META PLTR AMZN GOOGL INTC ORCL CRM ADBE IBM QCOM MU SHOP SNOW TSM AVGO ARM',Media:'DIS NFLX SPOT WBD CMCSA RBLX',Consumer:'KO WMT MCD NKE SBUX COST HD GME PEP PG KHC TGT LULU CMG',Auto:'F TSLA GM TM RIVN',Finance:'V JPM MA PYPL BAC GS SQ BRKB',
+Health:'JNJ PFE LLY UNH MRK ABBV MRNA',Energy:'XOM CVX COP NEE ENPH',Space:'SPCX STRL RKLB',Travel:'DAL UAL CCL UBER MAR BKNG',Industrial:'BA CAT LMT GE DE HON UPS RTX',Telecom:'T VZ TMUS'};
 const SEC={};for(const k in SECTORS)SECTORS[k].split(' ').forEach(t=>SEC[t]=k);
 let fsec='',fup='Trading';
 function applyUp(){document.querySelectorAll('#ups .row[data-u]').forEach(r=>r.style.display=r.dataset.cat===fup?'':'none');
@@ -207,6 +220,7 @@ const START=10,OLDP={};
 [ST,FD,CR].forEach(a=>a.forEach(x=>{OLDP[x[0]]=x[2];x[2]=START}));
 const GR={KO:.00004,F:.00003,WMT:.00005,DIS:.00004,MCD:.00005,AAPL:.00007,NKE:.00003,SBUX:.00004,V:.00007,MSFT:.00008,AMD:.00009,GME:.00002,TSLA:.00009,META:.00008,AMZN:.00008,PLTR:.0001,NVDA:.00011,NFLX:.00007,
 XOM:.00005,JNJ:.00004,PFE:.00002,DAL:.00004,UAL:.00003,CVX:.00005,BA:.00003,JPM:.00006,HD:.00005,CAT:.00006,LMT:.00005,CCL:.00004,COST:.00007,UBER:.00007,STRL:.00008,LLY:.00011,SPCX:.00011,
+GOOGL:8e-05,INTC:2e-05,ORCL:6e-05,CRM:7e-05,ADBE:5e-05,IBM:3e-05,QCOM:5e-05,MU:7e-05,SHOP:8e-05,SNOW:9e-05,TSM:9e-05,AVGO:.0001,ARM:.0001,MA:7e-05,PYPL:4e-05,BAC:4e-05,GS:6e-05,SQ:6e-05,BRKB:6e-05,SPOT:8e-05,WBD:1e-05,CMCSA:3e-05,RBLX:8e-05,PEP:4e-05,PG:4e-05,KHC:2e-05,TGT:4e-05,LULU:6e-05,CMG:7e-05,GM:3e-05,TM:5e-05,RIVN:5e-05,UNH:7e-05,MRK:4e-05,ABBV:5e-05,MRNA:4e-05,COP:4e-05,NEE:5e-05,ENPH:4e-05,GE:7e-05,DE:5e-05,HON:4e-05,UPS:3e-05,RTX:5e-05,MAR:5e-05,BKNG:7e-05,T:2e-05,VZ:2e-05,TMUS:6e-05,RKLB:.0001,
 BTC:.00008,ETH:.00008,SOL:.00009,DOGE:.00004};
 const gro=x=>x[7]!==undefined?x[7]:GR[x[0]];
 const stars=(n,c,e)=>c.repeat(n)+e.repeat(5-n);
@@ -217,6 +231,7 @@ const STOCKS=ST.concat(FD,CR),SM=Object.fromEntries(STOCKS.map(x=>[x[0],x]));
 // Real-ish market caps in $B. Each company's share limit is derived from its size, so every company has a different cap.
 const MC={KO:270,F:45,WMT:560,DIS:180,MCD:210,AAPL:3000,NKE:150,SBUX:105,V:550,MSFT:3100,AMD:260,GME:10,TSLA:800,META:1250,AMZN:1900,PLTR:60,NVDA:2200,NFLX:280,
 XOM:480,JNJ:380,PFE:160,DAL:35,UAL:25,CVX:290,BA:120,JPM:600,HD:370,CAT:170,LMT:120,CCL:25,COST:400,UBER:150,STRL:50,LLY:700,SPCX:350,
+GOOGL:2100,INTC:110,ORCL:480,CRM:260,ADBE:210,IBM:190,QCOM:180,MU:120,SHOP:110,SNOW:55,TSM:800,AVGO:1000,ARM:130,MA:430,PYPL:75,BAC:300,GS:170,SQ:45,BRKB:900,SPOT:90,WBD:25,CMCSA:150,RBLX:30,PEP:230,PG:390,KHC:40,TGT:70,LULU:45,CMG:80,GM:55,TM:250,RIVN:15,UNH:500,MRK:280,ABBV:310,MRNA:15,COP:130,NEE:150,ENPH:12,GE:200,DE:110,HON:135,UPS:100,RTX:150,MAR:70,BKNG:130,T:130,VZ:170,TMUS:250,RKLB:12,
 IDX:500,BND:300,GLD:250,TECH:200,DIV:100,BTC:1800,ETH:400,SOL:80,DOGE:60};
 const maxSh=x=>Math.max(1,Math.round(MC[x[0]]*2000/x[2])),mcapOf=x=>S.p[x[0]].p*maxSh(x); // true market cap = price x total shares (the same shares you can buy)
 const heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
@@ -525,7 +540,8 @@ function renderAch(){const n=ACHV.filter(a=>G.a[a.id]).length;$('#achh').textCon
 const SUN=[['Airbnb','Travel'],['Stripe','Finance'],['Dropbox','Tech'],['Slack','Tech'],['Discord','Tech'],['Notion','Tech'],['Figma','Tech'],['Canva','Tech'],['Zoom','Tech'],['Twitch','Media'],['Reddit','Media'],['Pinterest','Media'],
 ['Snapchat','Media'],['Instacart','Consumer'],['DoorDash','Consumer'],['Robinhood','Finance'],['Coinbase','Finance'],['Plaid','Finance'],['Ramp','Finance'],['Brex','Finance'],['Airtable','Tech'],['Vercel','Tech'],['Replit','Tech'],
 ['Duolingo','Tech'],['Etsy','Consumer'],['Quibi','Media'],['Juicero','Consumer'],['Vine','Media'],['Friendster','Media'],['Pets.com','Consumer'],['Webvan','Consumer'],['Napster','Media'],['Clubhouse','Media'],['Peloton','Consumer'],
-['Oculus','Tech'],['Nest','Tech'],['Fitbit','Health'],['Beyond Meat','Consumer'],['Warby Parker','Consumer'],['Casper','Consumer'],['Allbirds','Consumer'],['Lime','Travel'],['Bird','Travel'],['Cruise','Auto']];
+['Oculus','Tech'],['Nest','Tech'],['Fitbit','Health'],['Beyond Meat','Consumer'],['Warby Parker','Consumer'],['Casper','Consumer'],['Allbirds','Consumer'],['Lime','Travel'],['Bird','Travel'],['Cruise','Auto'],
+['Linear','Tech'],['Loom','Tech'],['Zapier','Tech'],['Retool','Tech'],['Supabase','Tech'],['Netlify','Tech'],['Grammarly','Tech'],['Asana','Tech'],['Miro','Tech'],['Calendly','Tech'],['Typeform','Tech'],['Perplexity','Tech'],['Midjourney','Tech'],['Replika','Tech'],['Magic Leap','Tech'],['Substack','Media'],['Patreon','Media'],['Medium','Media'],['Tumblr','Media'],['MySpace','Media'],['Vimeo','Media'],['SoundCloud','Media'],['Digg','Media'],['BuzzFeed','Media'],['Vice','Media'],['Glossier','Consumer'],['Away','Consumer'],['Dollar Shave Club','Consumer'],['Blue Apron','Consumer'],['HelloFresh','Consumer'],['Oatly','Consumer'],['Impossible Foods','Consumer'],['Liquid Death','Consumer'],['Rent the Runway','Consumer'],['Gopuff','Consumer'],['Soylent','Consumer'],['Chime','Finance'],['Klarna','Finance'],['Affirm','Finance'],['SoFi','Finance'],['Monzo','Finance'],['Revolut','Finance'],['Wise','Finance'],['Venmo','Finance'],['Wealthfront','Finance'],['Acorns','Finance'],['FTX','Finance'],['Celsius','Finance'],['Theranos','Health'],['23andMe','Health'],['Oscar Health','Health'],['Hims','Health'],['Calm','Health'],['Headspace','Health'],['Noom','Health'],['Zocdoc','Health'],['Turo','Travel'],['Vacasa','Travel'],['Sonder','Travel'],['Getaround','Travel'],['Hopper','Travel'],['Hyperloop One','Travel'],['Nikola','Auto'],['Fisker','Auto'],['Lordstown','Auto'],['Canoo','Auto'],['Lucid','Auto'],['Zoox','Auto'],['Waymo','Auto'],['Faraday Future','Auto'],['Astra','Space'],['Virgin Orbit','Space'],['Relativity','Space'],['Firefly','Space'],['Planet Labs','Space'],['Axiom Space','Space'],['Sunrun','Energy'],['Northvolt','Energy'],['Heliogen','Energy'],['QuantumScape','Energy'],['Solyndra','Energy'],['Boom Supersonic','Industrial'],['Formlabs','Industrial'],['Anduril','Industrial'],['Divergent','Industrial'],['Starry','Telecom'],['Ligado','Telecom'],['Helium','Telecom']];
 const TYPES=['rocket','wander','doomed'],PRI={rocket:.22,wander:.20,doomed:.58},OTH={rocket:['wander','doomed'],wander:['rocket','doomed'],doomed:['rocket','wander']};
 const SIGT={rocket:'🟢 Looks strong',wander:'🟡 Unclear',doomed:'🔴 Red flags'};
 const accOf=L=>.4+.1*L;
@@ -560,7 +576,7 @@ function suGrad(l){const U=S.su,t=l.type,d={s:l.sym,n:l.name,sec:l.sec,vol:+(.00
   build()}
 const SU_MU=2,SU_VOL=1.5;
 function suTick(){const U=S.su,L=lv('sscout');
-  if(U.list.length<4&&S.tick>=U.next){suSpawn();U.next=S.tick+(U.list.length<3?5:40+(Math.random()*40|0))}
+  if(U.list.length<6&&S.tick>=U.next){suSpawn();U.next=S.tick+(U.list.length<4?5:25+(Math.random()*25|0))}
   U.list=U.list.filter(l=>{l.age++;l.mu+=gauss()*.0002;
     let r=l.mu*SU_MU+gauss()*l.sg*SU_VOL;if(Math.random()<.006)r+=Math.log(1.2+Math.random()*.5);if(Math.random()<.006)r+=Math.log(.5+Math.random()*.35); // SU_MU/SU_VOL speed startups up (about 2x faster to IPO or bankruptcy)
     l.p*=Math.exp(Math.max(-.6,Math.min(.6,r)));
