@@ -11,7 +11,7 @@ const PUB = path.join(__dirname, 'public');
 const TYPES = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css',
   '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' };
 
-const KEY = process.env.FINNHUB_API_KEY || 'dbdtg4hr01qm2lrtjl20dbdtg4hr01qm2lrtjl2g';
+const KEY = (process.env.FINNHUB_API_KEY || '').trim(); // never hardcode this: set it in Railway -> Variables
 const BASE = process.env.FINNHUB_BASE || 'https://finnhub.io/api/v1';
 // Game ticker -> real ticker, where they differ (GLD and BND are the same in both).
 const MAP = { IDX:'SPY', TECH:'QQQ', DIV:'SCHD', BRKB:'BRK.B', SQ:'XYZ' };
@@ -22,7 +22,7 @@ const CACHE_FILE = path.join(os.tmpdir(), 'idle-stocks-quotes.json');
 let cache = {};                       // game ticker -> { c, pc, t, at, none? }
 try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) || {}; } catch (e) {}
 const want = new Map();               // game ticker -> last time a player asked for it
-let hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false;
+let hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false, authErr = 0;
 
 async function pollOne() {
   const now = Date.now();
@@ -35,7 +35,9 @@ async function pollOne() {
   try {
     const r = await fetch(BASE + '/quote?symbol=' + encodeURIComponent(MAP[sym] || sym) + '&token=' + KEY, { signal: AbortSignal.timeout(8000) });
     if (r.status === 429) { backoff = Date.now() + 20000; return; }
+    if (r.status === 401 || r.status === 403) { authErr = r.status; backoff = Date.now() + 15000; console.log('Finnhub rejected the API key (HTTP ' + r.status + '). Check FINNHUB_API_KEY.'); return; } // bad key: do NOT mark stocks as unpriceable
     if (!r.ok) { cache[sym] = { c: 0, pc: 0, t: 0, at: Date.now(), none: true }; return; }
+    authErr = 0;
     const j = await r.json();
     cache[sym] = j && j.c > 0 ? { c: j.c, pc: j.pc || j.c, t: j.t || 0, at: Date.now() } : { c: 0, pc: 0, t: 0, at: Date.now(), none: true };
     dirty = true;
@@ -53,7 +55,9 @@ function quotes(req, res) {
   s.forEach(x => want.set(x, now));
   const out = {}; let ready = 0;
   s.forEach(x => { const q = cache[x]; if (q && q.c > 0) { out[x] = { c: q.c, pc: q.pc, t: q.t }; ready++; } });
-  const body = KEY ? { ok: true, now, total: s.length, ready, quotes: out } : { ok: false, error: 'nokey', now, quotes: {} };
+  const body = !KEY ? { ok: false, error: 'nokey', now, quotes: {} }
+    : (authErr && !ready) ? { ok: false, error: 'badkey', now, quotes: {} }
+    : { ok: true, now, total: s.length, ready, quotes: out };
   res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
