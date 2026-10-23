@@ -179,6 +179,24 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 #title .slot svg.ico,#title .shead svg.ico{width:1.05em;height:1.05em}
 #title .sstats svg.ico{width:1em;height:1em}
 #tmain .trow .btn{gap:.35rem;letter-spacing:.04em}
+
+/* ---- v0.2.1: achievement lists + in-game background ---- */
+.alist2{display:flex;flex-direction:column;gap:.3571rem;margin-top:.3rem}
+details.lk{margin-top:.4rem}
+details.lk summary{cursor:pointer;color:var(--mu);padding:.35rem .2rem;font-size:.9em;user-select:none}
+details.lk[open] summary{color:var(--tx)}
+#app{position:relative;z-index:1}
+#gbg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:
+ radial-gradient(ellipse 90% 40% at 50% -6%,color-mix(in srgb,var(--ac) 22%,transparent),transparent 70%),
+ radial-gradient(ellipse 100% 42% at 50% 108%,color-mix(in srgb,var(--up) 15%,transparent),transparent 70%),var(--bg)}
+#gbg::before{content:"";position:absolute;inset:0;background-image:linear-gradient(color-mix(in srgb,var(--tx) 5%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--tx) 5%,transparent) 1px,transparent 1px);background-size:2.2rem 2.2rem;-webkit-mask-image:linear-gradient(#000,transparent 80%);mask-image:linear-gradient(#000,transparent 80%)}
+#gbg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 50%,color-mix(in srgb,var(--bg) 70%,#000) 130%)}
+#gbg svg{position:absolute;left:0;bottom:0;height:64%;width:auto;animation:gbgs 160s linear infinite;will-change:transform}
+@keyframes gbgs{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){#gbg svg{animation:none}}
+#app header,#app .row,#app .foot,#app nav button:not(.on),#app .chip:not(.on){background:color-mix(in srgb,var(--card) 78%,transparent)}
+#app .btn:not(.on):not(.main){background-color:color-mix(in srgb,var(--card) 70%,transparent)}
+#app .foot .btn{background:transparent}
 @media(max-height:34rem){#title svg.logo{width:3rem;height:3rem}.wm b{font-size:2.5em}#title .tag2{display:none}}
 
 /* graph dialog header */
@@ -289,6 +307,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
 </svg>
 
+<div id="gbg" aria-hidden="true"></div>
 <div id="app">
   <header>
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
@@ -301,7 +320,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.2</div>
+<div id="title"><div id="ver">v0.2.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -347,7 +366,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 </div></div>
 <div id="ach" class="hide"><div class="card">
   <div class="up-row"><b class="ahead" id="achh">Achievements</b><button class="btn" id="ax">✕</button></div>
-  <div class="mu">Shared by every save slot. Each one gives a one-time bonus of Research Points to the save you're playing when you earn it.</div>
+  <div class="mu" id="adesc"></div>
   <div id="alist"></div>
 </div></div>
 <div id="notes"></div>
@@ -565,8 +584,8 @@ function evTick(){
     const p0=o.p,had=!!NOTES[e.s]||e.h0!==undefined;
     o.p*=1+e.mv;o.fair*=e.crash?(e.g?1.02:(isC(SM[e.s])?.8:.85)):1+e.mv*.5;
     if(NOTES[e.s]){NOTES[e.s].remove();delete NOTES[e.s]}
-    if(e.crash&&!e.g&&n>0)G.crash=1;
-    if(e.h0!==undefined){if(!e.g&&n<=e.h0*.5)G.dodge=1;if(e.g&&n>=e.h0*1.25)G.wave=1}
+    if(e.crash&&!e.g&&n>0)bmax('crash',1);
+    if(e.h0!==undefined){if(!e.g&&n<=e.h0*.5)bmax('dodge',1);if(e.g&&n>=e.h0*1.25)bmax('wave',1)}
     if(n>0||had){const d=n*p0*e.mv;
       note(e.mv>=0?'up':'dn',(e.mv>=0?'📈 ':'📉 ')+e.s+' · '+(e.g?ev.g:ev.b),(e.mv>=0?'+':'')+(e.mv*100).toFixed(1)+'%'+(n?' · your '+n+' shares '+(d>=0?'gained ':'lost ')+fmt(Math.abs(d)):' · you were out of this one'),{s:e.s,ttl:14000})}
     return false})}
@@ -621,8 +640,19 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
   if(b.dataset.a||b.dataset.su||b.dataset.pv||b.dataset.sa||b.closest('.row[data-u]')||b.id==='sdel')return;sfx('click')},true);
 
 const IC=(n,c)=>`<svg class="ico ${c||''}"><use href="#i-${n}"/></svg>`;
+const gs=k=>(S&&S.gs&&S.gs[k])||0,GSo=()=>S.gs||(S.gs={});
+function bump(k){G[k]=(G[k]||0)+1;const o=GSo();o[k]=(o[k]||0)+1}
+function bmax(k,v){G[k]=Math.max(G[k]||0,v);const o=GSo();o[k]=Math.max(o[k]||0,v)}
 const GK='stockidle.ach';let G={a:{},trades:0,ticks:0,best:0};
 try{Object.assign(G,JSON.parse(rd(GK)))}catch(e){}if(!G.a)G.a={};
+function buildBg(){let seed=11;const r=()=>(seed=seed*16807%2147483647)/2147483647,N=40,W=30,start=210;let p=start;const cs=[];
+  for(let i=0;i<N;i++){const o=p;p=Math.max(90,Math.min(330,p+(r()-.5)*52));if(i>=N-8)p+=(start-p)*((i-(N-8)+1)/8);
+    cs.push({x:i*W+W/2,o,c:p,h:Math.min(o,p)-r()*20,l:Math.max(o,p)+r()*20})}
+  const can=cs.map(k=>{const up=k.c<=k.o,col=up?'var(--up)':'var(--dn)',t=Math.min(k.o,k.c),h=Math.max(3,Math.abs(k.c-k.o));
+    return `<path d="M${k.x} ${k.h.toFixed(1)}V${k.l.toFixed(1)}" stroke="${col}" stroke-width="2" opacity=".3"/><rect x="${k.x-9}" y="${t.toFixed(1)}" width="18" height="${h.toFixed(1)}" rx="2" fill="${col}" opacity=".28"/>`}).join('');
+  const line=cs.map((k,i)=>(i?'L':'M')+k.x+' '+k.c.toFixed(1)).join('');
+  const one=`<g>${can}<path d="${line}L${N*W} 400H${W/2}Z" fill="url(#gbgA)" opacity=".5"/><path d="${line}" fill="none" stroke="var(--up)" stroke-opacity=".55" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></g>`;
+  $('#gbg').innerHTML=`<svg viewBox="0 0 2400 400" preserveAspectRatio="xMinYMax slice"><defs><linearGradient id="gbgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity=".22"/><stop offset="1" stop-color="var(--up)" stop-opacity="0"/></linearGradient></defs>${one}<g transform="translate(1200 0)">${one.replace('id="gbgA"','')}</g></svg>`}
 let NOTES={};
 function note(kind,title,body,o={}){sfx(kind==='inf'?'alert':kind==='dn'?'down':kind==='ach'?'ach':'up');if(!CFG.alerts)return null;const el=document.createElement('div');el.className='note '+kind;
   el.innerHTML=(kind==='ach'?'<svg class="ico ni"><use href="#i-medal"/></svg>':'')+'<b></b><div></div><small class="mu"></small>';if(kind==='ach')el.classList.add('pop');const ch=[...el.children].filter(x=>x.tagName!=='svg');ch[0].textContent=title;ch[1].textContent=body;
@@ -635,7 +665,7 @@ function applyCfg(){const h=document.documentElement;h.dataset.theme=CFG.theme;
   h.style.setProperty('--sc',CFG.scale/100);
   const cs=getComputedStyle(h);colUp=cs.getPropertyValue('--up').trim()||'#2ecc71';colDn=cs.getPropertyValue('--dn').trim()||'#ff5c5c'}
 const mk=x=>({p:x[2],fair:x[2],fp:x[2],h:Array(40).fill(x[2]),g:[x[2]],gs:1,n:0,r:[x[2]],m:0,gm:.8+Math.random()*.4});
-function fresh(){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],lt:{},p:{}};
+function fresh(){regGrads([]);const s={ver:2,cash:2000,hold:{},priv:{},ctrl:{},up:{},max:2000,mood:0,tick:0,last:Date.now(),start:2000,paid:0,payn:PAYT,rp:0,rpt:0,prof:0,psell:0,ms:{},unl:{},ev:[],ct:{list:[],next:0,done:0,earned:0,id:0},su:{list:[],next:0,id:0,net:0,busts:0,best:0,grads:0},grads:[],lt:{},p:{},ach:{},gs:{}};
   STOCKS.forEach(x=>s.p[x[0]]=mk(x));return s}
 function migrate(){ // old saves: rebase every price to the new $10 start, with shares scaled so your holdings keep the same value
   if(S.ver===2)return;
@@ -653,6 +683,9 @@ function load(n){slot=n;S=peek(n);
   if(!S.ms){S.rp=0;S.rpt=0;S.prof=0;S.psell=0;S.ms={};S.unl={};
     const old={DIS:3000,AAPL:7000,MSFT:15000,TSLA:25000,AMZN:60000,NVDA:150000,NFLX:400000};
     for(const k in old)if(S.max>=old[k]||(S.hold[k]&&S.hold[k].n))S.unl[k]=1}
+  if(!S.gs)S.gs={};
+  if(!S.ach){S.ach={};['trades','ticks','best','contracts','sinv','sgrad','sbust','moved','pd','crash','dodge','wave'].forEach(k=>{if(G[k])S.gs[k]=G[k]}); // old save: carry over what this device already unlocked and still qualifies for
+    ACHV.forEach(a=>{try{if(G.a[a.id]&&a.f())S.ach[a.id]=G.a[a.id]}catch(e){}})}
   refundOld()}
 function save(){S.last=Date.now();wr(SK(slot),JSON.stringify(S));wr(GK,JSON.stringify(G))}
 const lv=id=>Math.min(S.up[id]||0,UPM[id]||99);
@@ -689,7 +722,7 @@ function tick(){
   S.cash+=(S.cash*lv('int')*INTR+hvv*lv('div')*DIVR+fy)*ym;
   const bl=lv('bot');if(bl&&S.tick%Math.max(2,10-bl)===0)bot(bl);
   if(S.tick>=S.payn){S.payn+=PAYT;S.cash+=PAYC;S.paid+=PAYC;toast('💼 Paycheck +'+fmt(PAYC));sfx('cash')}
-  suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();G.ticks++;if(S.tick%5===0)checkAch();
+  suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();bump('ticks');if(S.tick%5===0)checkAch();
   draw();
 }
 function bot(l){
@@ -704,9 +737,9 @@ const ACHV=[
 ['nw1','Getting Started','Reach $10,000 net worth',1,()=>S.max>=1e4],['nw2','Six Figures','Reach $100,000 net worth',2,()=>S.max>=1e5],
 ['nw3','Millionaire','Reach $1,000,000 net worth',3,()=>S.max>=1e6],['nw4','Tycoon','Reach $10,000,000 net worth',5,()=>S.max>=1e7],
 ['nw5','Mogul','Reach $100,000,000 net worth',8,()=>S.max>=1e8],
-['first','In the Green','Make a profitable sale',1,()=>S.psell>=1],['big1','Nice Haul','Make $1,000 profit on a single sale',2,()=>G.best>=1e3],
-['big2','Whale Move','Make $100,000 profit on a single sale',5,()=>G.best>=1e5],
-['tr100','Day Trader','Make 100 trades',1,()=>G.trades>=100],['tr1k','Wall Street Regular','Make 1,000 trades',3,()=>G.trades>=1e3],
+['first','In the Green','Make a profitable sale',1,()=>S.psell>=1],['big1','Nice Haul','Make $1,000 profit on a single sale',2,()=>gs('best')>=1e3],
+['big2','Whale Move','Make $100,000 profit on a single sale',5,()=>gs('best')>=1e5],
+['tr100','Day Trader','Make 100 trades',1,()=>gs('trades')>=100],['tr1k','Wall Street Regular','Make 1,000 trades',3,()=>gs('trades')>=1e3],
 ['d5','Diversified','Hold 5 different securities at once',1,()=>Object.keys(S.hold).length>=5],
 ['d10','Spread Thin','Hold 10 different securities at once',2,()=>Object.keys(S.hold).length>=10],
 ['fund','Playing It Safe','Own a mutual fund',1,()=>Object.keys(S.hold).some(k=>isF(SM[k]))],
@@ -716,26 +749,30 @@ const ACHV=[
 ['unla','Completionist','Unlock every security',5,()=>STOCKS.every(isOpen)],
 ['up1','Upgraded','Buy your first upgrade',1,()=>UPS.some(u=>lv(u.id)>0)],['upm','Maxed Out','Max out an upgrade',3,()=>UPS.some(u=>lv(u.id)>=u.max)],
 ['brief','Well Informed','Reach level 3 Analyst Briefings',3,()=>lv('brief')>=3],
-['crash','Survivor','Hold a security when it crashes',2,()=>G.crash],
-['dodge','Dodged a Bullet','Sell half or more of a holding after a warning, before a bad event',3,()=>G.dodge],
-['wave','Caught the Wave','Buy 25% more of a holding after a warning, before a good event',3,()=>G.wave],
+['crash','Survivor','Hold a security when it crashes',2,()=>gs('crash')],
+['dodge','Dodged a Bullet','Sell half or more of a holding after a warning, before a bad event',3,()=>gs('dodge')],
+['wave','Caught the Wave','Buy 25% more of a holding after a warning, before a good event',3,()=>gs('wave')],
 ['rp50','Researcher','Earn 50 Research Points in one game',2,()=>S.rpt>=50],
-['ct1','Hired Gun','Complete a contract',1,()=>(G.contracts||0)>=1],['ct10','Reliable Contractor','Complete 10 contracts',2,()=>(G.contracts||0)>=10],['ct50','Trusted Advisor','Complete 50 contracts',4,()=>(G.contracts||0)>=50],
-['su1','Angel Investor','Invest in a startup',1,()=>(G.sinv||0)>=1],['su2','Unicorn Hunter','Own shares when a startup hits $10 and goes public',3,()=>(G.sgrad||0)>=1],
-['su3','Total Wipeout','Back a startup that goes bankrupt',1,()=>(G.sbust||0)>=1],['su4','Venture Capitalist','Earn $10,000 net profit from startups',3,()=>!!S.su&&S.su.net>=1e4],
-['t1','Patient Investor','Play for 1 hour in total',1,()=>G.ticks>=3600],['t10','In It for the Long Haul','Play for 10 hours in total',3,()=>G.ticks>=36000],
-['mm1','Market Mover','Move a stock 5% with a single trade',2,()=>(G.moved||0)>=.05],['mm2','Mover and Shaker','Move a stock 15% with a single trade',4,()=>(G.moved||0)>=.15],
-['pd1','Pump and Dump','Sell for a profit right after pumping a stock',3,()=>(G.pd||0)>=1],['pd2','Pump Syndicate','Pull off 10 pump-and-dumps',5,()=>(G.pd||0)>=10]
+['ct1','Hired Gun','Complete a contract',1,()=>(gs('contracts')||0)>=1],['ct10','Reliable Contractor','Complete 10 contracts',2,()=>(gs('contracts')||0)>=10],['ct50','Trusted Advisor','Complete 50 contracts',4,()=>(gs('contracts')||0)>=50],
+['su1','Angel Investor','Invest in a startup',1,()=>(gs('sinv')||0)>=1],['su2','Unicorn Hunter','Own shares when a startup hits $10 and goes public',3,()=>(gs('sgrad')||0)>=1],
+['su3','Total Wipeout','Back a startup that goes bankrupt',1,()=>(gs('sbust')||0)>=1],['su4','Venture Capitalist','Earn $10,000 net profit from startups',3,()=>!!S.su&&S.su.net>=1e4],
+['t1','Patient Investor','Play for 1 hour in total',1,()=>gs('ticks')>=3600],['t10','In It for the Long Haul','Play for 10 hours in total',3,()=>gs('ticks')>=36000],
+['mm1','Market Mover','Move a stock 5% with a single trade',2,()=>(gs('moved')||0)>=.05],['mm2','Mover and Shaker','Move a stock 15% with a single trade',4,()=>(gs('moved')||0)>=.15],
+['pd1','Pump and Dump','Sell for a profit right after pumping a stock',3,()=>(gs('pd')||0)>=1],['pd2','Pump Syndicate','Pull off 10 pump-and-dumps',5,()=>(gs('pd')||0)>=10]
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
-function checkAch(){const got=[];ACHV.forEach(a=>{if(!G.a[a.id]&&a.f()){G.a[a.id]=Date.now();S.rp+=a.rp;S.rpt+=a.rp;got.push(a)}});
+function checkAch(){const got=[];ACHV.forEach(a=>{if(!S.ach[a.id]&&a.f()){const now=Date.now();S.ach[a.id]=now;const first=!G.a[a.id];if(first){G.a[a.id]=now;S.rp+=a.rp;S.rpt+=a.rp}got.push({n:a.n,d:a.d,rp:a.rp,first})}});
   if(!got.length)return;wr(GK,JSON.stringify(G));
-  if(got.length<=2)got.forEach(a=>note('ach',a.n,a.d+' · +'+a.rp+' RP',{ttl:10000}));
-  else note('ach',got.length+' achievements unlocked','+'+got.reduce((q,a)=>q+a.rp,0)+' RP total · see the Achievements screen',{ttl:10000})}
-function renderAch(){const n=ACHV.filter(a=>G.a[a.id]).length;
-  $('#achh').innerHTML='<svg class="ico"><use href="#i-medal"/></svg><span>Achievements '+n+'/'+ACHV.length+'</span>';
-  const done=ACHV.filter(a=>G.a[a.id]),todo=ACHV.filter(a=>!G.a[a.id]);
-  const row=a=>{const ok=!!G.a[a.id];return `<div class="arow ${ok?'ok':'no'}"><svg class="ico ai"><use href="#i-${ok?'medal':'lock'}"/></svg><div><b>${a.n}</b><div class="mu">${a.d}</div></div><div class="rbadge">+${a.rp} RP</div></div>`};
-  $('#alist').innerHTML='<div class="abar"><i style="width:'+(n/ACHV.length*100)+'%"></i></div>'+'<div style="display:flex;flex-direction:column;gap:.3571rem;margin-top:.3rem">'+done.concat(todo).map(row).join('')+'</div>'}
+  if(got.length<=2)got.forEach(a=>note('ach',a.n,a.d+(a.first?' · +'+a.rp+' RP':''),{ttl:10000}));
+  else note('ach',got.length+' achievements unlocked','+'+got.reduce((q,a)=>q+(a.first?a.rp:0),0)+' RP total · see the Achievements screen',{ttl:10000})}
+function renderAch(glob){const src=glob?G.a:S.ach,n=ACHV.filter(a=>src[a.id]).length;
+  $('#achh').innerHTML='<svg class="ico"><use href="#i-medal"/></svg><span>'+(glob?'All-time ':'This save ')+n+'/'+ACHV.length+'</span>';
+  $('#adesc').textContent=glob?'Everything you have ever unlocked, across all of your saves. The Research Points bonus is only paid the first time.':'Achievements earned in this save (Slot '+slot+'). One you earned in another save counts here when you earn it again, but its RP bonus is only paid once.';
+  const dt=t=>new Date(t).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+  const done=ACHV.filter(a=>src[a.id]).sort((x,y)=>src[y.id]-src[x.id]),todo=ACHV.filter(a=>!src[a.id]);
+  const row=(a,ok)=>`<div class="arow ${ok?'ok':'no'}"><svg class="ico ai"><use href="#i-${ok?'medal':'lock'}"/></svg><div><b>${a.n}</b><div class="mu">${a.d}${ok?' · '+dt(src[a.id]):''}</div></div><div class="rbadge">+${a.rp} RP</div></div>`;
+  $('#alist').innerHTML='<div class="abar"><i style="width:'+(n/ACHV.length*100)+'%"></i></div><div class="alist2">'+
+    (done.length?done.map(a=>row(a,1)).join(''):'<div class="mu" style="text-align:center;padding:.8rem 0">Nothing unlocked '+(glob?'yet':'in this save yet')+'.</div>')+'</div>'+
+    (todo.length?'<details class="lk"><summary>Locked ('+todo.length+')</summary><div class="alist2">'+todo.map(a=>row(a,0)).join('')+'</div></details>':'')}
 // Startups: tiny unknown companies that start near $2 and trade like penny stocks. Reach $10 and they go public onto the Market list. Hit $0 and they go bankrupt.
 const SUN=[['Airbnb','Travel'],['Stripe','Finance'],['Dropbox','Tech'],['Slack','Tech'],['Discord','Tech'],['Notion','Tech'],['Figma','Tech'],['Canva','Tech'],['Zoom','Tech'],['Twitch','Media'],['Reddit','Media'],['Pinterest','Media'],
 ['Snapchat','Media'],['Instacart','Consumer'],['DoorDash','Consumer'],['Robinhood','Finance'],['Coinbase','Finance'],['Plaid','Finance'],['Ramp','Finance'],['Brex','Finance'],['Airtable','Tech'],['Vercel','Tech'],['Replit','Tech'],
@@ -760,17 +797,17 @@ function suSpawn(){const U=S.su,used=new Set(U.list.map(l=>l.name).concat((S.gra
   SEC[sym]=x[1];U.list.push(l)}
 function suBuy(id,pc){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1+feeRate(),q=Math.floor(S.cash*pc/100/(l.p*f));
   if(q<1){toast('Not enough cash',1);return}
-  S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;G.trades++;G.sinv=(G.sinv||0)+1;sfx('buy');draw()}
+  S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;bump('trades');bump('sinv');sfx('buy');draw()}
 function suSell(id,half){const l=S.su.list.find(q=>q.id===id);if(!l||l.n<1)return;
   const q=half?Math.max(1,Math.floor(l.n/2)):l.n,f=feeRate(),pr=q*(l.p*(1-f)-l.c);
-  S.cash+=q*l.p*(1-f);l.n-=q;G.trades++;S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
-  if(pr>0){G.best=Math.max(G.best||0,pr);S.psell++;ctHook('sell',l.sym,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
+  S.cash+=q*l.p*(1-f);l.n-=q;bump('trades');S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
+  if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',l.sym,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales')}}
   draw()}
 function suGrad(l){const U=S.su,t=l.type,d={s:l.sym,n:l.name,sec:l.sec,vol:+(.007+Math.random()*.009).toFixed(4),beta:+(.8+Math.random()*.9).toFixed(1),cm:+(1+Math.random()*1.2).toFixed(1),
     g:+((t==='rocket'?.00008:t==='wander'?.00004:.00002)+Math.random()*.00004).toFixed(6),mc:Math.round(Math.max(8+Math.random()*22,Math.ceil(l.n*1.5/200)))};
   S.grads=S.grads||[];S.grads.push(d);regStock(d);S.p[d.s]=mk(SM[d.s]);
-  if(l.n>0){S.hold[d.s]={n:l.n,c:l.c};G.sgrad=(G.sgrad||0)+1;U.net+=l.n*(START-l.c)}
+  if(l.n>0){S.hold[d.s]={n:l.n,c:l.c};bump('sgrad');U.net+=l.n*(START-l.c)}
   U.grads=(U.grads||0)+1;
   suNote('up','🎓 '+l.name+' hit $10!','Now public as '+l.sym+' on the Market tab'+(l.n?' · you own '+l.n+' shares':''));
   build()}
@@ -783,7 +820,7 @@ function suTick(){const U=S.su,L=lv('sscout');
     if(l.tc&&l.age>=l.tc)l.p=0;
     if(l.p>=10){l.p=10;suGrad(l);return false}
     if(l.p<=.15){U.busts++;delete SEC[l.sym];
-      if(l.n>0){G.sbust=(G.sbust||0)+1;U.net-=l.n*l.c;suNote('dn','💀 '+l.name+' went bankrupt','Your '+l.n+' shares are worthless · lost '+fmt(l.n*l.c))}
+      if(l.n>0){bump('sbust');U.net-=l.n*l.c;suNote('dn','💀 '+l.name+' went bankrupt','Your '+l.n+' shares are worthless · lost '+fmt(l.n*l.c))}
       return false}
     l.h.push(l.p);if(l.h.length>40)l.h.shift();
     if(L>=4&&l.tc&&!l.warned&&l.n>0&&l.age>=l.tc-20){l.warned=1;suNote('dn','⚠ '+l.name,'Scout warns this startup is about to collapse')}
@@ -837,7 +874,7 @@ function ctTick(){const C=S.ct;
     if(c.t==='nwgoal')c.p=nw();
     if(c.t==='rise')c.p=S.p[c.s].p;
     if(c.t==='gain')c.p=ugain();
-    if(c.p>=c.tg&&(c.t!=='rise'||heldN(SM[c.s])>=c.min)){S.cash+=c.rw;C.done++;C.earned+=c.rw;G.contracts=(G.contracts||0)+1;C.next=S.tick+30;
+    if(c.p>=c.tg&&(c.t!=='rise'||heldN(SM[c.s])>=c.min)){S.cash+=c.rw;C.done++;C.earned+=c.rw;bump('contracts');C.next=S.tick+30;
       note('up','📜 Contract complete · +'+fmt(c.rw),c.d,{ttl:9000});return false}
     if(S.tick>=c.exp){C.next=S.tick+20;note('dn','📜 Contract expired',c.d,{ttl:7000});return false}
     return true});
@@ -867,7 +904,7 @@ function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, th
   if(i>=.02){const sc=SEC[s];if(sc)STOCKS.forEach(x=>{if(x[0]!==s&&SEC[x[0]]===sc&&S.p[x[0]])S.p[x[0]].m=(S.p[x[0]].m||0)+dir*i*.004})}}
 function manip(s,dir,i,q){ // returns true when this trade reverses a recent market-moving trade (pump & dump pattern)
   if(!S.lt)S.lt={};if(i<.01)return false;
-  G.moved=Math.max(G.moved||0,i);
+  bmax('moved',i);
   const lt=S.lt[s],rev=!!(lt&&lt.d!==dir&&S.tick-lt.t<REV_T&&lt.i>=.01);
   S.lt[s]={d:dir,t:S.tick,i};
   if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market and attract followers.',1)}
@@ -877,7 +914,7 @@ function buy(s,q,silent){
   if(room<1){if(!silent)toast('👑 You already own 100% of '+SM[s][1],1);return}
   const f=1+feeRate(),pl=planBuy(s,q,!silent);q=pl.q;if(q<1){if(!silent)toast('Not enough cash',1);return}
   const pe=pl.pe,i=pl.i;
-  S.cash-=q*pe*f;if(!silent)G.trades++;const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;ctHook('buy',s,q);
+  S.cash-=q*pe*f;if(!silent)bump('trades');const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;ctHook('buy',s,q);
   const own=ownCheck(s); // takeover check uses the price before your own buying pushes it up
   if(!silent&&!own&&S.hold[s]){marketMove(s,1,i);manip(s,1,i,q);if(i>=.015)toast('📈 Your buy pushed '+SM[s][1]+' up '+(i*100).toFixed(1)+'%')}
   if(!own&&!silent)sfx('buy');draw()}
@@ -893,11 +930,11 @@ function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.p
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),ps=i>1e-9?p*(1-Math.exp(-i))/i:p,pr=q*(ps*(1-f)-h.c);
-  S.cash+=q*ps*(1-f);if(!silent)G.trades++;h.n-=q;if(h.n<=0)delete S.hold[s];
+  S.cash+=q*ps*(1-f);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
   if(!silent)sfx(pr>0?'sell':'loss');
-  if(pr>0){G.best=Math.max(G.best||0,pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
+  if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
-  if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){G.pd=(G.pd||0)+1;toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
+  if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){bump('pd');toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
     else if(i>=.015)toast('📉 Your sell pushed '+SM[s][1]+' down '+(i*100).toFixed(1)+'%')}
   draw()}
 let cur=null,dpts=[],dts=[],rng=0;
@@ -1028,7 +1065,8 @@ function cfgChanged(){wr(CFGK,JSON.stringify(CFG));applyCfg();renderSet();if(S)d
 function openSet(){renderSet();$('#set').classList.remove('hide')}
 function closeSet(){$('#set').classList.add('hide')}
 $('#gear').onclick=$('#tset').onclick=openSet;
-$('#trophy').onclick=$('#tach').onclick=()=>{renderAch();$('#ach').classList.remove('hide')};
+$('#trophy').onclick=()=>{renderAch(false);$('#ach').classList.remove('hide')};
+$('#tach').onclick=()=>{renderAch(true);$('#ach').classList.remove('hide')};
 $('#ach').addEventListener('click',e=>{if(e.target.id==='ach'||e.target.id==='ax')$('#ach').classList.add('hide')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#ach').classList.add('hide')});
 $('#sc').oninput=e=>{CFG.scale=+e.target.value;cfgChanged()};
@@ -1053,7 +1091,7 @@ function renderSlots(msg){
     if(!o)return `<div class="slot empty ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">Empty slot</span>${cur?'<span class="pill2">Selected</span>':''}</div><div class="sstats"><span>Start fresh with $2,000</span></div></div><div class="sb"><button class="btn go" data-sa="new">${IC('plus')}New game</button></div></div>`;
     const hn=Object.keys(o.hold||{}).length,nwv=slotNW(o),gain=nwv-(o.start||2000);
     return `<div class="slot ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">${fmt(nwv)}</span><span class="${gain>=0?'up':'dn'}" style="font-size:.8em">${gain>=0?'▲':'▼'} ${fmt(Math.abs(gain))}</span>${cur?'<span class="pill2">Selected</span>':''}</div>
-      <div class="sstats"><span>${IC('clock')}${fmtT(o.tick||0)} played</span><span>${IC('chart')}${hn} holding${hn===1?'':'s'}</span><span>${IC('flask')}${o.rpt||0} RP earned</span></div>
+      <div class="sstats"><span>${IC('clock')}${fmtT(o.tick||0)} played</span><span>${IC('chart')}${hn} holding${hn===1?'':'s'}</span><span>${IC('flask')}${o.rpt||0} RP earned</span>${o.ach?`<span>${IC('medal')}${Object.keys(o.ach).length}/${ACHV.length}</span>`:''}</div>
       <div class="sstats"><span>Last played ${ago(o.last||Date.now())}</span></div></div>
       <div class="sb"><button class="btn go" data-sa="load">${IC('play')}Load</button><button class="btn ghost" data-sa="del" title="Delete this save">${IC('trash')}</button></div></div>`}).join('');
   $('#smsg').textContent=msg||''}
@@ -1091,7 +1129,7 @@ function showTitle(){const c=S.tick>0;
 {const old=rd('stockidle.v1');if(old&&!rd(SK(1))){wr(SK(1),old);rm('stockidle.v1')}
 let best=1,bl=-1;for(let n=1;n<=SLOTS;n++){const o=peek(n);if(o&&(o.last||0)>bl){bl=o.last||0;best=n}}
 load(best)}
-applyCfg();build();draw();showTitle();
+applyCfg();buildBg();build();draw();showTitle();
 setInterval(()=>{if(live())save()},5000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&live())save()});
 window.addEventListener('beforeunload',()=>{if(live())save()});
