@@ -558,10 +558,11 @@ function suGrad(l){const U=S.su,t=l.type,d={s:l.sym,n:l.name,sec:l.sec,vol:+(.00
   U.grads=(U.grads||0)+1;
   suNote('up','🎓 '+l.name+' hit $10!','Now public as '+l.sym+' on the Market tab'+(l.n?' · you own '+l.n+' shares':''));
   build()}
+const SU_MU=2,SU_VOL=1.5;
 function suTick(){const U=S.su,L=lv('sscout');
   if(U.list.length<4&&S.tick>=U.next){suSpawn();U.next=S.tick+(U.list.length<3?5:40+(Math.random()*40|0))}
   U.list=U.list.filter(l=>{l.age++;l.mu+=gauss()*.0002;
-    let r=l.mu+gauss()*l.sg;if(Math.random()<.004)r+=Math.log(1.2+Math.random()*.5);if(Math.random()<.004)r+=Math.log(.5+Math.random()*.35);
+    let r=l.mu*SU_MU+gauss()*l.sg*SU_VOL;if(Math.random()<.006)r+=Math.log(1.2+Math.random()*.5);if(Math.random()<.006)r+=Math.log(.5+Math.random()*.35); // SU_MU/SU_VOL speed startups up (about 2x faster to IPO or bankruptcy)
     l.p*=Math.exp(Math.max(-.6,Math.min(.6,r)));
     if(l.tc&&l.age>=l.tc)l.p=0;
     if(l.p>=10){l.p=10;suGrad(l);return false}
