@@ -11,12 +11,12 @@ const PUB = path.join(__dirname, 'public');
 const TYPES = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css',
   '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' };
 
-const KEY = process.env.FINNHUB_API_KEY || '';
+const KEY = process.env.FINNHUB_API_KEY || 'dbdtg4hr01qm2lrtjl20dbdtg4hr01qm2lrtjl2g';
 const BASE = process.env.FINNHUB_BASE || 'https://finnhub.io/api/v1';
 // Game ticker -> real ticker, where they differ (GLD and BND are the same in both).
 const MAP = { IDX:'SPY', TECH:'QQQ', DIV:'SCHD', BRKB:'BRK.B', SQ:'XYZ' };
-// Fictional or unpriceable in this mode: Starlink and SpaceX are private, crypto is not supported yet.
-const NOQUOTE = new Set(['STRL','SPCX','BTC','ETH','SOL','DOGE']);
+// Fictional or unpriceable in this mode: Starlink is a SpaceX subsidiary (not listed), crypto is not supported yet.
+const NOQUOTE = new Set(['STRL','BTC','ETH','SOL','DOGE']);
 
 const CACHE_FILE = path.join(os.tmpdir(), 'idle-stocks-quotes.json');
 let cache = {};                       // game ticker -> { c, pc, t, at, none? }
