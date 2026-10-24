@@ -295,9 +295,11 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 .chip.srtb{margin-left:auto;border-style:dashed;display:inline-flex;align-items:center;gap:.3rem}
 .chip{white-space:nowrap;flex:0 0 auto}
 .chip .ico{width:1em;height:1em;vertical-align:0}
-#privbox:not(:empty){margin-bottom:.5rem}
+#privbox:not(:empty){display:flex;flex-direction:column;gap:.4286rem;margin:0 0 .4286rem} /* flex + gap so spacing is identical in normal and 'Unlocked first' (flex) mode; margins do not collapse there */
+#market .chips{padding-bottom:.4286rem}
 #privbox .sec{padding:.2rem .2rem .4rem;line-height:1.35}
-#privbox .row{margin-bottom:.3571rem}
+#privbox .row{margin:0}
+#privbox .pvs{font-size:.75em;line-height:1.35}
 .chip.srtb.on{border-style:solid}
 </style>
 </head>
@@ -350,7 +352,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.3.5</div>
+<div id="title"><div id="ver">v0.4.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -489,10 +491,27 @@ function regGrads(list,lst){ST.length=NST0;STOCKS.length=NALL0;
   Object.keys(SEC).forEach(k=>{if(!BASEK.has(k))delete SEC[k]});
   (list||[]).forEach(regStock);(lst||[]).forEach(l=>{SEC[l.sym]=l.sec})}
 const RP_OWN=3,PRIV_Y=.00002; // RP for taking a controlling (>50%) stake, once per company; private companies pay ~7% of their value per hour
-const pvI=()=>Object.values((S&&S.priv)||{}).reduce((a,p)=>a+p.v*PRIV_Y,0);
+// Private companies: value rises and falls with a hidden model. How developed a company is (its price vs the $10 everyone starts at)
+// decides everything. Young companies grow fast and swing a lot but pay a low yield. Mature ones barely grow but pay a high yield.
+const PGR=2.2,pLx=p=>Math.log(Math.max(1,p.v/p.n/START)),pDamp=lx=>1/(1+.35*lx*lx),pSat=lx=>lx/(lx+2),
+  pSyn=s=>{const c=SEC[s];return c?Math.min(5,Object.keys(S.priv).filter(q=>q!==s&&SEC[q]===c).length):0}, // other private companies in the same sector
+  pInc=(s,p)=>p.v*PRIV_Y*(.55+.9*pSat(pLx(p)))*(1+.12*lv('pyld'))*(1+.1*pSyn(s)); // income per second
+const pvI=()=>S&&S.priv?Object.keys(S.priv).reduce((a,k)=>a+pInc(k,S.priv[k]),0):0;
+const PNEWS=[['Signs a major contract','Product launch beats expectations','Opens a new market','Cuts costs sharply','Wins a key patent'],['Loses a key customer','Costly product recall','Regulators open an inquiry','Key executives leave','Supply chain trouble']];
+function privEvent(s,p,dm){const good=Math.random()<.5+.12*dm;let m=(.04+.12*dm)*(.5+Math.random());if(!good)m*=1-.15*lv('pstab');
+  const t=PNEWS[good?0:1][Math.random()*5|0];const v0=p.v;p.v=Math.max(p.n,p.v*(good?1+m:1-m));const d=p.v-v0,pc=(p.v/v0-1)*100;p.news=t+' ('+(pc>=0?'+':'−')+Math.abs(pc).toFixed(1)+'%)';
+  note(good?'up':'dn',(good?'📈 ':'📉 ')+s+' · '+t,(pc>=0?'+':'−')+Math.abs(pc).toFixed(1)+'% · your private company '+(d>=0?'gained ':'lost ')+fmt(Math.abs(d)),{ttl:14000})}
+function privTick(){const k=Object.keys(S.priv);if(!k.length||isLive())return;const gl=lv('pgrow'),st=lv('pstab'),lab=lv('plab');
+  k.forEach(s=>{const p=S.priv[s],x=SM[s];if(!x)return;const dm=pDamp(pLx(p)),n=pSyn(s);
+    const dr=gro(x)*(p.gm||1)*PGR*(1+.2*gl)*(1+.05*n)*dm,vol=x[3]*.5*(.6+.8*dm)*(1-.12*st);
+    p.v=Math.max(p.n,p.v*Math.exp(Math.max(-.03,Math.min(.03,dr+S.mood*x[4]*.15+vol*gauss()))));
+    if(Math.random()<1/900)privEvent(s,p,dm)});
+  if(lab){S.privrp=(S.privrp||0)+k.length*Math.pow(2,lab-1)/3600; // 1 RP/hr per company at level 1, doubling each level
+   let g=0;while(S.privrp>=1-1e-9){S.privrp--;g++}if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · private R&D labs',1)}}}
+function privFix(){if(!S.priv)S.priv={};for(const s in S.priv){const p=S.priv[s];if(p.c===undefined)p.c=p.v;if(p.gm===undefined)p.gm=.85+Math.random()*.3;if(p.news===undefined)p.news=''}if(S.privrp===undefined)S.privrp=0}
 const DIVR=.000008,INTR=.000008,chunk=()=>150+.04*S.max;
 const SAL=100000,PAYT=180,PAYC=Math.round(SAL/26); // $100k/yr, one $3,846 check every 180s (3 minutes)
-const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭'],['Shadow','🕶️']];
+const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭'],['Private','🏢'],['Shadow','🕶️']];
 const UPS=[ // Bought with Research Points. None of these change how prices behave; they only help the player.
 {id:'fee',cat:'Trading',ic:'💱',n:'Broker Discount',d:'Lower fee on every buy and sell',base:2,g:1.5,max:5,fx:l=>Math.max(0,.5-.1*l).toFixed(1)+'% trade fee'},
 {id:'bot',cat:'Trading',ic:'🤖',n:'Auto-Trader',d:'Buys dips and sells peaks in stocks for you. Never owns more than 50% of any company, and you can switch it off any time',base:4,g:1.55,max:6,fx:l=>l?'acts every '+Math.max(2,10-l)+'s, up to '+(10+4*l)+'% of cash':'off'},
@@ -506,6 +525,10 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (noisy readings)','+ shows confidence (sharper)','+ odds estimate (sharper)','+ collapse warnings (sharpest)'][l]},
 {id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going. Without it, your trades just cost you slippage',base:3,g:1.7,max:4,fx:l=>l?'+'+Math.round(FOLLOW*100*l)+'% follow-through':'no followers'},
 {id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Get better fills on big orders. You pay less slippage, but your trades still move the market just as much, so pumps stay strong',base:2,g:1.7,max:4,fx:l=>'-'+15*l+'% slippage on large orders'},
+{id:'pgrow',cat:'Private',ic:'🌱',n:'Venture Management',d:'Your private companies grow faster. Young companies gain the most',base:3,g:1.6,max:5,fx:l=>'+'+20*l+'% private company growth'},
+{id:'pyld',cat:'Private',ic:'🏭',n:'Operations Team',d:'Private companies pay you more income',base:2,g:1.55,max:6,fx:l=>'+'+12*l+'% private income'},
+{id:'pstab',cat:'Private',ic:'🛡️',n:'Risk Management',d:'Private company value swings less, and bad news hurts less',base:3,g:1.65,max:5,fx:l=>l?'-'+12*l+'% swings, -'+15*l+'% bad-news damage':'No protection'},
+{id:'plab',cat:'Private',ic:'🧪',n:'Corporate R&D Labs',d:'Every private company you own slowly produces Research Points',base:4,g:1.8,max:5,fx:l=>l?Math.pow(2,l-1)+' RP per hour, per company':'No research'},
 ].map(u=>({rp:1,...u}));
 // Big company events: [symbol, event, good outcome, bad outcome, chance of good, typical move]
 const EV=[
@@ -732,7 +755,7 @@ function suFix(){const u=S.su;if(!S.grads)S.grads=[];if(u&&u.list)return; // old
   S.cash+=u&&u.pos?u.pos.reduce((a,p)=>a+p.v,0):0;
   S.su={list:[],next:0,id:0,net:u?u.net||0:0,busts:u?u.busts||0:0,best:u?u.best||0:0,grads:0}}
 function load(n){slot=n;S=peek(n);
-  if(!S)S=fresh();migrate();suFix();regGrads(S.grads,S.su.list);if(!S.ev)S.ev=[];
+  if(!S)S=fresh();migrate();suFix();regGrads(S.grads,S.su.list);privFix();if(!S.ev)S.ev=[];
   if(S.paid===undefined){S.paid=0;S.payn=(S.tick||0)+PAYT}
   if(!S.priv)S.priv={};if(!S.ctrl)S.ctrl={};if(!S.lt)S.lt={};if(!S.ct)S.ct={list:[],next:0,done:0,earned:0,id:0};STOCKS.forEach(x=>{if(!S.p[x[0]])S.p[x[0]]=mk(x);const o=S.p[x[0]];if(!o.g){o.g=[o.p];o.gs=1;o.n=0}if(!o.r)o.r=[o.p];if(o.m===undefined)o.m=0;if(o.gm===undefined)o.gm=.8+Math.random()*.4;});
   if(!S.ms){S.rp=0;S.rpt=0;S.prof=0;S.psell=0;S.ms={};S.unl={};
@@ -810,7 +833,7 @@ function tick(){
     o.h.push(o.p);if(o.h.length>40)o.h.shift();
     o.r.push(Math.round(o.p*100)/100);if(o.r.length>900)o.r.shift();
     o.n++;if(o.n%o.gs===0){o.g.push(Math.round(o.p*100)/100);if(o.g.length>1200){o.g=o.g.filter((_,i)=>i%2===0);o.gs*=2}}});
-  evTick();
+  evTick();privTick();
   const ym=1+.15*lv('yld');let hvv=0,fy=0;
   Object.entries(S.hold).forEach(([k,h])=>{const v=h.n*S.p[k].p;hvv+=v;fy+=v*(SM[k][8]||0)});fy+=pvI();
   S.cash+=(S.cash*lv('int')*INTR+hvv*lv('div')*DIVR+fy)*ym;
@@ -1050,13 +1073,19 @@ function buy(s,q,silent){
   if(!own&&!silent)sfx('buy');draw()}
 function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n*2>maxSh(x)&&!S.ctrl[s]){S.ctrl[s]=1;S.rp+=RP_OWN;S.rpt+=RP_OWN;msg='👑 You now control '+x[1]+' (over 50%)! 🔬 +'+RP_OWN+' Research Points'}
-  if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
-    msg=(msg?msg+' · ':'')+'🏢 You bought out '+x[1]+'. It is now private and off the market, and pays you '+fmt(v*PRIV_Y*3600)+'/hr'}
+  if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v,c:v,gm:.85+Math.random()*.3,news:''};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
+    msg=(msg?msg+' · ':'')+'🏢 You bought out '+x[1]+'. It is now private and pays you '+fmt(pInc(s,S.priv[s])*3600)+'/hr'}
   if(msg){toast(msg,1);sfx('win')}return !!msg}
-function sellPriv(s){const p=S.priv[s];if(!p)return;S.cash+=p.v;delete S.priv[s];toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' · it is public again',1);sfx('sell');draw()}
+function sellPriv(s){const p=S.priv[s];if(!p)return;const pr=p.v-p.c;S.cash+=p.v;delete S.priv[s];
+  const o=S.p[s],np=Math.max(.5,p.v/p.n);if(o){o.p=o.fair=o.fp=np;o.m=0;o.h=Array(40).fill(np)} // it returns to the market at the value you built it up to
+  let g=0;if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;while(S.prof>=chunk()){S.prof-=chunk();g++}if(g){S.rp+=g;S.rpt+=g}}
+  toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' ('+(pr>=0?'+':'−')+fmt(Math.abs(pr))+' since buyout) · it is public again'+(g?' · 🔬 +'+g+' RP':''),1);sfx(pr>0?'sell':'loss');draw()}
 let privSig='';
-function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.priv);const sig=k.map(q=>q+S.priv[q].v).join();if(sig===privSig)return;privSig=sig;
-  el.innerHTML=k.length?'<div class="sec">🏢 Private companies: you own 100%, so they are off the stock market. They pay you income, and you can sell one to take it public again.</div>'+k.map(q=>{const p=S.priv[q],x=SM[q];return `<div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><div><span class="sym">${q}</span> <span class="mu">${x[1]}</span><span class="tag">PRIVATE</span><div class="mu" style="font-size:.75em">Value ${fmt(p.v)} · earns ${fmt(p.v*PRIV_Y*3600)}/hr · ${p.n.toLocaleString()} sh</div></div><button class="btn" data-pv="${q}">Sell company</button></div>`}).join(''):''}
+function pvHTML(q){const p=S.priv[q],x=SM[q],pl=p.v-p.c,pc=p.c>0?pl/p.c*100:0,syn=pSyn(q);
+  return `<span class="sym">${q}</span> <span class="mu">${x[1]}</span><span class="tag">PRIVATE</span><div class="pvs">Value <b>${fmt(p.v)}</b> <span class="${pl>=0?'up':'dn'}">${pl>=0?'+':'−'}${fmt(Math.abs(pl))} (${pc>=0?'+':''}${pc.toFixed(1)}%)</span></div><div class="mu pvs">Earns ${fmt(pInc(q,p)*3600)}/hr${syn?' · 🤝 +'+syn*10+'% sector synergy':''} · ${p.n.toLocaleString()} sh</div>`}
+function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.priv),sig=k.join();
+  if(sig!==privSig){privSig=sig;el.innerHTML=k.length?''+k.map(q=>`<div class="row" data-pr="${q}" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><div class="pvx"></div><button class="btn" data-pv="${q}">Sell company</button></div>`).join(''):''}
+  k.forEach(q=>{const e=el.querySelector('[data-pr="'+q+'"] .pvx');if(e)e.innerHTML=pvHTML(q)})}
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),e=fillOf(i),ps=e>1e-9?p*(1-Math.exp(-e))/e:p,pr=q*(ps*(1-f)-h.c);
