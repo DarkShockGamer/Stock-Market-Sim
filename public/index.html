@@ -350,7 +350,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.3.4</div>
+<div id="title"><div id="ver">v0.3.5</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -503,7 +503,7 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and hot stocks before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheapest-stock pick in the header','+ Momentum tags and alerts for ones you do not own'][l]},
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
-{id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]},
+{id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (noisy readings)','+ shows confidence (sharper)','+ odds estimate (sharper)','+ collapse warnings (sharpest)'][l]},
 {id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going. Without it, your trades just cost you slippage',base:3,g:1.7,max:4,fx:l=>l?'+'+Math.round(FOLLOW*100*l)+'% follow-through':'no followers'},
 {id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Get better fills on big orders. You pay less slippage, but your trades still move the market just as much, so pumps stay strong',base:2,g:1.7,max:4,fx:l=>'-'+15*l+'% slippage on large orders'},
 ].map(u=>({rp:1,...u}));
@@ -876,18 +876,22 @@ const SUN=[['Airbnb','Travel'],['Stripe','Finance'],['Dropbox','Tech'],['Slack',
 ['Linear','Tech'],['Loom','Tech'],['Zapier','Tech'],['Retool','Tech'],['Supabase','Tech'],['Netlify','Tech'],['Grammarly','Tech'],['Asana','Tech'],['Miro','Tech'],['Calendly','Tech'],['Typeform','Tech'],['Perplexity','Tech'],['Midjourney','Tech'],['Replika','Tech'],['Magic Leap','Tech'],['Substack','Media'],['Patreon','Media'],['Medium','Media'],['Tumblr','Media'],['MySpace','Media'],['Vimeo','Media'],['SoundCloud','Media'],['Digg','Media'],['BuzzFeed','Media'],['Vice','Media'],['Glossier','Consumer'],['Away','Consumer'],['Dollar Shave Club','Consumer'],['Blue Apron','Consumer'],['HelloFresh','Consumer'],['Oatly','Consumer'],['Impossible Foods','Consumer'],['Liquid Death','Consumer'],['Rent the Runway','Consumer'],['Gopuff','Consumer'],['Soylent','Consumer'],['Chime','Finance'],['Klarna','Finance'],['Affirm','Finance'],['SoFi','Finance'],['Monzo','Finance'],['Revolut','Finance'],['Wise','Finance'],['Venmo','Finance'],['Wealthfront','Finance'],['Acorns','Finance'],['FTX','Finance'],['Celsius','Finance'],['Theranos','Health'],['23andMe','Health'],['Oscar Health','Health'],['Hims','Health'],['Calm','Health'],['Headspace','Health'],['Noom','Health'],['Zocdoc','Health'],['Turo','Travel'],['Vacasa','Travel'],['Sonder','Travel'],['Getaround','Travel'],['Hopper','Travel'],['Hyperloop One','Travel'],['Nikola','Auto'],['Fisker','Auto'],['Lordstown','Auto'],['Canoo','Auto'],['Lucid','Auto'],['Zoox','Auto'],['Waymo','Auto'],['Faraday Future','Auto'],['Astra','Space'],['Virgin Orbit','Space'],['Relativity','Space'],['Firefly','Space'],['Planet Labs','Space'],['Axiom Space','Space'],['Sunrun','Energy'],['Northvolt','Energy'],['Heliogen','Energy'],['QuantumScape','Energy'],['Solyndra','Energy'],['Boom Supersonic','Industrial'],['Formlabs','Industrial'],['Anduril','Industrial'],['Divergent','Industrial'],['Starry','Telecom'],['Ligado','Telecom'],['Helium','Telecom']];
 const TYPES=['rocket','wander','doomed'],PRI={rocket:.22,wander:.20,doomed:.58},OTH={rocket:['wander','doomed'],wander:['rocket','doomed'],doomed:['rocket','wander']};
 const SIGT={rocket:'🟢 Looks strong',wander:'🟡 Unclear',doomed:'🔴 Red flags'};
-const accOf=L=>.4+.1*L;
-function odds(sg,a){const r={};let t=0;TYPES.forEach(f=>{r[f]=PRI[f]*(f===sg?a:(1-a)/2);t+=r[f]});TYPES.forEach(f=>r[f]/=t);return r}
-function suSig(l){const L=lv('sscout');if(!L)return null;return l.u<accOf(L)?l.type:OTH[l.type][l.w]}
+// Startup Scout: every startup gets its own noisy reading (fixed per company), and the odds come from Bayes on that reading.
+// Higher scout levels shrink the noise, so readings get sharper. Two companies with the same label can still show different odds.
+const SIGMA=[0,1.3,1.1,.95,.8],MU={rocket:1,wander:0,doomed:-1};
+function suRead(l){const L=lv('sscout');if(!L)return null;
+  const z=l.z!==undefined?l.z:(l.u-.5)*3.46,x=MU[l.type]+SIGMA[L]*z,v=2*SIGMA[L]*SIGMA[L],r={};let t=0;
+  TYPES.forEach(f=>{r[f]=PRI[f]*Math.exp(-(x-MU[f])*(x-MU[f])/v);t+=r[f]});TYPES.forEach(f=>r[f]/=t);
+  const best=TYPES.reduce((m,f)=>r[f]>r[m]?f:m);return{r,c:r[best],sg:r[best]<.45?'wander':best}}
 function suHint(l){const L=lv('sscout');if(!L)return 'Unknown company · no intel (see Startup Scout in Upgrades)';
-  const sg=suSig(l),a=accOf(L);let t='Scout: '+SIGT[sg];if(L>=2)t+=' · '+Math.round(a*100)+'% reliable';
-  if(L>=3){const r=odds(sg,a);t+=' · strong '+Math.round(r.rocket*100)+'% / doomed '+Math.round(r.doomed*100)+'%'}return t}
+  const d=suRead(l);let t='Scout: '+SIGT[d.sg];if(L>=2)t+=' · '+Math.round(d.c*100)+'% confident';
+  if(L>=3)t+=' · strong '+Math.round(d.r.rocket*100)+'% / doomed '+Math.round(d.r.doomed*100)+'%';return t}
 function suNote(kind,title,body){if(!note(kind,title,body,{ttl:16000}))toast(title+' · '+body,1)}
 function suSpawn(){const U=S.su,used=new Set(U.list.map(l=>l.name).concat((S.grads||[]).map(d=>d.n))),pool=SUN.filter(x=>!used.has(x[0]));if(!pool.length)return;
   const x=pool[Math.random()*pool.length|0],r=Math.random(),t=r<.22?'rocket':r<.42?'wander':'doomed';
   const b=x[0].replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4);let sym=b,k=1;while(SM[sym]||U.list.some(q=>q.sym===sym))sym=b.slice(0,3)+(k++);
   const mu=t==='rocket'?.0012+Math.random()*.0035:t==='wander'?-.008+Math.random()*.006:-.012+Math.random()*.009;
-  const l={id:++U.id,sym,name:x[0],sec:x[1],type:t,u:Math.random(),w:Math.random()<.5?0:1,p:2,age:0,mu,sg:.07,n:0,c:0,h:Array(40).fill(2),warned:0};
+  const l={id:++U.id,sym,name:x[0],sec:x[1],type:t,u:Math.random(),w:Math.random()<.5?0:1,z:gauss(),p:2,age:0,mu,sg:.07,n:0,c:0,h:Array(40).fill(2),warned:0};
   if(t==='doomed'&&Math.random()<.45)l.tc=40+Math.round(Math.random()*200);
   SEC[sym]=x[1];U.list.push(l)}
 function suBuy(id,pc){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1+feeRate(),q=Math.floor(S.cash*pc/100/(l.p*f));
