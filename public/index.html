@@ -107,6 +107,7 @@ html[data-ns] .sp{display:none}
 .pips{color:var(--ac);font-size:.75em;letter-spacing:.1em}
 .eff{color:var(--tx);opacity:.85;font-size:.8em}
 .upg .btn{min-width:4.2rem;font-weight:600}
+.upg .botsw{margin-top:.4rem;font-size:.82em;padding:.35rem .7rem}.upg .botsw.on{color:var(--up);border-color:color-mix(in srgb,var(--up) 50%,var(--line))}.upg .botsw.off{color:var(--dn);border-color:color-mix(in srgb,var(--dn) 50%,var(--line))}
 #ups:not(.hide){display:flex;flex-direction:column;gap:.3571rem}
 #upchips{padding:0}
 #title .btn{text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed','Arial Narrow','Roboto Condensed',system-ui,sans-serif;font-weight:600;white-space:nowrap}
@@ -337,7 +338,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.3.2</div>
+<div id="title"><div id="ver">v0.3.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -365,7 +366,6 @@ html[data-theme=light] .cc.maj{color:#9a7400}
   <div class="gw" id="dgw"><svg id="dg" viewBox="0 0 300 150" preserveAspectRatio="none"></svg><span class="gh" id="dhi"></span><span class="gl" id="dlo"></span></div>
   <div id="dtip"></div>
   <div id="dacts"><button class="btn" data-a="b1">Buy 1</button><button class="btn" data-a="b10">Buy 10</button><button class="btn" data-a="bm">Max</button><button class="btn" data-a="s1">Sell 1</button><button class="btn" data-a="sa">Sell all</button></div>
-  <div id="dimp" class="mu" style="font-size:.78em;line-height:1.35;padding:.2rem .1rem"></div>
   <div id="down"></div>
 </div></div>
 <div id="set" class="hide"><div class="card">
@@ -483,7 +483,7 @@ const SAL=100000,PAYT=180,PAYC=Math.round(SAL/26); // $100k/yr, one $3,846 check
 const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭'],['Shadow','🕶️']];
 const UPS=[ // Bought with Research Points. None of these change how prices behave; they only help the player.
 {id:'fee',cat:'Trading',ic:'💱',n:'Broker Discount',d:'Lower fee on every buy and sell',base:2,g:1.5,max:5,fx:l=>Math.max(0,.5-.1*l).toFixed(1)+'% trade fee'},
-{id:'bot',cat:'Trading',ic:'🤖',n:'Auto-Trader',d:'Buys dips and sells peaks in stocks for you',base:4,g:1.55,max:6,fx:l=>l?'acts every '+Math.max(2,10-l)+'s, up to '+(10+4*l)+'% of cash':'off'},
+{id:'bot',cat:'Trading',ic:'🤖',n:'Auto-Trader',d:'Buys dips and sells peaks in stocks for you. Never owns more than 50% of any company, and you can switch it off any time',base:4,g:1.55,max:6,fx:l=>l?'acts every '+Math.max(2,10-l)+'s, up to '+(10+4*l)+'% of cash':'off'},
 {id:'div',cat:'Income',ic:'💵',n:'Dividends',d:'Your holdings pay you a little every second',base:2,g:1.55,max:8,fx:l=>'+'+(l*DIVR*360000).toFixed(1)+'% of holdings per hour'},
 {id:'int',cat:'Income',ic:'🏦',n:'Savings Account',d:'Idle cash earns interest',base:2,g:1.5,max:5,fx:l=>'+'+(l*INTR*360000).toFixed(1)+'% of cash per hour'},
 {id:'yld',cat:'Income',ic:'👑',n:'Dividend Aristocrat',d:'Boosts all dividends, interest and fund yield',base:3,g:1.7,max:4,fx:l=>'+'+15*l+'% income'},
@@ -802,18 +802,19 @@ function tick(){
   const ym=1+.15*lv('yld');let hvv=0,fy=0;
   Object.entries(S.hold).forEach(([k,h])=>{const v=h.n*S.p[k].p;hvv+=v;fy+=v*(SM[k][8]||0)});fy+=pvI();
   S.cash+=(S.cash*lv('int')*INTR+hvv*lv('div')*DIVR+fy)*ym;
-  const bl=lv('bot');if(bl&&S.tick%Math.max(2,10-bl)===0)bot(bl);
+  const bl=lv('bot');if(bl&&!S.botOff&&S.tick%Math.max(2,10-bl)===0)bot(bl);
   if(S.tick>=S.payn){S.payn+=PAYT;S.cash+=PAYC;S.paid+=PAYC;toast('💼 Paycheck +'+fmt(PAYC));sfx('cash')}
   suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();bump('ticks');if(S.tick%5===0)checkAch();
   draw();
 }
 function bot(l){
+  const cap=x=>Math.floor(maxSh(x)/2),held=x=>(S.hold[x[0]]||{}).n||0; // the bot never takes a company past 50%
   const un=STOCKS.filter(x=>isOpen(x)&&!S.priv[x[0]]&&!isF(x)&&!isC(x));let best=null,worst=null;
   un.forEach(x=>{const o=S.p[x[0]],a=o.h.reduce((q,w)=>q+w,0)/o.h.length,d=o.p/a-1;
-    if(d<-.012&&(!best||d<best.d))best={s:x[0],d};
+    if(d<-.012&&held(x)<cap(x)&&(!best||d<best.d))best={s:x[0],d};
     if(d>.012&&S.hold[x[0]]&&(!worst||d>worst.d))worst={s:x[0],d}});
   if(worst){const h=S.hold[worst.s];sell(worst.s,Math.max(1,Math.ceil(h.n*.5)),true)}
-  if(best){const p=S.p[best.s].p;buy(best.s,Math.floor(S.cash*(.1+.04*l)/(p*(1+feeRate()))),true)}
+  if(best){const x=SM[best.s],p=S.p[best.s].p,q=Math.min(Math.floor(S.cash*(.1+.04*l)/(p*(1+feeRate()))),cap(x)-held(x));if(q>=1)buy(best.s,q,true)}
 }
 const ACHV=[
 ['nw1','Getting Started','Reach $10,000 net worth',1,()=>S.max>=1e4],['nw2','Six Figures','Reach $100,000 net worth',2,()=>S.max>=1e5],
@@ -1049,8 +1050,6 @@ function drawD(){
   $('#dhi').textContent='High $'+mx.toFixed(2);$('#dlo').textContent='Low $'+mn.toFixed(2);
   const pr=o.p*(1+feeRate());
   const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
-  {const b10=planBuy(cur,10,true).q?planBuy(cur,10,true).i:0,bm=planBuy(cur,1e15,true).i;
-    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price but cost you slippage, so buying and selling right away loses money. Pump Network (Shadow) brings followers to push it further.'+(lv('block')?'<br>Block desk: you pay '+15*lv('block')+'% less slippage on this move.':'')}
   $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   document.querySelectorAll('#dacts [data-a^=b]').forEach(b=>b.disabled=S.cash<pr||full);
@@ -1077,7 +1076,7 @@ function build(){
   privSig='';applyFilter();
   $('#funds').innerHTML='<div class="sec">Mutual funds: slower growth, much steadier, rarely crash. Gold tends to hold up when stocks fall.</div>'+FD.map(srow).join('');
   $('#crypto').innerHTML='<div class="sec">Crypto: huge swings and frequent deep crashes.</div>'+CR.map(srow).join('');
-  const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><div class="utt"><b>${u.n}</b><span class="pips"></span></div><div class="ud">${u.d}</div><div class="eff"></div></div><button class="btn"></button></div>`;
+  const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><div class="utt"><b>${u.n}</b><span class="pips"></span></div><div class="ud">${u.d}</div><div class="eff"></div>${u.id==='bot'?'<button class="btn botsw" data-bot="1"></button>':''}</div><button class="btn"></button></div>`;
   $('#ups').innerHTML=`<div class="row rsc"><div class="rtop"><div><div class="rlbl">🔬 Research points</div><div class="rbig"><span id="rpa">0</span><small>RP available</small></div></div><span class="pill" id="rpb"></span></div>
     <div class="rprog"><div class="rph"><span>Next RP from sales profit</span><b id="rpg"></b></div><div class="bar"><i id="rpbar"></i></div></div>
     <div class="rinfo"><span class="ri">🎯</span><span id="rpn"></span></div>
@@ -1123,7 +1122,8 @@ function draw(){
     const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),cost=Math.round(u.base*Math.pow(u.g,l));
     r.querySelector('.pips').textContent='●'.repeat(l)+'○'.repeat(u.max-l);
     r.querySelector('.eff').innerHTML=l>=u.max?`<span class="lbl">Maxed</span><span class="pill mx">${u.fx(l)}</span>`:`<span class="lbl">Now</span><span class="pill now">${u.fx(l)}</span><span class="ar">→</span><span class="lbl">Next</span><span class="pill nx">${u.fx(l+1)}</span>`;
-    const b=r.querySelector('button');b.textContent=l>=u.max?'MAX':u.rp?'🔬 '+cost:fmt(cost);b.disabled=l>=u.max||(u.rp?S.rp:S.cash)<cost;});
+    const b=r.querySelector(':scope>button');b.textContent=l>=u.max?'MAX':u.rp?'🔬 '+cost:fmt(cost);b.disabled=l>=u.max||(u.rp?S.rp:S.cash)<cost;
+    const sw=r.querySelector('.botsw');if(sw){sw.style.display=l?'':'none';sw.textContent=S.botOff?'🤖 OFF · tap to turn on':'🤖 ON · tap to turn off';sw.classList.toggle('off',!!S.botOff);sw.classList.toggle('on',!S.botOff)}});
   document.querySelectorAll('#upchips .chip').forEach(b=>{const c=UCATS.find(q=>q[0]===b.dataset.uc);
     const can=UPS.some(u=>u.cat===c[0]&&lv(u.id)<u.max&&S.rp>=Math.round(u.base*Math.pow(u.g,lv(u.id))));b.textContent=c[1]+' '+c[0]+(can?' •':'')});
 }
@@ -1131,6 +1131,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(b&&b.dataset.pv){sellPriv(b.dataset.pv);return}if(!b){const q=e.target.closest('.row[data-s]');if(q&&!q.classList.contains('lock'))openD(q.dataset.s);return}
   if(b.dataset.su){const r=b.closest('.row'),a=b.dataset.su;
     if(a==='b')suBuy(+r.dataset.l,+b.dataset.pc);else if(a==='half')suSell(+r.dataset.l,1);else if(a==='all')suSell(+r.dataset.l,0);return}
+  if(b.dataset.bot){S.botOff=!S.botOff;sfx('pop');toast(S.botOff?'🤖 Auto-Trader switched off':'🤖 Auto-Trader switched on');draw();save();return}
   if(b.dataset.srt){srtU=!srtU;try{localStorage.setItem('stockidle.sortunl',srtU?'1':'0')}catch(e){}applyFilter();return}
   if(b.dataset.sec!==undefined){fsec=b.dataset.sec;applyFilter();return}
   if(b.dataset.uc!==undefined){fup=b.dataset.uc;applyUp();draw();return}
