@@ -485,7 +485,7 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
 {id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (50% reliable)','+ shows reliability (60%)','+ odds estimate (70%)','+ collapse warnings (80%)'][l]},
-{id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going longer',base:3,g:1.7,max:4,fx:l=>'+'+25*l+'% follow-through'},
+{id:'pump',cat:'Shadow',ic:'📣',n:'Pump Network',d:'Followers pile in after your big trades, so the move keeps going. Without it, your trades just cost you slippage',base:3,g:1.7,max:4,fx:l=>l?'+'+Math.round(FOLLOW*100*l)+'% follow-through':'no followers'},
 {id:'block',cat:'Shadow',ic:'🏛️',n:'Block Trading Desk',d:'Get better fills on big orders. You pay less slippage, but your trades still move the market just as much, so pumps stay strong',base:2,g:1.7,max:4,fx:l=>'-'+15*l+'% slippage on large orders'},
 ].map(u=>({rp:1,...u}));
 // Big company events: [symbol, event, good outcome, bad outcome, chance of good, typical move]
@@ -837,8 +837,8 @@ const ACHV=[
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
 function checkAch(){const got=[];ACHV.forEach(a=>{if(!S.ach[a.id]&&a.f()){const now=Date.now();S.ach[a.id]=now;const first=!G.a[a.id];if(first){G.a[a.id]=now;S.rp+=a.rp;S.rpt+=a.rp}got.push({n:a.n,d:a.d,rp:a.rp,first})}});
   if(!got.length)return;wr(GK,JSON.stringify(G));
-  if(got.length<=2)got.forEach(a=>note('ach',a.n,a.d+(a.first?' · +'+a.rp+' RP':''),{ttl:10000}));
-  else note('ach',got.length+' achievements unlocked','+'+got.reduce((q,a)=>q+(a.first?a.rp:0),0)+' RP total · see the Achievements screen',{ttl:10000})}
+  if(got.length<=2)got.forEach(a=>note('ach',a.n,a.d+(a.first&&!isLive()?' · +'+a.rp+' RP':''),{ttl:10000}));
+  else note('ach',got.length+' achievements unlocked',(isLive()?'see the Achievements screen':'+'+got.reduce((q,a)=>q+(a.first?a.rp:0),0)+' RP total · see the Achievements screen'),{ttl:10000})}
 function renderAch(glob){const src=glob?G.a:S.ach,n=ACHV.filter(a=>src[a.id]).length;
   $('#achh').innerHTML='<svg class="ico"><use href="#i-medal"/></svg><span>'+(glob?'All-time ':'This save ')+n+'/'+ACHV.length+'</span>';
   $('#adesc').textContent=glob?'Everything you have ever unlocked, across all of your saves. The Research Points bonus is only paid the first time.':'Achievements earned in this save (Slot '+slot+'). One you earned in another save counts here when you earn it again, but its RP bonus is only paid once.';
@@ -966,9 +966,11 @@ function unlock(s){const x=SM[s];if(isOpen(x))return;
 // ===== Market impact & manipulation =====
 // Your own trades move prices. Impact grows with the share of the company you trade (square-root law), you pay slippage,
 // and big moves attract momentum traders ("hype").
-const IMP=.30,HYPE=.035,REV_T=120;
+const IMP=.30,HYPE=.035,REV_T=120,SLIP=1.6,FOLLOW=.5;
+// Without upgrades a trade costs more slippage than the move it causes (SLIP>1), and nobody follows you in, so buy-then-sell just loses money.
+// Pump Network (follow-through) and Block Trading Desk (less slippage) are what make moving the market profitable.
 const impOf=(s,q)=>isLive()?0:Math.min(.30,IMP*Math.sqrt(Math.max(0,q)/maxSh(SM[s]))), // how far your trade moves the market price
-  fillOf=i=>i*(1-.15*lv('block')); // Block Trading Desk: the part of that move you actually pay for in slippage
+  fillOf=i=>i*SLIP*(1-.15*lv('block')); // Block Trading Desk: the part of that move you actually pay for in slippage
 function planBuy(s,q,imp){const o=S.p[s],f=1+feeRate(),room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
   q=Math.min(q,Math.floor(S.cash/(o.p*f)),room);let i=0,pe=o.p;
   for(let k=0;k<8&&q>=1;k++){i=imp?impOf(s,q):0;{const e=fillOf(i);pe=e>1e-9?o.p*(Math.exp(e)-1)/e:o.p}const c=q*pe*f;if(c<=S.cash)break;q=Math.floor(q*S.cash/c*.999)}
@@ -977,14 +979,14 @@ function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, th
   if(isLive())return; // real prices: your trades do not move them
   const o=S.p[s];o.p=Math.max(.5,o.p*Math.exp(dir*i));
   if(i<.01)return;
-  o.m=(o.m||0)+dir*i*HYPE*(1+.25*lv('pump'))*(dir>0?1:.85);
+  o.m=(o.m||0)+dir*i*HYPE*FOLLOW*lv('pump')*(dir>0?1:.85); // followers only show up with Pump Network
   if(i>=.02){const sc=SEC[s];if(sc)STOCKS.forEach(x=>{if(x[0]!==s&&SEC[x[0]]===sc&&S.p[x[0]])S.p[x[0]].m=(S.p[x[0]].m||0)+dir*i*.004})}}
 function manip(s,dir,i,q){ // returns true when this trade reverses a recent market-moving trade (pump & dump pattern)
   if(!S.lt)S.lt={};if(i<.01)return false;
   bmax('moved',i);
   const lt=S.lt[s],rev=!!(lt&&lt.d!==dir&&S.tick-lt.t<REV_T&&lt.i>=.01);
   S.lt[s]={d:dir,t:S.tick,i};
-  if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market and attract followers.',1)}
+  if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market, but you pay slippage. Pump Network brings followers.',1)}
   return rev}
 function buy(s,q,silent){
   const room=maxSh(SM[s])-((S.hold[s]||{}).n||0);
@@ -1041,7 +1043,7 @@ function drawD(){
   const pr=o.p*(1+feeRate());
   const ot=ownTxt(x),st=(l,v)=>`<div class="stat"><span>${l}</span><b>${v}</b></div>`;
   {const b10=planBuy(cur,10,true).q?planBuy(cur,10,true).i:0,bm=planBuy(cur,1e15,true).i;
-    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price and attract followers. Pump it, then sell into the hype.'+(lv('block')?'<br>Block desk: you pay '+15*lv('block')+'% less slippage on this move.':'')}
+    $('#dimp').innerHTML=`Price impact: Buy 10 <b>+${(b10*100).toFixed(1)}%</b> · Max <b>+${(bm*100).toFixed(1)}%</b>`+(h?` · Sell all <b>−${(impOf(cur,h.n)*100).toFixed(1)}%</b>`:'')+'<br>Big trades move the price but cost you slippage, so buying and selling right away loses money. Pump Network (Shadow) brings followers to push it further.'+(lv('block')?'<br>Block desk: you pay '+15*lv('block')+'% less slippage on this move.':'')}
   $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   document.querySelectorAll('#dacts [data-a^=b]').forEach(b=>b.disabled=S.cash<pr||full);
@@ -1173,7 +1175,7 @@ function renderSlots(msg){
     if(!o)return `<div class="slot empty ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">Empty slot</span>${cur?'<span class="pill2">Selected</span>':''}</div><div class="sstats"><span>Classic: $2,000 · Live: real prices, $10,000</span></div></div><div class="sb"><button class="btn go" data-sa="new">${IC('plus')}Classic</button><button class="btn go" data-sa="newlive">${IC('chart')}Live</button></div></div>`;
     const hn=Object.keys(o.hold||{}).length,nwv=slotNW(o),gain=nwv-(o.start||2000);
     return `<div class="slot ${cur?'cur':''}" data-n="${n}"><div class="sn">${n}</div><div class="sm"><div class="t1"><span class="big">${fmt(nwv)}</span>${o.mode==='live'?'<span class="pill2 lv">Live</span>':''}<span class="${gain>=0?'up':'dn'}" style="font-size:.8em">${gain>=0?'▲':'▼'} ${fmt(Math.abs(gain))}</span>${cur?'<span class="pill2">Selected</span>':''}</div>
-      <div class="sstats"><span>${IC('clock')}${fmtT(o.tick||0)} played</span><span>${IC('chart')}${hn} holding${hn===1?'':'s'}</span><span>${IC('flask')}${o.rpt||0} RP earned</span>${o.ach?`<span>${IC('medal')}${Object.keys(o.ach).length}/${ACHV.length}</span>`:''}</div>
+      <div class="sstats"><span>${IC('clock')}${fmtT(o.tick||0)} played</span><span>${IC('chart')}${hn} holding${hn===1?'':'s'}</span>${o.mode==='live'?'':`<span>${IC('flask')}${o.rpt||0} RP earned</span>`}${o.ach?`<span>${IC('medal')}${Object.keys(o.ach).length}/${ACHV.length}</span>`:''}</div>
       <div class="sstats"><span>Last played ${ago(o.last||Date.now())}</span></div></div>
       <div class="sb"><button class="btn go" data-sa="load">${IC('play')}Load</button><button class="btn ghost" data-sa="del" title="Delete this save">${IC('trash')}</button></div></div>`}).join('');
   $('#smsg').textContent=msg||''}
