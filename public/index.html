@@ -483,7 +483,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.8.3</div>
+<div id="title"><div id="ver">v0.8.4</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1467,6 +1467,7 @@ function drawStats(){const el=$('#stats');if(el.classList.contains('hide'))retur
     ${kpi('Capital gains tax',fmt(S.tax||0),'Current rate '+(taxRate()*100).toFixed(0)+'% on profits')}
     ${kpi('Realized P/L',money(real),rw+rl?'Win rate '+Math.round(rw/(rw+rl)*100)+'% · '+rw+'W '+rl+'L':'No sales yet',real>=0?'up':'dn')}
     ${kpi('Positions',hold.length+(svv>0?' + startups':'')+(pvv>0?' + private':''),new Set(hold.map(q=>SEC[q.k]||(isF(SM[q.k])?'Funds':isC(SM[q.k])?'Crypto':'Other'))).size+' sector'+(new Set(hold.map(q=>SEC[q.k]||'x')).size===1?'':'s'))}</div>`;
+  const kpisH=h;h=''; // stats order: Allocation, then the boxes, then Net worth over time, then the rest
   // net worth over time
   const pts=(S.nwh||[]).map(p=>p[1]);pts.push(W);
   h+='<div class="sec">Net worth over time</div><div class="pcard">';
@@ -1474,13 +1475,15 @@ function drawStats(){const el=$('#stats');if(el.classList.contains('hide'))retur
   else{const mn=Math.min(...pts,S.start),mx=Math.max(...pts,S.start),rg=(mx-mn)||1,Wd=300,Hd=100,X=i=>(i*Wd/(pts.length-1)).toFixed(1),Y=v=>(Hd-4-(v-mn)/rg*(Hd-8)).toFixed(1),line=pts.map((v,i)=>X(i)+','+Y(v)).join(' '),col=W>=S.start?colUp:colDn;
     h+=`<div class="gw" style="height:6.5rem;cursor:default"><svg viewBox="0 0 ${Wd} ${Hd}" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><polygon points="0,${Hd} ${line} ${Wd},${Hd}" fill="${col}" opacity=".15"/><line x1="0" x2="${Wd}" y1="${Y(S.start)}" y2="${Y(S.start)}" stroke="#8b97a6" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" opacity=".6"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg><span class="gh">High ${fmt(mx)}</span><span class="gl">Low ${fmt(mn)}</span></div><div class="mu">Dashed line = your starting ${fmt(S.start)}</div>`}
   h+='</div>';
+  const nwH=h;h='';
   // allocation donut
   let sl=hold.map(q=>({n:q.k,v:q.v}));
   if(sl.length>6){const rest=sl.slice(6);sl=sl.slice(0,6);sl.push({n:'Other ('+rest.length+')',v:rest.reduce((a,q)=>a+q.v,0)})}
   if(svv>0)sl.push({n:'Startups',v:svv});if(pvv>0)sl.push({n:'Private',v:pvv});sl.push({n:'Cash',v:S.cash,c:'#64748b'});
   sl.forEach((q,i)=>{if(!q.c)q.c=PAL[i%PAL.length]});
   let cum=0;const arcs=W>0?sl.filter(q=>q.v>0).map(q=>{const p=q.v/W*100,s=`<circle cx="18" cy="18" r="15.9155" fill="none" stroke="${q.c}" stroke-width="5" stroke-dasharray="${p.toFixed(2)} ${(100-p).toFixed(2)}" stroke-dashoffset="${(25-cum).toFixed(2)}"/>`;cum+=p;return s}).join(''):'';
-  h+=`<div class="sec">Allocation</div><div class="pcard donut"><svg viewBox="0 0 36 36" class="dn-svg"><circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--line)" stroke-width="5"/>${arcs}</svg><div class="leg">${sl.filter(q=>q.v>0).map(q=>`<div><i style="background:${q.c}"></i><span>${esc(q.n)}</span><b>${W>0?(q.v/W*100).toFixed(1):0}%</b></div>`).join('')}</div></div>`;
+  h+=`<div class="sec">Allocation</div><div class="pcard donut"><svg viewBox="-1 -1 38 38" class="dn-svg"><circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--line)" stroke-width="5"/>${arcs}</svg><div class="leg">${sl.filter(q=>q.v>0).map(q=>`<div><i style="background:${q.c}"></i><span>${esc(q.n)}</span><b>${W>0?(q.v/W*100).toFixed(1):0}%</b></div>`).join('')}</div></div>`;
+  h+=kpisH+nwH;
   // sector exposure
   const sec={};hold.forEach(q=>{const x=SM[q.k],n=SEC[q.k]||(isF(x)?'Funds':isC(x)?'Crypto':'Other');sec[n]=(sec[n]||0)+q.v});if(svv>0)sec.Startups=svv;if(pvv>0)sec.Private=pvv;
   const se=Object.entries(sec).sort((a,b)=>b[1]-a[1]);
