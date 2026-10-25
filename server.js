@@ -7,6 +7,7 @@
 // free tier (60 calls/min) is enough: the server refreshes about 1 symbol per 1.1 seconds, and only
 // while somebody is actually playing a Live game.
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
+const cloud = require('./cloud');
 const PUB = path.join(__dirname, 'public');
 const TYPES = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css',
   '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' };
@@ -179,6 +180,7 @@ function quotes(req, res) {
 
 http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
+  if (cloud.handle(req, res, p)) return;
   if (p === '/api/quotes') return quotes(req, res);
   if (p === '/api/history') return history(req, res);
   if (p === '/api/news') return newsApi(req, res);
@@ -190,4 +192,5 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
     res.end(d);
   });
-}).listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Running on ' + (process.env.PORT || 3000) + (KEY ? '' : ' (no FINNHUB_API_KEY set: Live Market mode is disabled)')));
+}).listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Running on ' + (process.env.PORT || 3000) + (KEY ? '' : ' (no FINNHUB_API_KEY set: Live Market mode is disabled)')
+  + (cloud.enabled ? ' | cloud saves ON, data in ' + cloud.DATA + (process.env.DATA_DIR ? '' : ' (set DATA_DIR to a Railway Volume or saves vanish on redeploy)') : ' | cloud saves off (set GOOGLE_CLIENT_ID)')));
