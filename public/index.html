@@ -482,7 +482,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.7.1</div>
+<div id="title"><div id="ver">v0.7.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1086,11 +1086,12 @@ function suSpawn(){const U=S.su,used=new Set(U.list.map(l=>l.name).concat((S.gra
   const l={id:++U.id,sym,name:x[0],sec:x[1],type:t,u:Math.random(),w:Math.random()<.5?0:1,z:gauss(),p:2,age:0,mu,sg:.07,n:0,c:0,h:Array(40).fill(2),warned:0};
   if(t==='doomed'&&Math.random()<.45)l.tc=40+Math.round(Math.random()*200);
   SEC[sym]=x[1];U.list.push(l)}
-function suBuy(id,pc){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1+feeRate(),q=Math.floor(S.cash*pc/100/(l.p*f));
+const suMax=l=>Math.max(0,Math.floor(S.cash/(l.p*(1+feeRate())))),suBQ=l=>qtyFor(QM,suMax(l)),suSQ=l=>qtyFor(QM,l.n); // same trade-size selector as normal stocks
+function suBuy(id,q){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1+feeRate();q=Math.min(Math.floor(q),suMax(l));
   if(q<1){toast('Not enough cash',1);return}
   S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;bump('trades');bump('sinv');sfx('buy');draw()}
-function suSell(id,half){const l=S.su.list.find(q=>q.id===id);if(!l||l.n<1)return;
-  const q=half?Math.max(1,Math.floor(l.n/2)):l.n,f=feeRate(),pr=q*(l.p*(1-f)-l.c);
+function suSell(id,q){const l=S.su.list.find(q=>q.id===id);if(!l||l.n<1)return;
+  q=Math.min(Math.floor(q),l.n);if(q<1)return;const f=feeRate(),pr=q*(l.p*(1-f)-l.c);
   S.cash+=q*l.p*(1-f);l.n-=q;bump('trades');S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',l.sym,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales')}}
@@ -1121,14 +1122,14 @@ function drawSu(){const el=$('#startups');if(el.classList.contains('hide'))retur
   if(el.dataset.sig!==sig){el.dataset.sig=sig;
     el.innerHTML='<div class="sec">Startups: unknown young companies that start near $2. If one climbs to $10 it goes public and moves to the Market list. If it falls to $0 it goes bankrupt and your shares are worthless. You choose how much to put in, and you can sell any time. Most fail.</div>'+
     '<div class="row" style="display:block"><b>📊 Track record</b><div class="mu rec"></div></div>'+
-    (U.list.length?U.list.map(l=>`<div class="row" data-l="${l.id}"><div><span class="sym">${l.sym}</span> <span class="mu">${l.name}</span><span class="tag">STARTUP</span><span class="tag">${l.sec}</span><svg class="sp" viewBox="0 0 56 20"><polyline fill="none" stroke-width="1.6" points=""/></svg><div class="mu oh" style="font-size:.75em"></div></div><div class="px"><span class="v"></span> <span class="c mu"></span></div><div style="grid-column:1/-1"><div class="bar"><i></i></div><div class="mu" style="font-size:.75em">Bankrupt at $0 · goes public at $10</div></div><div class="acts"><span class="mu">Invest:</span><button class="btn" data-su="b" data-pc="5">5%</button><button class="btn" data-su="b" data-pc="10">10%</button><button class="btn" data-su="b" data-pc="25">25%</button><button class="btn" data-su="b" data-pc="50">50%</button><button class="btn" data-su="b" data-pc="100">All</button></div><div class="acts"><button class="btn" data-su="half">Sell half</button><button class="btn" data-su="all">Sell all</button><span class="own mu"></span></div></div>`).join(''):'<div class="mu" style="padding:.4rem .3rem">New startups are on the way...</div>')}
+    (U.list.length?U.list.map(l=>`<div class="row" data-l="${l.id}"><div><span class="sym">${l.sym}</span> <span class="mu">${l.name}</span><span class="tag">STARTUP</span><span class="tag">${l.sec}</span><svg class="sp" viewBox="0 0 56 20"><polyline fill="none" stroke-width="1.6" points=""/></svg><div class="mu oh" style="font-size:.75em"></div></div><div class="px"><span class="v"></span> <span class="c mu"></span></div><div style="grid-column:1/-1"><div class="bar"><i></i></div><div class="mu" style="font-size:.75em">Bankrupt at $0 · goes public at $10</div></div><div class="acts"><button class="btn" data-su="buy">Buy</button>${qSel()}<button class="btn" data-su="sell">Sell</button><span class="own mu"></span></div></div>`).join(''):'<div class="mu" style="padding:.4rem .3rem">New startups are on the way...</div>')}
   U.list.forEach(l=>{const r=el.querySelector('[data-l="'+l.id+'"]');if(!r)return;const ch=l.p/2-1,f=1+feeRate();
     r.querySelector('.v').textContent='$'+l.p.toFixed(2);const c=r.querySelector('.c');c.textContent=(ch>=0?'+':'')+(ch*100).toFixed(0)+'%';c.className='c '+(ch>=0?'up':'dn');
     r.querySelector('.bar i').style.width=Math.min(100,l.p/10*100)+'%';
     r.querySelector('.oh').textContent=suHint(l);
     r.querySelector('.own').textContent=l.n?l.n+' sh · '+((l.p/l.c-1>=0?'+':'')+((l.p/l.c-1)*100).toFixed(0))+'%':'';
-    r.querySelectorAll('[data-pc]').forEach(b=>b.disabled=Math.floor(S.cash*b.dataset.pc/100/(l.p*f))<1);
-    r.querySelectorAll('[data-su=half],[data-su=all]').forEach(b=>b.disabled=l.n<1);
+    {const bq=suBQ(l),sq=suSQ(l),bb=r.querySelector('[data-su=buy]'),sb=r.querySelector('[data-su=sell]');
+      bb.textContent=bq?'Buy '+nk(bq):'Buy';bb.disabled=bq<1;sb.textContent=sq?'Sell '+nk(sq):'Sell';sb.disabled=sq<1}
     const mn=Math.min(...l.h),mx=Math.max(...l.h),pts=l.h.map((v,i)=>(i*56/Math.max(1,l.h.length-1)).toFixed(1)+','+(18-(v-mn)/((mx-mn)||1)*16).toFixed(1)).join(' ');
     const pl=r.querySelector('polyline');pl.setAttribute('points',pts);pl.setAttribute('stroke',l.p>=l.h[0]?colUp:colDn)});
   const rec=el.querySelector('.rec');if(rec)rec.textContent='Net '+(U.net>=0?'+':'-')+fmt(Math.abs(U.net))+' · '+(U.busts||0)+' bankrupt · '+(U.grads||0)+' went public · invested now '+fmt(sv())}
@@ -1372,7 +1373,7 @@ document.addEventListener('click',e=>{
   if(qAnchor)closeQ();
   const b=e.target.closest('button');if(b&&b.dataset.pv){sellPriv(b.dataset.pv);return}if(!b){const q=e.target.closest('.row[data-s]');if(q&&!q.classList.contains('lock'))openD(q.dataset.s);return}
   if(b.dataset.su){const r=b.closest('.row'),a=b.dataset.su;
-    if(a==='b')suBuy(+r.dataset.l,+b.dataset.pc);else if(a==='half')suSell(+r.dataset.l,1);else if(a==='all')suSell(+r.dataset.l,0);return}
+    const l=S.su.list.find(q=>q.id===+r.dataset.l);if(l){if(a==='buy')suBuy(l.id,suBQ(l));else if(a==='sell')suSell(l.id,suSQ(l))}return}
   if(b.dataset.bot){S.botOff=!S.botOff;sfx('pop');toast(S.botOff?'🤖 Auto-Trader switched off':'🤖 Auto-Trader switched on');draw();save();return}
   if(b.dataset.reset){fq='';fsec='';fsort='def';try{localStorage.setItem('stockidle.msort',fsort)}catch(e){}const si=$('#msearch');if(si)si.value='';RESORT=true;applyFilter();return}
   if(b.dataset.resort){RESORT=true;applyFilter();return}
