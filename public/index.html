@@ -335,9 +335,9 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 #dnews .nitem{display:flex;flex-direction:column;gap:.1rem;padding:.35rem 0;border-top:1px solid var(--line);color:var(--tx);text-decoration:none}
 #dnews .nitem:hover .nh{color:var(--ac)}.nh{font-size:.9em;line-height:1.25}
 /* ---- v0.6: cloud saves ---- */
-#lb{width:min(21rem,100%);background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.9rem;padding:.55rem .65rem;text-align:left;margin-top:.2rem}
+#lb{text-align:left;width:100%}
 #lb.hide{display:none}
-#lb .lbh{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.35rem}
+#lb .lbh{display:flex;justify-content:center;margin:.2rem 0 .5rem}
 #lb .lbh b{font-size:1.05em;letter-spacing:.08em;text-transform:uppercase;font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:600}
 #lb .seg .btn{min-width:0;width:auto;font-size:.8em;padding:.15rem .55rem;letter-spacing:.04em}
 #lb .seg .btn.on{background:var(--ac);border-color:var(--ac);color:#fff}
@@ -424,9 +424,10 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
   <div id="tmain" class="tcol"><div class="mu" id="ts"></div><div class="tcl hide" id="tcl" role="button" tabindex="0" title="Cloud saves"></div>
     <button class="btn main tbtn" id="tp"><svg class="ico"><use href="#i-play"/></svg><span>Play</span></button>
     <button class="btn tbtn" id="tl"><svg class="ico"><use href="#i-folder"/></svg><span>Saves</span></button>
+    <button class="btn tbtn" id="tlb"><svg class="ico"><use href="#i-chart"/></svg><span>Leaderboard</span></button>
     <div class="trow"><button class="btn tbtn" id="tach"><svg class="ico"><use href="#i-medal"/></svg><span>Awards</span></button>
-    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div>
-    <div id="lb" class="hide"></div></div>
+    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div></div>
+  <div id="tlbs" class="tcol hide"><div class="shead"><button class="btn" id="tb2"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Leaderboard</h2></div><div id="lb"></div></div>
   <div id="tslots" class="tcol hide"><div class="shead"><button class="btn" id="tb"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Save slots</h2></div><div id="slist"></div><div class="mu" id="smsg"></div></div>
 </div>
 <div id="dlg" class="hide"><div class="card">
@@ -1433,7 +1434,7 @@ async function cloudSync(manual){
   if(!CLD.tok||CLD.busy)return;CLD.busy=true;CLD.err='';cloudUi();let replaced=false;
   try{
     if(S&&live())save();
-    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');CLD.hide=!!j.hide;
+    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');CLD.hide=!!j.hide;if(!j.name&&CLD.user&&CLD.user.name)capi('PUT','profile',{name:CLD.user.name}).catch(()=>{});
     const conf=[];
     for(let n=1;n<=SLOTS;n++){
       const cs=j.slots&&j.slots[n],lo=peek(n),lrev=CLD.revs[n]||0;
@@ -1454,13 +1455,13 @@ async function cloudSync(manual){
     if(replaced){clearTimeout(loop.t);load(slot);build();draw();closeD();clearNotes();showTitle();toast('☁ Loaded your cloud save into slot '+slot,1)}
     else if(manual)toast('☁ Synced',1)
   }catch(e){if(e.message!=='expired')CLD.err=e.message==='race'?'A save changed while syncing, try again':'Could not sync (offline or server error)'}
-  CLD.busy=false;cloudUi();loadLB(true)}
+  CLD.busy=false;cloudUi();if(!$('#tlbs').classList.contains('hide'))loadLB(true)}
 async function cloudPushCur(){
   if(!CLD.tok||CLD.busy||!S||CLD.hold[slot])return;
   const raw=rd(SK(slot));if(!raw)return;let d;try{d=JSON.parse(raw)}catch(e){return}if(d.last===CLD.ll[slot])return;
   CLD.busy=true;let race=false;
   try{await pushSlot(slot,CLD.revs[slot]||0);CLD.err=''}catch(e){if(e.message==='race')race=true;else if(e.message!=='expired')CLD.err='Offline · will retry'}
-  CLD.busy=false;cloudUi();if(race)cloudSync();else if(!live())loadLB(true)}
+  CLD.busy=false;cloudUi();if(race)cloudSync();else if(!$('#tlbs').classList.contains('hide'))loadLB(true)}
 const cloudSoon=()=>{if(CLD.auto)cloudPushCur()};
 function cloudDel(n){delete CLD.revs[n];delete CLD.ll[n];delete CLD.hold[n];clSave();if(CLD.tok)capi('DELETE','saves/'+n).catch(()=>{})}
 async function onCred(resp){
@@ -1502,16 +1503,18 @@ const LB={m:'classic',d:null,at:0,busy:false};
 async function loadLB(force){if(!CLD.cfg||LB.busy||(!force&&Date.now()-LB.at<30e3))return;LB.busy=true;
   try{const r=await capi('GET','leaderboard');if(r.j.ok){LB.d=r.j;LB.at=Date.now()}}catch(e){}
   LB.busy=false;renderLB()}
-function renderLB(){const el=$('#lb');if(!el)return;if(!CLD.cfg){el.classList.add('hide');return}
-  const d=LB.d,m=LB.m,list=d?d[m]:[],me=d&&d.me&&d.me[m],tot=d?d[m+'Total']:0;el.classList.remove('hide');
+function renderLB(){const el=$('#lb');if(!el)return;if(!CLD.cfg){el.innerHTML='<div class="mu">Leaderboards need cloud saves, which are not set up on this server.</div>';return}
+  const d=LB.d,m=LB.m,list=d?d[m]:[],me=d&&d.me&&d.me[m],tot=d?d[m+'Total']:0;
   const rows=!d?'<div class="mu" style="padding:.3rem">Loading…</div>':list.length?'<ol>'+list.map(r=>`<li class="${r.you?'you':''}"><span class="rk">${r.r}</span><span class="nm">${esc(r.name)}</span><span>${fmt(r.nw)}</span></li>`).join('')+'</ol>':'<div class="mu" style="padding:.3rem">No scores yet. Sign in and save to be the first!</div>';
   const mine=me&&!list.some(r=>r.you)?`<li class="you"><span class="rk">${me.r||'–'}</span><span class="nm">You${me.r?'':' (hidden)'}</span><span>${fmt(me.nw)}</span></li>`:'';
-  const foot=!CLD.tok?'Sign in with Google to join the leaderboard.':CLD.hide?'You are hidden from the leaderboard (Settings).':me?'':'Save a '+(m==='live'?'Live':'Classic')+' game to the cloud to appear here.';
-  el.innerHTML=`<div class="lbh"><b>Leaderboard</b><div class="seg"><button class="btn ${m==='classic'?'on':''}" data-lb="classic">Classic</button><button class="btn ${m==='live'?'on':''}" data-lb="live">Live</button></div></div>${rows}${mine?'<ol>'+mine+'</ol>':''}<div class="lbf">${esc(foot||(tot?tot+' player'+(tot===1?'':'s')+' · best net worth save':''))}</div>`}
+  const foot=!CLD.tok?'Sign in with Google (Settings) to join the leaderboard.':CLD.hide?'You are hidden from the leaderboard (Settings).':me?'':'Save a '+(m==='live'?'Live':'Classic')+' game to the cloud to appear here.';
+  el.innerHTML=`<div class="lbh"><div class="seg"><button class="btn ${m==='classic'?'on':''}" data-lb="classic">Classic</button><button class="btn ${m==='live'?'on':''}" data-lb="live">Live</button></div></div>${rows}${mine?'<ol>'+mine+'</ol>':''}<div class="lbf">${esc(foot||(tot?tot+' player'+(tot===1?'':'s')+' · best net worth save':''))}</div>`}
+$('#tlb').onclick=()=>{renderLB();views('lb');loadLB(true)};
+$('#tb2').onclick=()=>{showTitle()};
 $('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
 async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
-  cloudUi();loadLB(true);if(CLD.cfg&&CLD.tok)cloudSync(false);
+  cloudUi();if(CLD.cfg&&CLD.tok)cloudSync(false);
   setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
@@ -1545,7 +1548,7 @@ $('#set').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
 $('#menu').onclick=()=>{closeD();clearNotes();save();clearTimeout(loop.t);showTitle();cloudSoon()};
 const slotNW=o=>o.cash+(o.su&&o.su.list?o.su.list.reduce((a,l)=>a+l.n*l.p,0):0)+Object.entries(o.hold||{}).reduce((a,[k,h])=>a+h.n*(o.p[k]?o.p[k].p:0),0)+Object.values(o.priv||{}).reduce((a,p)=>a+p.v,0);
-function views(sl){$('#tmain').classList.toggle('hide',sl);$('#tslots').classList.toggle('hide',!sl);$('#title').classList.toggle('sl',sl)}
+function views(sl){$('#tmain').classList.toggle('hide',!!sl);$('#tslots').classList.toggle('hide',sl!==true);$('#tlbs').classList.toggle('hide',sl!=='lb');$('#title').classList.toggle('sl',!!sl)}
 const ago=t=>{const d=(Date.now()-t)/1000;if(d<60)return 'just now';if(d<3600)return Math.floor(d/60)+' min ago';if(d<86400)return Math.floor(d/3600)+' h ago';if(d<604800)return Math.floor(d/86400)+' d ago';return new Date(t).toLocaleDateString([],{month:'short',day:'numeric'})};
 function renderSlots(msg){
   $('#slist').innerHTML=Array.from({length:SLOTS},(_,i)=>i+1).map(n=>{const o=peek(n),cur=n===slot;
@@ -1587,7 +1590,7 @@ function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7
 function play(){lvStart();sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){const c=S.tick>0;
   $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
-  views(false);$('#title').classList.remove('hide');cloudUi();loadLB()}
+  views(false);$('#title').classList.remove('hide');cloudUi()}
 {const old=rd('stockidle.v1');if(old&&!rd(SK(1))){wr(SK(1),old);rm('stockidle.v1')}
 let best=1,bl=-1;for(let n=1;n<=SLOTS;n++){const o=peek(n);if(o&&(o.last||0)>bl){bl=o.last||0;best=n}}
 load(best)}
