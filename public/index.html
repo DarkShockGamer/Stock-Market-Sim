@@ -483,7 +483,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.8.1</div>
+<div id="title"><div id="ver">v0.8.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1037,7 +1037,7 @@ const ACHV=[
 ['d5','Diversified','Hold 5 different securities at once',1,()=>Object.keys(S.hold).length>=5],
 ['d10','Spread Thin','Hold 10 different securities at once',2,()=>Object.keys(S.hold).length>=10],
 ['fund','Playing It Safe','Own a mutual fund',1,()=>Object.keys(S.hold).some(k=>isF(SM[k]))],
-['allf','Fund Manager','Own all five mutual funds at once',2,()=>FD.every(x=>S.hold[x[0]])],
+['allf','Fund Manager','Own every mutual fund at once',6,()=>FD.every(x=>S.hold[x[0]])],
 ['cry','To the Moon','Own a cryptocurrency',1,()=>Object.keys(S.hold).some(k=>isC(SM[k]))],
 ['unl1','Research Pays Off','Unlock your first stock, fund or coin',1,()=>STOCKS.some(x=>x[5]>0&&isOpen(x))],
 ['unla','Completionist','Unlock every security',5,()=>STOCKS.every(isOpen)],
@@ -1059,7 +1059,7 @@ const ACHV=[
 ['cash1','Cash is King','Hold $1,000,000 in cash at once',3,()=>S.cash>=1e6],
 ['d20','Collector','Hold 20 different securities at once',3,()=>hk().length>=20],['d30','Whole Market','Hold 30 different securities at once',5,()=>hk().length>=30],
 ['cr1','Crypto Curious','Own a cryptocurrency',1,()=>nCr()>=1],['cr3','Altcoin Collector','Hold 3 different cryptocurrencies at once',3,()=>nCr()>=3],['cr6','Crypto Whale','Hold 6 different cryptocurrencies at once',5,()=>nCr()>=6],
-['fd1','Index Investor','Own a fund',1,()=>nFd()>=1],['fd4','Fund Manager','Hold 4 different funds at once',3,()=>nFd()>=4],
+['fd1','Index Investor','Own a fund',1,()=>nFd()>=1],['fd4','Diversified Funds','Hold 4 different funds at once',3,()=>nFd()>=4],
 ['mix','Balanced Portfolio','Hold a stock, a fund and a cryptocurrency at the same time',3,()=>nCr()>=1&&nFd()>=1&&hk().some(k=>SM[k]&&!isC(SM[k])&&!isF(SM[k]))],
 ['sec3','Sector Specialist','Hold 3 stocks from the same sector at once',2,()=>{const c={};hk().forEach(k=>{const z=SEC[k];if(z&&SM[k]&&!isC(SM[k])&&!isF(SM[k]))c[z]=(c[z]||0)+1});return Object.values(c).some(v=>v>=3)}],
 ['sec6','Well Rounded','Hold stocks from 6 different sectors at once',3,()=>new Set(hk().map(k=>SEC[k]).filter(Boolean)).size>=6],
@@ -1071,7 +1071,7 @@ const ACHV=[
 ['pv1','Going Private','Buy out a company completely',3,()=>Object.keys(S.priv||{}).length>=1],['pv5','Private Empire','Own 5 private companies at once',5,()=>Object.keys(S.priv||{}).length>=5],
 ['su5','Seed Round','Invest in startups 10 times',2,()=>(gs('sinv')||0)>=10],['su6','Unicorn Stable','Take 5 startups public',5,()=>(gs('sgrad')||0)>=5],['su7','Graveyard Shift','Back 5 startups that go bankrupt',3,()=>(gs('sbust')||0)>=5],['su8','Venture Titan','Earn $1,000,000 net profit from startups',5,()=>!!S.su&&S.su.net>=1e6],
 ['rp500','Think Tank','Earn 500 Research Points in one game',5,()=>S.rpt>=500],
-['upx','Fully Loaded','Max out 5 different upgrades',4,()=>UPS.filter(u=>lv(u.id)>=u.max).length>=5],['upa','Completionist','Max out every upgrade',10,()=>UPS.every(u=>lv(u.id)>=u.max)],
+['upx','Fully Loaded','Max out 5 different upgrades',4,()=>UPS.filter(u=>lv(u.id)>=u.max).length>=5],['upa','Perfect Build','Max out every upgrade',10,()=>UPS.every(u=>lv(u.id)>=u.max)],
 ['ct100','Corporate Fixer','Complete 100 contracts',6,()=>(gs('contracts')||0)>=100]
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
 function checkAch(){const got=[];ACHV.forEach(a=>{if(!S.ach[a.id]&&a.f()){const now=Date.now();S.ach[a.id]=now;const first=!G.a[a.id];if(first){G.a[a.id]=now;S.rp+=a.rp;S.rpt+=a.rp}got.push({n:a.n,d:a.d,rp:a.rp,first})}});
@@ -1228,11 +1228,12 @@ function marketMove(s,dir,i){ // apply a trade's lasting effect to the price, th
   o.m=(o.m||0)+dir*i*HYPE*FOLLOW*lv('pump')*(dir>0?1:.85); // followers only show up with Pump Network
   if(i>=.02){const sc=SEC[s];if(sc)STOCKS.forEach(x=>{if(x[0]!==s&&SEC[x[0]]===sc&&S.p[x[0]])S.p[x[0]].m=(S.p[x[0]].m||0)+dir*i*.004})}}
 function manip(s,dir,i,q){ // returns true when this trade reverses a recent market-moving trade (pump & dump pattern)
-  if(!S.lt)S.lt={};if(i<.01)return false;
-  bmax('moved',i);
-  const lt=S.lt[s],rev=!!(lt&&lt.d!==dir&&S.tick-lt.t<REV_T&&lt.i>=.01);
-  S.lt[s]={d:dir,t:S.tick,i};
-  if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market, but you pay slippage. Pump Network brings followers.',1)}
+  if(!S.lt)S.lt={};
+  const lt=S.lt[s],live=!!lt&&S.tick-lt.t<REV_T,same=live&&lt.d===dir,
+    rev=live&&lt.d!==dir&&lt.i>=.01; // the pump can be one big buy or several smaller ones that add up; the dump can be sold in any size chunks
+  S.lt[s]={d:dir,t:S.tick,i:(same?lt.i:0)+i};
+  if(i>=.01){bmax('moved',i);
+    if(!G.mmSeen){G.mmSeen=1;toast('📈 Your trade moved the price '+(dir>0?'+':'−')+(i*100).toFixed(1)+'%. Big trades move the market, but you pay slippage. Pump Network brings followers.',1)}}
   return rev}
 // Trade size: ONE shared selector replaces the fixed Buy 1 / Buy 10 / Max / Sell 1 / Sell all buttons.
 // Each row is just  [Buy n] [size v] [Sell n]  and the buttons always show the real share count they will trade.
