@@ -386,6 +386,29 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 #pmenu .pmi .tv{font-weight:700;color:var(--mu)}#pmenu .pmi .tv.on{color:var(--up)}
 #pmenu .pmi.warn:hover{color:var(--dn);border-color:var(--dn)}
 #pmenu .gbtn{min-height:2.5rem}
+/* ---- market toolbar: search, category + sort dropdowns ---- */
+.srchw.mbar{display:flex;flex-direction:column;gap:.45rem;padding:.2rem 0 .45rem;border-bottom:1px solid var(--line);margin-bottom:.45rem}
+#msearch{padding-left:2.1rem;height:2.4rem;border-radius:.7rem;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a0' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat .7rem center/1rem}
+.mctl{display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end}
+.msel{display:flex;flex-direction:column;gap:.18rem;flex:1 1 8.5rem;min-width:0}
+.msel .ml{font-size:.66em;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);padding-left:.25rem}
+.msel .sw{position:relative;display:block}
+.msel .sw::after{content:"";position:absolute;right:.8rem;top:50%;width:.42rem;height:.42rem;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:translateY(-70%) rotate(45deg);pointer-events:none;transition:border-color .15s}
+.msel select{appearance:none;-webkit-appearance:none;width:100%;height:2.3rem;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:.7rem;padding:0 2rem 0 .75rem;font:inherit;font-weight:600;cursor:pointer;text-overflow:ellipsis;color-scheme:dark;transition:border-color .15s,box-shadow .15s}
+html[data-theme=light] .msel select{color-scheme:light}
+.msel select option{background:var(--card);color:var(--tx)}
+.msel select:hover{border-color:var(--ac)}
+.msel select:focus-visible{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 28%,transparent)}
+.msel.act select{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,var(--card))}
+.msel.act .sw::after{border-color:var(--ac)}
+.msel.dim select{opacity:.5}
+.mctl .chip.srtb{margin:0;height:2.3rem;padding:0 .8rem;border-radius:.7rem;border-style:solid;font-size:.85em;font-weight:600;flex:0 0 auto}
+.mctl .chip.srtb.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.mmeta{display:flex;justify-content:space-between;align-items:center;min-height:1.3rem;font-size:.78em;color:var(--mu);padding:0 .25rem}
+.mmeta .mact{display:flex;gap:.2rem}
+.btn.lnk{background:none;border:0;padding:.1rem .4rem;color:var(--ac);font-size:1em;font-weight:600;border-radius:.4rem}
+.btn.lnk:hover:not(:disabled){background:color-mix(in srgb,var(--ac) 16%,transparent)}
+.btn.lnk.hide{display:none}
 #cloudbox{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
 .gbtn{min-height:2.5rem;display:flex;justify-content:center;align-items:center;color-scheme:light}
 .who{display:flex;align-items:center;gap:.5rem;min-width:0}.av{width:1.8rem;height:1.8rem;border-radius:50%;flex:0 0 auto}
@@ -445,7 +468,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.6.9</div>
+<div id="title"><div id="ver">v0.7.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -545,14 +568,34 @@ const ST=[
 const SECTORS={Tech:'AAPL MSFT AMD NVDA META PLTR AMZN GOOGL INTC ORCL CRM ADBE IBM QCOM MU SHOP SNOW TSM AVGO ARM',Media:'DIS NFLX SPOT WBD CMCSA RBLX',Consumer:'KO WMT MCD NKE SBUX COST HD GME PEP PG KHC TGT LULU CMG',Auto:'F TSLA GM TM RIVN',Finance:'V JPM MA PYPL BAC GS SQ BRKB',
 Health:'JNJ PFE LLY UNH MRK ABBV MRNA',Energy:'XOM CVX COP NEE ENPH',Space:'SPCX STRL RKLB',Travel:'DAL UAL CCL UBER MAR BKNG',Industrial:'BA CAT LMT GE DE HON UPS RTX',Telecom:'T VZ TMUS'};
 const SEC={};for(const k in SECTORS)SECTORS[k].split(' ').forEach(t=>SEC[t]=k);
-let fq='',fsec='',fup='Trading',srtU=false;try{srtU=localStorage.getItem('stockidle.sortunl')==='1'}catch(e){}
+let fq='',fsec='',fup='Trading',srtU=false,fsort='def',RESORT=true,RK={};try{srtU=localStorage.getItem('stockidle.sortunl')==='1';fsort=localStorage.getItem('stockidle.msort')||'def'}catch(e){}
+const SORTS=[['def','Default order'],['cheap','Cheapest first'],['exp','Most expensive first'],['alpha','Alphabetical (A–Z)'],['shares','Most shares owned']];
+if(!SORTS.some(x=>x[0]===fsort))fsort='def';
 function applyUp(){document.querySelectorAll('#ups .row[data-u]').forEach(r=>r.style.display=r.dataset.cat===fup?'':'none');
   document.querySelectorAll('#upchips .chip').forEach(b=>b.classList.toggle('on',b.dataset.uc===fup))}
+// Ranking is only recomputed when asked (RESORT) so rows do not jump around while prices tick and you are clicking Buy
+function computeRank(){RK={};if(fsort==='def')return;
+  const price=k=>S.p[k]?S.p[k].p:0,own=k=>S.hold[k]?S.hold[k].n:0;
+  const arr=[...document.querySelectorAll('#market .row[data-s]')].map(r=>r.dataset.s);
+  arr.sort((a,b)=>fsort==='cheap'?price(a)-price(b):fsort==='exp'?price(b)-price(a):fsort==='shares'?own(b)-own(a)||a.localeCompare(b):a.localeCompare(b));
+  arr.forEach((k,i)=>RK[k]=i+1)}
 function applyFilter(){let shown=0;
-  {const m=$('#market');m.classList.toggle('srt',srtU);m.querySelectorAll('.row[data-s]').forEach(r=>{r.style.order=srtU&&!isOpen(SM[r.dataset.s])?1:0});const sb=m.querySelector('[data-srt]');if(sb){sb.classList.toggle('on',srtU);sb.innerHTML=(srtU?IC('check'):'')+IC('unlock')+'<span>Unlocked first</span>';sb.setAttribute('aria-pressed',srtU)}}
+  const m=$('#market');if(RESORT){computeRank();RESORT=false}
+  {m.classList.toggle('srt',srtU||fsort!=='def');m.querySelectorAll('.row[data-s]').forEach(r=>{const k=r.dataset.s;r.style.order=(srtU&&!isOpen(SM[k])?1000:0)+(RK[k]||0)});const sb=m.querySelector('[data-srt]');if(sb){sb.classList.toggle('on',srtU);sb.innerHTML=(srtU?IC('check'):'')+IC('unlock')+'<span>Unlocked first</span>';sb.setAttribute('aria-pressed',srtU)}}
   document.querySelectorAll('#market .row[data-s]').forEach(r=>{const h=S.hold[r.dataset.s],ok=!(S.priv&&S.priv[r.dataset.s])&&(fq?matchQ(r.dataset.s):(!fsec||(fsec==='__own'?!!(h&&h.n>0):r.dataset.sec===fsec)));r.style.display=ok?'':'none';if(ok)shown++});
   const ne=$('#noown');if(ne)ne.style.display=!fq&&fsec==='__own'&&!shown?'':'none';const ns=$('#nosrch');if(ns)ns.style.display=fq&&!shown?'':'none';
-  document.querySelectorAll('#market .chip:not(.srtb)').forEach(b=>b.classList.toggle('on',!fq&&b.dataset.sec===fsec))}
+  const cs=$('#mcat'),ss=$('#msort');if(cs){if(cs.value!==fsec)cs.value=fsec;cs.closest('.msel').classList.toggle('act',!!fsec&&!fq);cs.closest('.msel').classList.toggle('dim',!!fq)}
+  if(ss){if(ss.value!==fsort)ss.value=fsort;ss.closest('.msel').classList.toggle('act',fsort!=='def')}
+  const mc=$('#mcount');if(mc)mc.textContent=shown+' stock'+(shown===1?'':'s')+(fq?' matching your search':fsec==='__own'?' owned':fsec?' in '+fsec:'');
+  const rs=$('#mreset');if(rs)rs.classList.toggle('hide',!(fq||fsec||fsort!=='def'));
+  const rr=$('#mresort');if(rr)rr.classList.toggle('hide',!(fsort==='cheap'||fsort==='exp'||fsort==='shares'))}
+function mbarHTML(){
+  const sel=(id,lab,opts,val)=>`<label class="msel"><span class="ml">${lab}</span><span class="sw"><select id="${id}" aria-label="${lab}">${opts.map(([v,t])=>`<option value="${v}"${v===val?' selected':''}>${t}</option>`).join('')}</select></span></label>`;
+  return `<div class="srchw mbar"><input id="msearch" type="search" placeholder="Search ticker, company or sector" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search stocks"><div class="mctl">`
+    +sel('mcat','Category',[['','All stocks'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])],fsec)
+    +sel('msort','Sort by',SORTS,fsort)
+    +`<button class="btn chip srtb" data-srt="1" title="Keep stocks you can buy above locked ones">${IC('unlock')}<span>Unlocked first</span></button></div>`
+    +`<div class="mmeta"><span id="mcount"></span><span class="mact"><button class="btn lnk hide" id="mresort" data-resort="1" title="Prices move, so the list only re-sorts when you change an option, switch tabs or tap this">↻ Re-sort</button><button class="btn lnk hide" id="mreset" data-reset="1">Reset</button></span></div></div>`}
 // Mutual funds: same fields + fixed growth per tick (index 7) and optional yield per tick (index 8). Slower, steadier, rare crashes.
 const FD=[
 ['IDX','Index Fund',50,.0012,.6,2,.1,.00003],['BND','Bond Fund',40,.0006,.1,3,.05,.000018],
@@ -1181,7 +1224,7 @@ function buy(s,q,silent){
   S.cash-=q*pe*f;if(!silent)bump('trades');const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;logTrade('B',s,q,pe,0,silent);ctHook('buy',s,q);
   const own=ownCheck(s); // takeover check uses the price before your own buying pushes it up
   if(!silent&&!own&&S.hold[s]){marketMove(s,1,i);manip(s,1,i,q);if(i>=.015)toast('📈 Your buy pushed '+SM[s][1]+' up '+(i*100).toFixed(1)+'%')}
-  if(!own&&!silent)sfx('buy');draw()}
+  if(!own&&!silent)sfx('buy');if(fsort==='shares')RESORT=true;draw()}
 function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n*2>maxSh(x)&&!S.ctrl[s]){S.ctrl[s]=1;S.rp+=RP_OWN;S.rpt+=RP_OWN;msg='👑 You now control '+x[1]+' (over 50%)! 🔬 +'+RP_OWN+' Research Points'}
   if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v,c:v,gm:.85+Math.random()*.3,news:''};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
@@ -1201,7 +1244,7 @@ function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),e=fillOf(i),ps=e>1e-9?p*(1-Math.exp(-e))/e:p,pr=q*(ps*(1-f)-h.c);
   S.cash+=q*ps*(1-f);S.real=(S.real||0)+pr;if(pr>0)S.rw=(S.rw||0)+1;else S.rl=(S.rl||0)+1;S.rbest=Math.max(S.rbest||0,pr);S.rworst=Math.min(S.rworst||0,pr);logTrade('S',s,q,ps,pr,silent);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
-  if(!silent)sfx(pr>0?'sell':'loss');
+  if(!silent)sfx(pr>0?'sell':'loss');if(fsort==='shares')RESORT=true;
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
   if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){bump('pd');toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
@@ -1254,8 +1297,8 @@ function build(){
     <div class="px"><span class="v"></span> <span class="c mu"></span></div>
     <div class="ulk hide"><button class="btn" data-a="ul"></button></div>
     <div class="acts"><button class="btn" data-a="buy">Buy</button>${qSel()}<button class="btn" data-a="sell">Sell</button><span class="own mu"></span></div></div>`;
-  $('#market').innerHTML='<div id="privbox"></div><div class="srchw"><input id="msearch" type="search" placeholder="Search ticker, company or sector" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search stocks"></div><div class="chips">'+[['','All'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])].map(([k,l])=>`<button class="btn chip" data-sec="${k}">${l}</button>`).join('')+'<button class="btn chip srtb" data-srt="1">'+IC('unlock')+'<span>Unlocked first</span></button></div><div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div><div class="mu" id="nosrch" style="display:none;padding:.6rem .3rem">No stocks match your search.</div>'+ST.map(srow).join('');
-  privSig='';{const si=$('#msearch');if(si)si.value=fq}applyFilter();
+  $('#market').innerHTML='<div id="privbox"></div>'+mbarHTML()+'<div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div><div class="mu" id="nosrch" style="display:none;padding:.6rem .3rem">No stocks match your search.</div>'+ST.map(srow).join('');
+  privSig='';{const si=$('#msearch');if(si)si.value=fq}RESORT=true;applyFilter();
   $('#funds').innerHTML='<div class="sec">Mutual funds: slower growth, much steadier, rarely crash. Gold tends to hold up when stocks fall.</div>'+FD.map(srow).join('');
   $('#crypto').innerHTML='<div class="sec">Crypto: huge swings and frequent deep crashes.</div>'+CR.map(srow).join('');
   const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><div class="utt"><b>${u.n}</b><span class="pips"></span></div><div class="ud">${u.d}</div><div class="eff"></div>${u.id==='bot'?'<button class="btn botsw" data-bot="1"></button>':''}</div><button class="btn"></button></div>`;
@@ -1316,8 +1359,9 @@ document.addEventListener('click',e=>{
   if(b.dataset.su){const r=b.closest('.row'),a=b.dataset.su;
     if(a==='b')suBuy(+r.dataset.l,+b.dataset.pc);else if(a==='half')suSell(+r.dataset.l,1);else if(a==='all')suSell(+r.dataset.l,0);return}
   if(b.dataset.bot){S.botOff=!S.botOff;sfx('pop');toast(S.botOff?'🤖 Auto-Trader switched off':'🤖 Auto-Trader switched on');draw();save();return}
+  if(b.dataset.reset){fq='';fsec='';fsort='def';try{localStorage.setItem('stockidle.msort',fsort)}catch(e){}const si=$('#msearch');if(si)si.value='';RESORT=true;applyFilter();return}
+  if(b.dataset.resort){RESORT=true;applyFilter();return}
   if(b.dataset.srt){srtU=!srtU;try{localStorage.setItem('stockidle.sortunl',srtU?'1':'0')}catch(e){}applyFilter();return}
-  if(b.dataset.sec!==undefined){fsec=b.dataset.sec;applyFilter();return}
   if(b.dataset.uc!==undefined){fup=b.dataset.uc;applyUp();draw();return}
   const r=b.closest('.row'),inD=b.closest('#dlg');
   if(b.dataset.r!==undefined){if(lhOn(cur))lrng=LR[[...b.parentNode.children].indexOf(b)];else rng=+b.dataset.r;drawD()}
@@ -1333,6 +1377,7 @@ document.addEventListener('click',e=>{
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sgn=v=>v>=0?'+':'−',money=v=>sgn(v)+fmt(Math.abs(v)),pct=(v,d=1)=>sgn(v)+Math.abs(v*100).toFixed(d)+'%';
 function matchQ(s){const x=SM[s];return (s+' '+x[1]+' '+(SEC[s]||'')).toLowerCase().includes(fq)}
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='mcat'){fsec=t.value;applyFilter()}else if(t.id==='msort'){fsort=t.value;try{localStorage.setItem('stockidle.msort',fsort)}catch(_){}RESORT=true;applyFilter()}});
 document.addEventListener('input',e=>{if(e.target.id==='msearch'){fq=e.target.value.trim().toLowerCase();applyFilter()}});
 document.addEventListener('keydown',e=>{if(e.target.id==='msearch'&&e.key==='Escape'&&e.target.value){e.target.value='';fq='';applyFilter();e.stopPropagation()}},true);
 
@@ -1601,6 +1646,7 @@ async function cloudInit(){
   setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
+  if(v==='m'){RESORT=true;applyFilter()}
   if(v==='k')drawCt();if(v==='s')drawSu();if(v==='p')drawStats();if(v==='l')drawLive()}
 $('#t-m').onclick=()=>tab('m');$('#t-f').onclick=()=>tab('f');$('#t-c').onclick=()=>tab('c');$('#t-k').onclick=()=>tab('k');$('#t-u').onclick=()=>tab('u');$('#t-s').onclick=()=>tab('s');$('#t-p').onclick=()=>tab('p');$('#t-l').onclick=()=>tab('l');
 function renderSet(){renderCloud();
