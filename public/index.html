@@ -301,6 +301,39 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 #privbox .row{margin:0}
 #privbox .pvs{font-size:.75em;line-height:1.35}
 .chip.srtb.on{border-style:solid}
+/* ---- v0.5: search, stats, news, challenges ---- */
+nav{overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 auto;padding:.4286rem .5rem}
+#t-l{display:none}body.live-mode #t-l{display:block}
+#stats:not(.hide),#live:not(.hide){display:flex;flex-direction:column;gap:.3571rem}
+.srchw{position:sticky;top:0;z-index:3;background:var(--bg);padding:0 0 .3rem}
+#msearch{width:100%;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:.5714rem;padding:.4286rem .6rem;font:inherit}
+#msearch:focus{outline:none;border-color:var(--ac)}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:.7143rem;padding:.5rem .6429rem;display:flex;flex-direction:column;gap:.25rem}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:.3571rem}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:.7143rem;padding:.4rem .6rem;display:flex;flex-direction:column;min-width:0}
+.kpi b{font-size:1.15em;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi .mu{font-size:.75em}
+.donut{flex-direction:row;align-items:center;gap:.8rem}
+.dn-svg{width:7rem;height:7rem;flex:0 0 auto;transform:rotate(0deg)}
+.leg{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem;font-size:.85em}
+.leg div{display:flex;align-items:center;gap:.35rem}.leg i{width:.6rem;height:.6rem;border-radius:.15rem;flex:0 0 auto}
+.leg span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.leg b{font-variant-numeric:tabular-nums}
+.sbar,.cbar{display:grid;grid-template-columns:5rem 1fr 3.4rem;align-items:center;gap:.4rem;font-size:.85em}
+.sbar b,.cbar b{text-align:right;font-variant-numeric:tabular-nums}.cbar{grid-template-columns:3rem 1fr 4.4rem}
+.sbar .bar,.cbar .bar{margin:0}
+.hl{display:grid;grid-template-columns:1fr 1fr;gap:.35rem .6rem}
+.hl>div{display:flex;flex-direction:column;min-width:0}.hl b{font-size:1.05em}
+.hl .warn2{grid-column:1/-1;color:var(--dn);font-size:.85em}
+.hr{background:var(--card);border:1px solid var(--line);border-radius:.7143rem;padding:.45rem .6429rem;display:grid;grid-template-columns:1fr auto auto;gap:.2rem .7rem;align-items:center;cursor:pointer}
+.hr:hover{border-color:var(--ac)}.hr .r{text-align:right;font-variant-numeric:tabular-nums}
+.lrow,.crow{display:flex;justify-content:space-between;gap:.5rem;font-size:.85em;padding:.2rem 0;border-top:1px solid var(--line)}
+.lrow:first-child,.crow:first-of-type{border-top:0}.lrow>span:nth-child(2){flex:1;min-width:0}
+.crow.ok{color:var(--up)}
+#dnews{display:flex;flex-direction:column}
+#dnews:empty{display:none}
+#dnews .nitem{display:flex;flex-direction:column;gap:.1rem;padding:.35rem 0;border-top:1px solid var(--line);color:var(--tx);text-decoration:none}
+#dnews .nitem:hover .nh{color:var(--ac)}.nh{font-size:.9em;line-height:1.25}
 </style>
 </head>
 <body>
@@ -345,14 +378,14 @@ html[data-theme=light] .cc.maj{color:#9a7400}
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
     <div style="text-align:right"><div class="mu">Cash</div><div id="cash" style="font-weight:600">$0</div><div class="mu" id="rp"></div><div class="mu" id="pay"></div><div class="mu" id="mood"></div></div>
   </header>
-  <nav><button id="t-m" class="on">Market</button><button id="t-f">Funds</button><button id="t-c">Crypto</button><button id="t-s">Startups</button><button id="t-k">Contracts</button><button id="t-u">Upgrades</button></nav>
-  <main id="main"><div id="market"></div><div id="funds" class="hide"></div><div id="crypto" class="hide"></div><div id="contracts" class="hide"></div><div id="startups" class="hide"></div><div id="ups" class="hide"></div></main>
+  <nav><button id="t-m" class="on">Market</button><button id="t-f">Funds</button><button id="t-c">Crypto</button><button id="t-s">Startups</button><button id="t-k">Contracts</button><button id="t-u">Upgrades</button><button id="t-p">📊 Stats</button><button id="t-l">🏁 Goals</button></nav>
+  <main id="main"><div id="market"></div><div id="funds" class="hide"></div><div id="crypto" class="hide"></div><div id="contracts" class="hide"></div><div id="startups" class="hide"></div><div id="ups" class="hide"></div><div id="stats" class="hide"></div><div id="live" class="hide"></div></main>
   <div class="foot"><button class="btn" id="pop" title="Open the game in a small separate window you can park in a corner"><span class="ic">🗗</span><span>Mini window</span></button>
     <button class="btn" id="trophy" title="Achievements"><span class="ic"><svg class="ico"><use href="#i-medal"/></svg></span><span>Achievements</span></button>
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.4.0</div>
+<div id="title"><div id="ver">v0.5.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -381,6 +414,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
   <div id="dtip"></div>
   <div id="dacts"></div>
   <div id="down"></div>
+  <div id="dnews"></div>
 </div></div>
 <div id="set" class="hide"><div class="card">
   <div class="up-row"><b class="ahead"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></b><button class="btn" id="sx">✕</button></div>
@@ -437,14 +471,14 @@ const ST=[
 const SECTORS={Tech:'AAPL MSFT AMD NVDA META PLTR AMZN GOOGL INTC ORCL CRM ADBE IBM QCOM MU SHOP SNOW TSM AVGO ARM',Media:'DIS NFLX SPOT WBD CMCSA RBLX',Consumer:'KO WMT MCD NKE SBUX COST HD GME PEP PG KHC TGT LULU CMG',Auto:'F TSLA GM TM RIVN',Finance:'V JPM MA PYPL BAC GS SQ BRKB',
 Health:'JNJ PFE LLY UNH MRK ABBV MRNA',Energy:'XOM CVX COP NEE ENPH',Space:'SPCX STRL RKLB',Travel:'DAL UAL CCL UBER MAR BKNG',Industrial:'BA CAT LMT GE DE HON UPS RTX',Telecom:'T VZ TMUS'};
 const SEC={};for(const k in SECTORS)SECTORS[k].split(' ').forEach(t=>SEC[t]=k);
-let fsec='',fup='Trading',srtU=false;try{srtU=localStorage.getItem('stockidle.sortunl')==='1'}catch(e){}
+let fq='',fsec='',fup='Trading',srtU=false;try{srtU=localStorage.getItem('stockidle.sortunl')==='1'}catch(e){}
 function applyUp(){document.querySelectorAll('#ups .row[data-u]').forEach(r=>r.style.display=r.dataset.cat===fup?'':'none');
   document.querySelectorAll('#upchips .chip').forEach(b=>b.classList.toggle('on',b.dataset.uc===fup))}
 function applyFilter(){let shown=0;
   {const m=$('#market');m.classList.toggle('srt',srtU);m.querySelectorAll('.row[data-s]').forEach(r=>{r.style.order=srtU&&!isOpen(SM[r.dataset.s])?1:0});const sb=m.querySelector('[data-srt]');if(sb){sb.classList.toggle('on',srtU);sb.innerHTML=(srtU?IC('check'):'')+IC('unlock')+'<span>Unlocked first</span>';sb.setAttribute('aria-pressed',srtU)}}
-  document.querySelectorAll('#market .row[data-s]').forEach(r=>{const h=S.hold[r.dataset.s],ok=!(S.priv&&S.priv[r.dataset.s])&&(!fsec||(fsec==='__own'?!!(h&&h.n>0):r.dataset.sec===fsec));r.style.display=ok?'':'none';if(ok)shown++});
-  const ne=$('#noown');if(ne)ne.style.display=fsec==='__own'&&!shown?'':'none';
-  document.querySelectorAll('#market .chip:not(.srtb)').forEach(b=>b.classList.toggle('on',b.dataset.sec===fsec))}
+  document.querySelectorAll('#market .row[data-s]').forEach(r=>{const h=S.hold[r.dataset.s],ok=!(S.priv&&S.priv[r.dataset.s])&&(fq?matchQ(r.dataset.s):(!fsec||(fsec==='__own'?!!(h&&h.n>0):r.dataset.sec===fsec)));r.style.display=ok?'':'none';if(ok)shown++});
+  const ne=$('#noown');if(ne)ne.style.display=!fq&&fsec==='__own'&&!shown?'':'none';const ns=$('#nosrch');if(ns)ns.style.display=fq&&!shown?'':'none';
+  document.querySelectorAll('#market .chip:not(.srtb)').forEach(b=>b.classList.toggle('on',!fq&&b.dataset.sec===fsec))}
 // Mutual funds: same fields + fixed growth per tick (index 7) and optional yield per tick (index 8). Slower, steadier, rare crashes.
 const FD=[
 ['IDX','Index Fund',50,.0012,.6,2,.1,.00003],['BND','Bond Fund',40,.0006,.1,3,.05,.000018],
@@ -816,7 +850,7 @@ function lvStatus(){
   return Date.now()/1000-LV.maxT<1500?'🟢 LIVE · market open':'🌙 Market closed · last close';}
 function lvTick(){
   STOCKS.forEach(x=>{const o=S.p[x[0]];if(o&&o.live&&o.tgt>0){o.p+=(o.tgt-o.p)*.3;if(Math.abs(o.tgt-o.p)<.004)o.p=o.tgt}}); // ease toward the latest real quote
-  S.max=Math.max(S.max,nw());bump('ticks');if(S.tick%5===0)checkAch();draw()}
+  S.max=Math.max(S.max,nw());bump('ticks');lvChTick();nwSample();if(S.tick%5===0)checkAch();draw()}
 function tick(){
   S.tick++;
   if(isLive()){lvTick();return}
@@ -839,7 +873,7 @@ function tick(){
   S.cash+=(S.cash*lv('int')*INTR+hvv*lv('div')*DIVR+fy)*ym;
   const bl=lv('bot');if(bl&&!S.botOff&&S.tick%Math.max(2,10-bl)===0)bot(bl);
   if(S.tick>=S.payn){S.payn+=PAYT;S.cash+=PAYC;S.paid+=PAYC;toast('💼 Paycheck +'+fmt(PAYC));sfx('cash')}
-  suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();bump('ticks');if(S.tick%5===0)checkAch();
+  suTick();S.max=Math.max(S.max,nw());checkRP();ctTick();bump('ticks');nwSample();if(S.tick%5===0)checkAch();
   draw();
 }
 function bot(l){
@@ -876,7 +910,9 @@ const ACHV=[
 ['su3','Total Wipeout','Back a startup that goes bankrupt',1,()=>(gs('sbust')||0)>=1],['su4','Venture Capitalist','Earn $10,000 net profit from startups',3,()=>!!S.su&&S.su.net>=1e4],
 ['t1','Patient Investor','Play for 1 hour in total',1,()=>gs('ticks')>=3600],['t10','In It for the Long Haul','Play for 10 hours in total',3,()=>gs('ticks')>=36000],
 ['mm1','Market Mover','Move a stock 5% with a single trade',2,()=>(gs('moved')||0)>=.05],['mm2','Mover and Shaker','Move a stock 15% with a single trade',4,()=>(gs('moved')||0)>=.15],
-['pd1','Pump and Dump','Sell for a profit right after pumping a stock',3,()=>(gs('pd')||0)>=1],['pd2','Pump Syndicate','Pull off 10 pump-and-dumps',5,()=>(gs('pd')||0)>=10]
+['pd1','Pump and Dump','Sell for a profit right after pumping a stock',3,()=>(gs('pd')||0)>=1],['pd2','Pump Syndicate','Pull off 10 pump-and-dumps',5,()=>(gs('pd')||0)>=10],
+['ch1','Index Beater','Win an S&P challenge in Live Market mode',2,()=>!!S.ch&&S.ch.w>=1],['ch2','On a Roll','Win 3 S&P challenges in a row (Live Market)',3,()=>!!S.ch&&(S.ch.best.d>=3||S.ch.best.w>=3)],
+['ch3','Alpha Hunter','Beat the S&P by 2% in a weekly challenge (Live Market)',4,()=>!!S.ch&&!!S.ch.ids&&S.ch.ids.w2>=1]
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
 function checkAch(){const got=[];ACHV.forEach(a=>{if(!S.ach[a.id]&&a.f()){const now=Date.now();S.ach[a.id]=now;const first=!G.a[a.id];if(first){G.a[a.id]=now;S.rp+=a.rp;S.rpt+=a.rp}got.push({n:a.n,d:a.d,rp:a.rp,first})}});
   if(!got.length)return;wr(GK,JSON.stringify(G));
@@ -1067,7 +1103,7 @@ function buy(s,q,silent){
   if(room<1){if(!silent)toast('👑 You already own 100% of '+SM[s][1],1);return}
   const f=1+feeRate(),pl=planBuy(s,q,!silent);q=pl.q;if(q<1){if(!silent)toast('Not enough cash',1);return}
   const pe=pl.pe,i=pl.i;
-  S.cash-=q*pe*f;if(!silent)bump('trades');const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;ctHook('buy',s,q);
+  S.cash-=q*pe*f;if(!silent)bump('trades');const h=S.hold[s]||(S.hold[s]={n:0,c:0});h.c=(h.c*h.n+q*pe)/(h.n+q);h.n+=q;logTrade('B',s,q,pe,0,silent);ctHook('buy',s,q);
   const own=ownCheck(s); // takeover check uses the price before your own buying pushes it up
   if(!silent&&!own&&S.hold[s]){marketMove(s,1,i);manip(s,1,i,q);if(i>=.015)toast('📈 Your buy pushed '+SM[s][1]+' up '+(i*100).toFixed(1)+'%')}
   if(!own&&!silent)sfx('buy');draw()}
@@ -1076,7 +1112,7 @@ function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v,c:v,gm:.85+Math.random()*.3,news:''};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
     msg=(msg?msg+' · ':'')+'🏢 You bought out '+x[1]+'. It is now private and pays you '+fmt(pInc(s,S.priv[s])*3600)+'/hr'}
   if(msg){toast(msg,1);sfx('win')}return !!msg}
-function sellPriv(s){const p=S.priv[s];if(!p)return;const pr=p.v-p.c;S.cash+=p.v;delete S.priv[s];
+function sellPriv(s){const p=S.priv[s];if(!p)return;const pr=p.v-p.c;S.cash+=p.v;S.real=(S.real||0)+pr;delete S.priv[s];
   const o=S.p[s],np=Math.max(.5,p.v/p.n);if(o){o.p=o.fair=o.fp=np;o.m=0;o.h=Array(40).fill(np)} // it returns to the market at the value you built it up to
   let g=0;if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;while(S.prof>=chunk()){S.prof-=chunk();g++}if(g){S.rp+=g;S.rpt+=g}}
   toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' ('+(pr>=0?'+':'−')+fmt(Math.abs(pr))+' since buyout) · it is public again'+(g?' · 🔬 +'+g+' RP':''),1);sfx(pr>0?'sell':'loss');draw()}
@@ -1089,7 +1125,7 @@ function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.p
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),e=fillOf(i),ps=e>1e-9?p*(1-Math.exp(-e))/e:p,pr=q*(ps*(1-f)-h.c);
-  S.cash+=q*ps*(1-f);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
+  S.cash+=q*ps*(1-f);S.real=(S.real||0)+pr;if(pr>0)S.rw=(S.rw||0)+1;else S.rl=(S.rl||0)+1;S.rbest=Math.max(S.rbest||0,pr);S.rworst=Math.min(S.rworst||0,pr);logTrade('S',s,q,ps,pr,silent);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
   if(!silent)sfx(pr>0?'sell':'loss');
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
@@ -1127,6 +1163,7 @@ function drawD(){
   actUpd($('#dacts'),cur);
   {const pl=h?o.p/h.c-1:0;$('#down').innerHTML=`<span>Cash <b>${fmt(S.cash)}</b></span><span>Fee <b>${(feeRate()*100).toFixed(1)}%</b></span>`+(h?`<span>Position <b>${fmt(h.n*o.p)}</b> <span class="${pl>=0?'up':'dn'}">(${pl>=0?'+':''}${(pl*100).toFixed(1)}%)</span></span>`:'<span>No position</span>')}
   if(!drawD.hold)$('#dtip').textContent='Touch or hover the chart to inspect · dashed line = start of range';
+  drawNews();
 }
 (()=>{const g=$('#dgw');
   const inspect=e=>{const r=g.getBoundingClientRect(),n=dpts.length,i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*(n-1)))),v=dpts[i],o=S.p[cur],ago=o.n-dts[i],lh=lhOn(cur);
@@ -1142,8 +1179,8 @@ function build(){
     <div class="px"><span class="v"></span> <span class="c mu"></span></div>
     <div class="ulk hide"><button class="btn" data-a="ul"></button></div>
     <div class="acts"><button class="btn" data-a="buy">Buy</button>${qSel()}<button class="btn" data-a="sell">Sell</button><span class="own mu"></span></div></div>`;
-  $('#market').innerHTML='<div id="privbox"></div><div class="chips">'+[['','All'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])].map(([k,l])=>`<button class="btn chip" data-sec="${k}">${l}</button>`).join('')+'<button class="btn chip srtb" data-srt="1">'+IC('unlock')+'<span>Unlocked first</span></button></div><div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div>'+ST.map(srow).join('');
-  privSig='';applyFilter();
+  $('#market').innerHTML='<div id="privbox"></div><div class="srchw"><input id="msearch" type="search" placeholder="Search ticker, company or sector" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search stocks"></div><div class="chips">'+[['','All'],['__own','★ Owned'],...Object.keys(SECTORS).map(k=>[k,k])].map(([k,l])=>`<button class="btn chip" data-sec="${k}">${l}</button>`).join('')+'<button class="btn chip srtb" data-srt="1">'+IC('unlock')+'<span>Unlocked first</span></button></div><div class="mu" id="noown" style="display:none;padding:.6rem .3rem">You do not own any stocks yet.</div><div class="mu" id="nosrch" style="display:none;padding:.6rem .3rem">No stocks match your search.</div>'+ST.map(srow).join('');
+  privSig='';{const si=$('#msearch');if(si)si.value=fq}applyFilter();
   $('#funds').innerHTML='<div class="sec">Mutual funds: slower growth, much steadier, rarely crash. Gold tends to hold up when stocks fall.</div>'+FD.map(srow).join('');
   $('#crypto').innerHTML='<div class="sec">Crypto: huge swings and frequent deep crashes.</div>'+CR.map(srow).join('');
   const urow=u=>`<div class="row upg" data-u="${u.id}" data-cat="${u.cat}"><div class="uic">${u.ic}</div><div><div class="utt"><b>${u.n}</b><span class="pips"></span></div><div class="ud">${u.d}</div><div class="eff"></div>${u.id==='bot'?'<button class="btn botsw" data-bot="1"></button>':''}</div><button class="btn"></button></div>`;
@@ -1185,7 +1222,7 @@ function draw(){
     const pl=r.querySelector('polyline');pl.setAttribute('points',pts);pl.setAttribute('stroke',ch>=0?colUp:colDn);
     r.querySelector('.own').textContent=h?`${h.n} sh · ${(o.p/h.c-1>=0?'+':'')+((o.p/h.c-1)*100).toFixed(1)}%`:'';
   });
-  drawD();drawRP();drawCt();drawSu();drawPriv();applyFilter();
+  drawD();drawRP();drawCt();drawSu();drawPriv();applyFilter();drawStats();drawLive();
   document.querySelectorAll('.row[data-u]').forEach(r=>{
     const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),cost=Math.round(u.base*Math.pow(u.g,l));
     r.querySelector('.pips').textContent='●'.repeat(l)+'○'.repeat(u.max-l);
@@ -1217,10 +1254,132 @@ document.addEventListener('click',e=>{
   else if(r&&r.dataset.u){const u=UPS.find(q=>q.id===r.dataset.u),l=lv(u.id),c=Math.round(u.base*Math.pow(u.g,l));
     if(l<u.max&&(u.rp?S.rp:S.cash)>=c){if(u.rp)S.rp-=c;else S.cash-=c;S.up[u.id]=l+1;sfx('upgrade');draw();save()}}
 });
-function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups'};
+// ===== Search, Portfolio stats, Live news and S&P challenges (v0.5) =====
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sgn=v=>v>=0?'+':'−',money=v=>sgn(v)+fmt(Math.abs(v)),pct=(v,d=1)=>sgn(v)+Math.abs(v*100).toFixed(d)+'%';
+function matchQ(s){const x=SM[s];return (s+' '+x[1]+' '+(SEC[s]||'')).toLowerCase().includes(fq)}
+document.addEventListener('input',e=>{if(e.target.id==='msearch'){fq=e.target.value.trim().toLowerCase();applyFilter()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='msearch'&&e.key==='Escape'&&e.target.value){e.target.value='';fq='';applyFilter();e.stopPropagation()}},true);
+
+// ---- trade log, realized P/L and net-worth history (saved with the game) ----
+function logTrade(a,s,q,px,pr,silent){(S.log||(S.log=[])).unshift({t:Date.now(),a,s,q,p:px,r:pr,b:silent?1:0});if(S.log.length>60)S.log.length=60}
+function nwSample(){if(!S.nwh)S.nwh=[];if(!S.nws)S.nws=10;const h=S.nwh;
+  if(!h.length||S.tick-h[h.length-1][0]>=S.nws){h.push([S.tick,Math.round(nw()*100)/100]);if(h.length>240){S.nwh=h.filter((_,i)=>i%2===0);S.nws*=2}}}
+
+// ---- Portfolio analytics tab ----
+const PAL=['#4c9aff','#2ecc71','#f1c40f','#ff7f50','#a78bfa','#22d3ee','#f472b6','#fb923c'];
+function drawStats(){const el=$('#stats');if(el.classList.contains('hide'))return;
+  const W=nw(),svv=sv(),pvv=pv(),
+    hold=Object.entries(S.hold).map(([k,h])=>{const o=S.p[k],v=h.n*o.p,cost=h.n*h.c;return {k,n:h.n,v,cost,pl:v-cost,pc:h.c>0?o.p/h.c-1:0}}).sort((a,b)=>b.v-a.v),
+    hvv=hold.reduce((a,q)=>a+q.v,0),cost=hold.reduce((a,q)=>a+q.cost,0),upl=hvv-cost,all=W-S.start,real=S.real||0,rw=S.rw||0,rl=S.rl||0,inv=hvv+svv+pvv;
+  const kpi=(l,v,sub,cls)=>`<div class="kpi"><span class="mu">${l}</span><b class="${cls||''}">${v}</b><span class="mu ${cls||''}">${sub||'&nbsp;'}</span></div>`;
+  let h=`<div class="kpis">${kpi('Net worth',fmt(W),money(all)+' ('+pct(S.start>0?all/S.start:0)+') all-time',all>=0?'up':'dn')}
+    ${kpi('Cash',fmt(S.cash),W>0?(S.cash/W*100).toFixed(0)+'% of net worth':'')}
+    ${kpi('Invested',fmt(inv),W>0?(inv/W*100).toFixed(0)+'% of net worth':'')}
+    ${kpi('Unrealized P/L',money(upl),cost>0?pct(upl/cost)+' on cost':'',upl>=0?'up':'dn')}
+    ${kpi('Realized P/L',money(real),rw+rl?'Win rate '+Math.round(rw/(rw+rl)*100)+'% · '+rw+'W '+rl+'L':'No sales yet',real>=0?'up':'dn')}
+    ${kpi('Positions',hold.length+(svv>0?' + startups':'')+(pvv>0?' + private':''),new Set(hold.map(q=>SEC[q.k]||(isF(SM[q.k])?'Funds':isC(SM[q.k])?'Crypto':'Other'))).size+' sector'+(new Set(hold.map(q=>SEC[q.k]||'x')).size===1?'':'s'))}</div>`;
+  // net worth over time
+  const pts=(S.nwh||[]).map(p=>p[1]);pts.push(W);
+  h+='<div class="sec">Net worth over time</div><div class="pcard">';
+  if(pts.length<3)h+='<div class="mu">Collecting data… a point is saved about every '+(S.nws||10)+'s of play.</div>';
+  else{const mn=Math.min(...pts,S.start),mx=Math.max(...pts,S.start),rg=(mx-mn)||1,Wd=300,Hd=100,X=i=>(i*Wd/(pts.length-1)).toFixed(1),Y=v=>(Hd-4-(v-mn)/rg*(Hd-8)).toFixed(1),line=pts.map((v,i)=>X(i)+','+Y(v)).join(' '),col=W>=S.start?colUp:colDn;
+    h+=`<div class="gw" style="height:6.5rem;cursor:default"><svg viewBox="0 0 ${Wd} ${Hd}" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><polygon points="0,${Hd} ${line} ${Wd},${Hd}" fill="${col}" opacity=".15"/><line x1="0" x2="${Wd}" y1="${Y(S.start)}" y2="${Y(S.start)}" stroke="#8b97a6" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" opacity=".6"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg><span class="gh">High ${fmt(mx)}</span><span class="gl">Low ${fmt(mn)}</span></div><div class="mu">Dashed line = your starting ${fmt(S.start)}</div>`}
+  h+='</div>';
+  // allocation donut
+  let sl=hold.map(q=>({n:q.k,v:q.v}));
+  if(sl.length>6){const rest=sl.slice(6);sl=sl.slice(0,6);sl.push({n:'Other ('+rest.length+')',v:rest.reduce((a,q)=>a+q.v,0)})}
+  if(svv>0)sl.push({n:'Startups',v:svv});if(pvv>0)sl.push({n:'Private',v:pvv});sl.push({n:'Cash',v:S.cash,c:'#64748b'});
+  sl.forEach((q,i)=>{if(!q.c)q.c=PAL[i%PAL.length]});
+  let cum=0;const arcs=W>0?sl.filter(q=>q.v>0).map(q=>{const p=q.v/W*100,s=`<circle cx="18" cy="18" r="15.9155" fill="none" stroke="${q.c}" stroke-width="5" stroke-dasharray="${p.toFixed(2)} ${(100-p).toFixed(2)}" stroke-dashoffset="${(25-cum).toFixed(2)}"/>`;cum+=p;return s}).join(''):'';
+  h+=`<div class="sec">Allocation</div><div class="pcard donut"><svg viewBox="0 0 36 36" class="dn-svg"><circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--line)" stroke-width="5"/>${arcs}</svg><div class="leg">${sl.filter(q=>q.v>0).map(q=>`<div><i style="background:${q.c}"></i><span>${esc(q.n)}</span><b>${W>0?(q.v/W*100).toFixed(1):0}%</b></div>`).join('')}</div></div>`;
+  // sector exposure
+  const sec={};hold.forEach(q=>{const x=SM[q.k],n=SEC[q.k]||(isF(x)?'Funds':isC(x)?'Crypto':'Other');sec[n]=(sec[n]||0)+q.v});if(svv>0)sec.Startups=svv;if(pvv>0)sec.Private=pvv;
+  const se=Object.entries(sec).sort((a,b)=>b[1]-a[1]);
+  if(se.length){h+='<div class="sec">Sector exposure <span class="mu">(share of invested money)</span></div><div class="pcard">'+se.map(([n,v])=>`<div class="sbar"><span>${esc(n)}</span><div class="bar"><i style="width:${(v/inv*100).toFixed(1)}%"></i></div><b>${(v/inv*100).toFixed(0)}%</b></div>`).join('')+'</div>'}
+  // highlights
+  if(hold.length){const best=hold.reduce((a,q)=>q.pc>a.pc?q:a),worst=hold.reduce((a,q)=>q.pc<a.pc?q:a),top=hold[0],tp=inv>0?top.v/inv:0;
+    h+='<div class="sec">Highlights</div><div class="pcard hl">'+
+      `<div><span class="mu">Best holding</span><b>${best.k}</b><span class="${best.pc>=0?'up':'dn'}">${pct(best.pc)}</span></div>`+
+      `<div><span class="mu">Worst holding</span><b>${worst.k}</b><span class="${worst.pc>=0?'up':'dn'}">${pct(worst.pc)}</span></div>`+
+      `<div><span class="mu">Biggest position</span><b>${top.k}</b><span>${(tp*100).toFixed(0)}% of invested</span></div>`+
+      `<div><span class="mu">Diversification</span><b>${hold.length<3?'Concentrated':hold.length<6?'Balanced':'Diversified'}</b><span>${hold.length} holding${hold.length===1?'':'s'}</span></div>`+
+      (hold.length>1&&tp>.4?`<div class="warn2">⚠ ${top.k} is ${(tp*100).toFixed(0)}% of what you have invested. One bad day there hurts a lot.</div>`:hold.length===1?`<div class="warn2">⚠ Everything you have invested is in ${top.k}.</div>`:'')+'</div>';
+    h+='<div class="sec">Holdings</div>'+hold.map(q=>`<div class="hr" data-open="${q.k}"><div><b>${q.k}</b> <span class="mu">${esc(SM[q.k][1])}</span><div class="mu">${q.n.toLocaleString()} sh · avg $${(q.cost/q.n).toFixed(2)} · now $${S.p[q.k].p.toFixed(2)}</div></div><div class="r"><b>${fmt(q.v)}</b><div class="mu">${W>0?(q.v/W*100).toFixed(1):0}% of total</div></div><div class="r ${q.pl>=0?'up':'dn'}"><b>${money(q.pl)}</b><div>${pct(q.pc)}</div></div></div>`).join('')}
+  else h+='<div class="sec">Holdings</div><div class="pcard mu">You do not own anything yet. Buy something on the Market tab and it shows up here.</div>';
+  // trading stats + recent trades
+  h+=`<div class="sec">Trading</div><div class="pcard hl"><div><span class="mu">Trades</span><b>${gs('trades').toLocaleString()}</b></div><div><span class="mu">Win rate</span><b>${rw+rl?Math.round(rw/(rw+rl)*100)+'%':'—'}</b></div><div><span class="mu">Best sale</span><b class="up">${S.rbest>0?'+'+fmt(S.rbest):'—'}</b></div><div><span class="mu">Worst sale</span><b class="dn">${S.rworst<0?'−'+fmt(-S.rworst):'—'}</b></div></div>`;
+  const lg=(S.log||[]).slice(0,8);
+  if(lg.length)h+='<div class="pcard">'+lg.map(t=>`<div class="lrow"><span class="mu">${ago(t.t)}</span><span>${t.b?'🤖 ':''}${t.a==='B'?'Bought':'Sold'} ${t.q.toLocaleString()} <b>${t.s}</b> @ $${t.p.toFixed(2)}</span><span class="${t.a==='S'?(t.r>=0?'up':'dn'):'mu'}">${t.a==='S'?money(t.r):''}</span></div>`).join('')+'</div>';
+  el.innerHTML=h}
+$('#stats').addEventListener('click',e=>{const r=e.target.closest('[data-open]');if(r&&SM[r.dataset.open])openD(r.dataset.open)});
+
+// ---- Live mode: company headlines (server proxies Finnhub /company-news) ----
+const NEWS={};
+function lvNews(s){if(!isLive()||NOLIVE.has(s))return;
+  const e=NEWS[s]||(NEWS[s]={items:[],ready:false,err:'',at:0,last:0,busy:false}),now=Date.now();
+  if(e.busy||now-e.last<2500||(e.ready&&now-e.at<240e3))return;
+  e.busy=true;e.last=now;
+  fetch('/api/news?s='+encodeURIComponent(s),{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    if(!j||!j.ok){e.err=(j&&j.error)||'bad';e.ready=true}else{e.err='';e.items=j.items||[];e.ready=!!j.ready}
+    e.at=Date.now()}).catch(()=>{e.err='net';e.ready=true;e.at=Date.now()}).finally(()=>{e.busy=false;if(cur===s)drawNews()})}
+function drawNews(){const el=$('#dnews');if(!el)return;
+  if(!cur||!isLive()||NOLIVE.has(cur)){if(el.innerHTML){el.innerHTML='';el.dataset.sig=''}return}
+  lvNews(cur);const e=NEWS[cur];let h;
+  if(!e||(!e.ready&&!e.err))h='<div class="mu">Loading headlines…</div>';
+  else if(e.err==='nokey'||e.err==='badkey')h='<div class="mu">Headlines need a working FINNHUB_API_KEY on the server.</div>';
+  else if(e.err)h='<div class="mu">Could not load headlines right now.</div>';
+  else if(!e.items.length)h='<div class="mu">No recent headlines for this one.</div>';
+  else h=e.items.slice(0,6).map(a=>`<a class="nitem" href="${esc(a.u)}" target="_blank" rel="noopener noreferrer"><span class="nh">${esc(a.h)}</span><span class="mu">${esc(a.s)}${a.t?' · '+ago(a.t*1000):''}</span></a>`).join('');
+  const sig=cur+'|'+h;if(el.dataset.sig!==sig){el.dataset.sig=sig;el.innerHTML='<div class="sec" style="padding-top:.2rem">📰 Latest headlines</div>'+h}}
+
+// ---- Live mode: daily / weekly challenges scored against the real S&P 500 (SPY, via the IDX ticker) ----
+// Your return is net worth now vs at the start of the period; the S&P return is SPY over the same moments. Both are sampled together
+// while the game is open, so being away never makes the comparison unfair. Real prices do not react to your trades.
+const EXMIN=.2,CHD=[
+  {id:'d1',per:'d',n:'Beat the S&P today',min:0},{id:'d2',per:'d',n:'Beat the S&P by 0.5% today',min:.005},
+  {id:'w1',per:'w',n:'Beat the S&P this week',min:0},{id:'w2',per:'w',n:'Beat the S&P by 2% this week',min:.02}];
+const pad2=n=>String(n).padStart(2,'0'),dkey=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()),
+  wstart=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x},
+  pkey=(per,d)=>per==='d'?dkey(d):dkey(wstart(d)),
+  pend=(per,t)=>{const d=new Date(t);if(per==='d')return new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime();const w=wstart(d);return new Date(w.getFullYear(),w.getMonth(),w.getDate()+7).getTime()};
+const chInit=()=>S.ch||(S.ch={cur:{},hist:[],st:{d:0,w:0},best:{d:0,w:0},w:0,l:0,dr:0,ids:{}});
+const chRes=r=>{const pr=r.a0>0?r.a1/r.a0-1:0,sr=r.b0>0?r.b1/r.b0-1:0;return {pr,sr,al:pr-sr,flat:Math.abs(pr)<1e-9&&Math.abs(sr)<1e-9}};
+const chWon=(per,r)=>{const x=chRes(r),ex=r.en?r.es/r.en:0;return CHD.filter(c=>c.per===per&&!x.flat&&ex>=EXMIN&&x.al>c.min+1e-9).map(c=>c.id)};
+function chSettle(per,r){const C=chInit();if(r.en<60)return; // under a minute of play in that period: not scored
+  const x=chRes(r),ex=r.es/r.en,inv=ex>=EXMIN,won=chWon(per,r),prim=won.includes(per+'1');
+  C.hist.unshift({per,k:r.k,pr:x.pr,sr:x.sr,ex,flat:x.flat,inv,won});if(C.hist.length>40)C.hist.length=40;
+  if(x.flat)C.dr++;else if(!inv)C.st[per]=0;else if(prim){C.st[per]++;C.best[per]=Math.max(C.best[per],C.st[per]);C.w++}else{C.st[per]=0;C.l++}
+  won.forEach(id=>C.ids[id]=(C.ids[id]||0)+1);
+  const nm=per==='d'?'Daily':'Weekly',body=nm+': you '+pct(x.pr,2)+' vs S&P '+pct(x.sr,2),ttl=x.flat?'➖ '+nm+' challenge: market did not move':!inv?'⚠ '+nm+' challenge skipped: not invested enough':prim?'🏆 You beat the S&P!':'📉 The S&P won this round';
+  if(!note(prim?'up':'inf',ttl,body,{ttl:14000}))toast(ttl+' · '+body,1)}
+function lvChTick(){const I=S.p.IDX;if(!I||!I.live||!(I.p>0)||!LV.at)return;
+  const C=chInit(),n=nw(),ix=I.p,ex=n>0?hv()/n:0,now=new Date();
+  ['d','w'].forEach(per=>{const k=pkey(per,now);let r=C.cur[per];
+    if(r&&r.k!==k){chSettle(per,r);r=null}
+    if(!r)r=C.cur[per]={k,t0:Date.now(),a0:n,b0:ix,a1:n,b1:ix,es:0,en:0};
+    r.a1=n;r.b1=ix;r.es+=ex;r.en++})}
+const leftTxt=ms=>{const m=Math.max(0,Math.round(ms/60000)),d=m/1440|0,h=(m%1440)/60|0;return d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':(m%60)+'m'};
+function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLive())return;
+  const C=chInit(),I=S.p.IDX,now=Date.now();let h='';
+  const dayCh=I&&I.live&&I.pc>0?I.p/I.pc-1:0;
+  h+=`<div class="pcard"><div class="up-row"><b>S&amp;P 500 (SPY)</b><span class="${dayCh>=0?'up':'dn'}"><b>${I&&I.live?'$'+I.p.toFixed(2)+' · '+pct(dayCh,2):'…'}</b></span></div><div class="mu">${esc(lvStatus())}</div><div class="mu">Beat the real index. Your trades never move real prices, so skill is all that counts.</div></div>`;
+  [['d','Today'],['w','This week']].forEach(([per,nm])=>{const r=C.cur[per],defs=CHD.filter(c=>c.per===per);
+    h+=`<div class="sec">${nm}${r?' <span class="mu">· resets in '+leftTxt(pend(per,now)-now)+'</span>':''}</div><div class="pcard">`;
+    if(!r){h+='<div class="mu">Waiting for live prices…</div></div>';return}
+    const x=chRes(r),ex=r.en?r.es/r.en:0,sc=Math.max(Math.abs(x.pr),Math.abs(x.sr),.005),bar=(l,v)=>`<div class="cbar"><span>${l}</span><div class="bar"><i style="width:${(Math.abs(v)/sc*100).toFixed(1)}%;background:${v>=0?colUp:colDn}"></i></div><b class="${v>=0?'up':'dn'}">${pct(v,2)}</b></div>`;
+    h+=bar('You',x.pr)+bar('S&amp;P',x.sr)+`<div class="mu" style="margin:.15rem 0 .3rem">Gap <b class="${x.al>=0?'up':'dn'}">${sgn(x.al)}${Math.abs(x.al*100).toFixed(2)} pts</b> · invested ${(ex*100).toFixed(0)}% on average${ex<EXMIN?' <span class="dn">(needs '+EXMIN*100+'%)</span>':''} · since ${new Date(r.t0).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}</div>`;
+    h+=defs.map(c=>{const won=!x.flat&&ex>=EXMIN&&x.al>c.min+1e-9,gap=c.min-x.al;
+      return `<div class="crow ${won?'ok':''}"><span>${won?'✅':'⏳'} ${c.n}</span><span class="mu">${won?'on track':x.flat?'no movement yet':ex<EXMIN?'invest more':'need '+(gap*100).toFixed(2)+' pts more'}</span></div>`}).join('')+'</div>'});
+  h+=`<div class="sec">Record</div><div class="pcard hl"><div><span class="mu">Daily streak</span><b>🔥 ${C.st.d}</b><span>best ${C.best.d}</span></div><div><span class="mu">Weekly streak</span><b>🔥 ${C.st.w}</b><span>best ${C.best.w}</span></div><div><span class="mu">Wins · losses</span><b>${C.w} · ${C.l}</b><span>${C.dr} flat</span></div><div><span class="mu">Big wins</span><b>${(C.ids.d2||0)+(C.ids.w2||0)}</b><span>+0.5% / +2% tiers</span></div></div>`;
+  if(C.hist.length)h+='<div class="sec">Past results</div><div class="pcard">'+C.hist.slice(0,10).map(e=>{const d=new Date(e.k+'T00:00:00'),lb=e.per==='d'?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'Week of '+d.toLocaleDateString([],{month:'short',day:'numeric'}),win=e.won.includes(e.per+'1');
+    return `<div class="lrow"><span>${e.flat?'➖':!e.inv?'⚠':win?'✅':'❌'} ${lb}</span><span class="mu">you ${pct(e.pr,2)} · S&amp;P ${pct(e.sr,2)}</span><span class="${win?'up':'mu'}">${e.flat?'flat':!e.inv?'skipped':win?'win':'loss'}</span></div>`}).join('')+'</div>';
+  h+='<div class="mu" style="padding:.4rem .2rem">Scored on the prices the game sees while it is open. You must keep at least '+EXMIN*100+'% of your net worth invested on average, so sitting in cash does not count.</div>';
+  el.innerHTML=h}
+function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
-  if(v==='k')drawCt();if(v==='s')drawSu()}
-$('#t-m').onclick=()=>tab('m');$('#t-f').onclick=()=>tab('f');$('#t-c').onclick=()=>tab('c');$('#t-k').onclick=()=>tab('k');$('#t-u').onclick=()=>tab('u');$('#t-s').onclick=()=>tab('s');
+  if(v==='k')drawCt();if(v==='s')drawSu();if(v==='p')drawStats();if(v==='l')drawLive()}
+$('#t-m').onclick=()=>tab('m');$('#t-f').onclick=()=>tab('f');$('#t-c').onclick=()=>tab('c');$('#t-k').onclick=()=>tab('k');$('#t-u').onclick=()=>tab('u');$('#t-s').onclick=()=>tab('s');$('#t-p').onclick=()=>tab('p');$('#t-l').onclick=()=>tab('l');
 function renderSet(){
   document.querySelectorAll('#set [data-k]').forEach(b=>{const k=b.dataset.k;
     if(b.dataset.v!==undefined)b.classList.toggle('on',CFG[k]===b.dataset.v);
