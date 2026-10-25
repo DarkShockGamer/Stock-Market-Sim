@@ -482,7 +482,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.7.3</div>
+<div id="title"><div id="ver">v0.7.4</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1048,11 +1048,14 @@ const ACHV=[
 ['ch3','Alpha Hunter','Beat the S&P by 2% in a weekly challenge (Live Market)',4,()=>!!S.ch&&!!S.ch.ids&&S.ch.ids.w2>=1]
 ].map(([id,n,d,rp,f])=>({id,n,d,rp,f}));
 function checkAch(){const got=[];ACHV.forEach(a=>{if(!S.ach[a.id]&&a.f()){const now=Date.now();S.ach[a.id]=now;const first=!G.a[a.id];if(first){G.a[a.id]=now;S.rp+=a.rp;S.rpt+=a.rp}got.push({n:a.n,d:a.d,rp:a.rp,first})}});
-  if(!got.length)return;wr(GK,JSON.stringify(G));
+  if(!got.length)return;wr(GK,JSON.stringify(G));reportAch();
   if(got.length<=2)got.forEach(a=>note('ach',a.n,a.d+(a.first&&!isLive()?' · +'+a.rp+' RP':''),{ttl:10000}));
   else note('ach',got.length+' achievements unlocked',(isLive()?'see the Achievements screen':'+'+got.reduce((q,a)=>q+(a.first?a.rp:0),0)+' RP total · see the Achievements screen'),{ttl:10000})}
-let ACST=null,ACAT=0,ACGL=false;
-function loadAchStats(){if(Date.now()-ACAT<60000)return;ACAT=Date.now();fetch('/api/ach-stats',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.ok){ACST=j;if(!$('#ach').classList.contains('hide')&&ACGL)renderAch(true)}}).catch(()=>{})}
+let ACST=null,ACAT=0,ACGL=false,ACSIG='';
+function reportAch(){try{let id=rd('stockidle.aid');if(!id){id=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>(b%36).toString(36)).join('');wr('stockidle.aid',id)}
+  const a=Object.keys(G.a||{}).sort(),sig=a.join(',');if(sig===ACSIG)return Promise.resolve();ACSIG=sig;
+  return fetch('/api/ach-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,a}),cache:'no-store'}).catch(()=>{ACSIG=''})}catch(e){return Promise.resolve()}}
+function loadAchStats(){if(Date.now()-ACAT<30000)return;ACAT=Date.now();reportAch().then(()=>fetch('/api/ach-stats',{cache:'no-store'}).then(r=>r.ok?r.json():null)).then(j=>{if(j&&j.ok){ACST=j;if(!$('#ach').classList.contains('hide')&&ACGL)renderAch(true)}}).catch(()=>{})}
 function renderAch(glob){ACGL=glob;if(glob)loadAchStats();const src=glob?G.a:S.ach,n=ACHV.filter(a=>src[a.id]).length;
   $('#achh').innerHTML='<svg class="ico"><use href="#i-medal"/></svg><span>'+(glob?'All-time ':'This save ')+n+'/'+ACHV.length+'</span>';
   $('#adesc').textContent=glob?'Everything you have ever unlocked, across all of your saves. The Research Points bonus is only paid the first time.':'Achievements earned in this save (Slot '+slot+'). One you earned in another save counts here when you earn it again, but its RP bonus is only paid once.';
