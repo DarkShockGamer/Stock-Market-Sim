@@ -369,6 +369,22 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 #tcl[data-st=ok]::after{background:var(--up)}#tcl[data-st=busy]::after{background:var(--ac)}#tcl[data-st=err]::after{background:var(--dn)}#tcl[data-st=off]::after{display:none}
 .tcl{font-size:.82em;color:var(--mu);cursor:pointer;background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.7rem;padding:.3rem .7rem;max-width:100%;overflow-wrap:anywhere}
 .tcl:hover{border-color:var(--ac);color:var(--tx)}.tcl.hide{display:none}
+#tcl[data-st=off]{width:auto;height:2.4rem;padding:0 1rem;border-radius:999px;font-size:.9em;white-space:nowrap;background:var(--ac);border-color:var(--ac);color:#fff}
+#tcl[data-st=off]:hover{filter:brightness(1.1)}
+#tcl .sgn{display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.02em}
+#pmenu{position:fixed;top:calc(max(.7rem,env(safe-area-inset-top,0px)) + 3.3rem);right:.7rem;z-index:6;width:min(17.5rem,calc(100vw - 1.4rem));background:var(--card);border:1px solid var(--line);border-radius:.9rem;padding:.5rem;display:flex;flex-direction:column;gap:.25rem;box-shadow:0 .6rem 1.6rem #0008;text-align:left;font-size:.9em}
+#pmenu.hide{display:none}
+#pmenu .pmh{display:flex;align-items:center;padding:.15rem .25rem}
+#pmenu .pmh .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pmenu .pmh img.av,#pmenu .pmh .av0{width:2rem;height:2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac) 30%,var(--card));font-weight:700}
+#pmenu .mu{padding:0 .25rem}
+#pmenu .pmsep{height:1px;background:var(--line);margin:.2rem 0}
+#pmenu .pmi{display:flex;align-items:center;justify-content:space-between;gap:.5rem;width:100%;max-width:none;min-width:0;text-align:left;padding:.4rem .6rem}
+#pmenu .pmi>span{display:flex;align-items:center;gap:.5rem}
+#pmenu .pmi .ico{width:1.05em;height:1.05em}
+#pmenu .pmi .tv{font-weight:700;color:var(--mu)}#pmenu .pmi .tv.on{color:var(--up)}
+#pmenu .pmi.warn:hover{color:var(--dn);border-color:var(--dn)}
+#pmenu .gbtn{min-height:2.5rem}
 #cloudbox{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
 .gbtn{min-height:2.5rem;display:flex;justify-content:center;align-items:center;color-scheme:light}
 .who{display:flex;align-items:center;gap:.5rem;min-width:0}.av{width:1.8rem;height:1.8rem;border-radius:50%;flex:0 0 auto}
@@ -428,7 +444,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.6.7</div>
+<div id="title"><div id="ver">v0.6.8</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -441,7 +457,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
   </svg>
   <div class="wm"><small>Idle</small><b>STOCKS</b></div>
   <div class="tag2 dec">Buy low. Sell high. Let it run.</div>
-  <div id="tmain" class="tcol"><div class="mu" id="ts"></div><div class="tcl hide" id="tcl" role="button" tabindex="0" title="Cloud saves"></div>
+  <div id="tmain" class="tcol"><div class="mu" id="ts"></div><div class="tcl hide" id="tcl" role="button" tabindex="0" title="Cloud saves" aria-haspopup="menu"></div><div id="pmenu" class="hide" role="menu"></div>
     <button class="btn main tbtn" id="tp"><svg class="ico"><use href="#i-play"/></svg><span>Play</span></button>
     <button class="btn tbtn" id="tl"><svg class="ico"><use href="#i-folder"/></svg><span>Saves</span></button>
     <button class="btn tbtn" id="tlb"><svg class="ico"><use href="#i-chart"/></svg><span>Leaderboard</span></button>
@@ -1501,10 +1517,10 @@ async function onCred(resp){
     CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true)}
   catch(e){CLD.err='Could not reach the server';cloudUi()}}
 const gisLoad=()=>CLD.gis||(CLD.gis=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=res;s.onerror=()=>{CLD.gis=null;rej(new Error('gis'))};document.head.appendChild(s)}));
-async function renderGBtn(){const el=$('#gbtn');if(!el||!CLD.cfg)return;
+async function renderGBtn(sel='#gbtn'){const el=$(sel);if(!el||!CLD.cfg)return;
   try{await gisLoad();if(!CLD.gInit){google.accounts.id.initialize({client_id:CLD.cfg.clientId,callback:onCred,auto_select:false,ux_mode:'popup'});CLD.gInit=true}
-    const e2=$('#gbtn');if(e2)google.accounts.id.renderButton(e2,{theme:CFG.theme==='light'?'outline':'filled_black',size:'large',shape:'pill',text:'signin_with',width:240})}
-  catch(e){const e2=$('#gbtn');if(e2)e2.innerHTML='<span class="mu">Could not load Google sign-in. Check your connection.</span>'}}
+    const e2=$(sel);if(e2)google.accounts.id.renderButton(e2,{theme:CFG.theme==='light'?'outline':'filled_black',size:'large',shape:'pill',text:'signin_with',width:240})}
+  catch(e){const e2=$(sel);if(e2)e2.innerHTML='<span class="mu">Could not load Google sign-in. Check your connection.</span>'}}
 const cloudStat=()=>CLD.busy?'Syncing…':CLD.err?'⚠ '+CLD.err:CLD.at?'Synced '+ago(CLD.at):'Not synced yet';
 function renderCloud(){const el=$('#cloudbox');if(!el)return;
   const sig=[!!CLD.cfg,!!CLD.tok,CLD.user&&CLD.user.name,CLD.auto,CLD.hide,CFG.theme].join('|');
@@ -1517,19 +1533,48 @@ function renderCloud(){const el=$('#cloudbox');if(!el)return;
       <div class="srow"><button class="btn" data-cl="sync">Sync now</button><button class="btn warn" data-cl="wipe">Delete cloud data</button></div><div class="mu" id="clst"></div>
       <div class="mu">Deleting a slot while signed in also deletes its cloud copy.</div>`}
   const st=$('#clst');if(st)st.textContent=CLD.tok?cloudStat():CLD.err}
-function cloudUi(){renderCloud();renderLB();const t=$('#tcl');
+function cloudUi(){renderCloud();renderPM();renderLB();const t=$('#tcl');
   if(t){if(!CLD.cfg)t.classList.add('hide');else{t.classList.remove('hide');
     const nm=CLD.user&&CLD.user.name||'Signed in',st=CLD.tok?(CLD.busy?'busy':CLD.err?'err':'ok'):'off';
-    const h=CLD.tok?(CLD.user&&CLD.user.picture?`<img src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`):'<span class="av0">☁</span>';
+    const h=CLD.tok?(CLD.user&&CLD.user.picture?`<img src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`):'<span class="sgn">Sign in</span>';
     if(t.dataset.h!==h){t.dataset.h=h;t.innerHTML=h}
     t.dataset.st=st;const tt=CLD.tok?nm+' · '+cloudStat():'Sign in to save to the cloud'+(CLD.err?' · '+CLD.err:'');t.title=tt;t.setAttribute('aria-label',tt)}}
   if(!$('#tslots').classList.contains('hide'))renderSlots()}
-$('#tcl').onclick=()=>openSet();
+function closePM(){const m=$('#pmenu');if(m)m.classList.add('hide')}
+function renderPM(force){const m=$('#pmenu');if(!m||m.classList.contains('hide'))return;
+  const sig=[!!CLD.tok,CLD.user&&CLD.user.name,CLD.user&&CLD.user.picture,CLD.auto,CLD.hide,CFG.theme].join('|');
+  if(force||CLD.psig!==sig||!m.firstChild){CLD.psig=sig;
+    const row=(a,ic,t,x)=>`<button class="btn pmi ${x||''}" role="menuitem" data-pm="${a}"><span><svg class="ico"><use href="#i-${ic}"/></svg>${t}</span></button>`;
+    const tg=(a,t,on)=>`<button class="btn pmi" role="menuitem" data-pm="${a}"><span>${t}</span><span class="tv ${on?'on':''}">${on?'On':'Off'}</span></button>`;
+    const nm=CLD.user&&CLD.user.name||'Signed in';
+    if(CLD.tok){
+      m.innerHTML=`<div class="pmh"><span class="who">${CLD.user&&CLD.user.picture?`<img class="av" src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`}<b>${esc(nm)}</b></span></div><div class="mu" id="pmst"></div><div class="pmsep"></div>`
+        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','folder','Sync now')
+        +tg('auto','Auto-sync',CLD.auto)+tg('hide','Show me on leaderboard',!CLD.hide)
+        +'<div class="pmsep"></div>'+row('set','gear','Settings')+row('out','back','Sign out','warn')}
+    else{
+      m.innerHTML=`<div class="pmh"><b>Sign in</b></div><div class="mu">Back up your saves to the cloud, continue on another device and join the leaderboard.</div><div id="gbtn2" class="gbtn"></div><div class="mu" id="pmst"></div><div class="pmsep"></div>`
+        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('set','gear','Settings');renderGBtn('#gbtn2')}}
+  const st=$('#pmst');if(st)st.textContent=CLD.tok?cloudStat():CLD.err}
+$('#tcl').onclick=e=>{e.stopPropagation();const m=$('#pmenu');if(m.classList.contains('hide')){m.classList.remove('hide');renderPM(true);sfx('click')}else closePM()};
+$('#tcl').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#tcl').click()}};
+document.addEventListener('click',e=>{if(!e.target.closest('#pmenu,#tcl'))closePM()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePM()});
+$('#pmenu').addEventListener('click',async e=>{const b=e.target.closest('button[data-pm]');if(!b)return;const a=b.dataset.pm;
+  if(a==='auto'){CLD.auto=!CLD.auto;clSave();CLD.sig='';renderCloud();renderPM(true);return}
+  if(a==='hide'){await cloudHide();renderPM(true);return}
+  if(a==='sync'){CLD.hold={};cloudSync(true);return}
+  closePM();
+  if(a==='lb'){renderLB();views('lb');loadLB(true)}
+  else if(a==='saves'){renderSlots();views(true)}
+  else if(a==='set')openSet();
+  else if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}});
+async function cloudHide(){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
 $('#cloudbox').addEventListener('click',async e=>{const b=e.target.closest('button[data-cl]');if(!b)return;const a=b.dataset.cl;
   if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}
   else if(a==='auto'){CLD.auto=!CLD.auto;clSave();CLD.sig='';renderCloud()}
   else if(a==='sync'){CLD.hold={};cloudSync(true)}
-  else if(a==='hide'){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
+  else if(a==='hide')await cloudHide();
   else if(a==='wipe'){
     if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to delete';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Delete cloud data'}},3000);return}
     try{const r=await capi('DELETE','account');if(r.j.ok){cloudOut();toast('Cloud data deleted and signed out. Saves on this device are untouched.',1)}else toast('Could not delete cloud data',1)}catch(e){}}});
@@ -1585,7 +1630,7 @@ $('#set').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
 $('#menu').onclick=()=>{closeD();clearNotes();save();clearTimeout(loop.t);showTitle();cloudSoon()};
 const slotNW=o=>o.cash+(o.su&&o.su.list?o.su.list.reduce((a,l)=>a+l.n*l.p,0):0)+Object.entries(o.hold||{}).reduce((a,[k,h])=>a+h.n*(o.p[k]?o.p[k].p:0),0)+Object.values(o.priv||{}).reduce((a,p)=>a+p.v,0);
-function views(sl){$('#tmain').classList.toggle('hide',!!sl);$('#tslots').classList.toggle('hide',sl!==true);$('#tlbs').classList.toggle('hide',sl!=='lb');$('#tcr').classList.toggle('hide',sl!=='cr');$('#title').classList.toggle('sl',!!sl)}
+function views(sl){closePM();$('#tmain').classList.toggle('hide',!!sl);$('#tslots').classList.toggle('hide',sl!==true);$('#tlbs').classList.toggle('hide',sl!=='lb');$('#tcr').classList.toggle('hide',sl!=='cr');$('#title').classList.toggle('sl',!!sl)}
 const ago=t=>{const d=(Date.now()-t)/1000;if(d<60)return 'just now';if(d<3600)return Math.floor(d/60)+' min ago';if(d<86400)return Math.floor(d/3600)+' h ago';if(d<604800)return Math.floor(d/86400)+' d ago';return new Date(t).toLocaleDateString([],{month:'short',day:'numeric'})};
 function renderSlots(msg){
   $('#slist').innerHTML=Array.from({length:SLOTS},(_,i)=>i+1).map(n=>{const o=peek(n),cur=n===slot;
@@ -1625,8 +1670,8 @@ function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
 function play(){lvStart();sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
-function showTitle(){const c=S.tick>0;
-  $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
+function showTitle(){
+  $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
 {const old=rd('stockidle.v1');if(old&&!rd(SK(1))){wr(SK(1),old);rm('stockidle.v1')}
 let best=1,bl=-1;for(let n=1;n<=SLOTS;n++){const o=peek(n);if(o&&(o.last||0)>bl){bl=o.last||0;best=n}}
