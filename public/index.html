@@ -336,6 +336,18 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 #dnews .nitem:hover .nh{color:var(--ac)}.nh{font-size:.9em;line-height:1.25}
 /* ---- v0.6: cloud saves ---- */
 #lb{text-align:left;width:100%}
+#tcr{align-items:center}
+#cr{width:100%;display:flex;flex-direction:column;align-items:center;gap:1.4rem;padding:1rem 0 .6rem;text-align:center}
+#cr .cr-sub{letter-spacing:.4em;text-transform:uppercase;font-size:1.1em;color:var(--tx);font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:600}
+#cr .cr-rule{width:3rem;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--ac),transparent)}
+#cr .cr-role{letter-spacing:.3em;text-transform:uppercase;font-size:.78em;color:var(--mu);font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:600}
+#cr .cr-name{font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:700;font-size:2.1em;letter-spacing:.06em;text-transform:uppercase;line-height:1.1;margin-top:.15rem;background:linear-gradient(100deg,var(--ac),var(--up));-webkit-background-clip:text;background-clip:text;color:transparent}
+#cr .cr-thx{font-size:.8em;color:var(--mu);letter-spacing:.12em}
+#cr>*{opacity:0}
+#cr.go>*{animation:crin .8s ease forwards}
+#cr.go>*:nth-child(2){animation-delay:.15s}#cr.go>*:nth-child(3){animation-delay:.3s}#cr.go>*:nth-child(4){animation-delay:.6s}#cr.go>*:nth-child(5){animation-delay:.75s}#cr.go>*:nth-child(6){animation-delay:.9s}#cr.go>*:nth-child(7){animation-delay:1.2s}
+@keyframes crin{from{opacity:0;transform:translateY(.8rem)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#cr>*{opacity:1}#cr.go>*{animation:none}}
 #lb.hide{display:none}
 #lb .lbh{display:flex;justify-content:center;margin:.2rem 0 .5rem}
 #lb .lbh b{font-size:1.05em;letter-spacing:.08em;text-transform:uppercase;font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:600}
@@ -408,7 +420,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.6.3</div>
+<div id="title"><div id="ver">v0.6.4</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -426,8 +438,18 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn tbtn" id="tl"><svg class="ico"><use href="#i-folder"/></svg><span>Saves</span></button>
     <button class="btn tbtn" id="tlb"><svg class="ico"><use href="#i-chart"/></svg><span>Leaderboard</span></button>
     <div class="trow"><button class="btn tbtn" id="tach"><svg class="ico"><use href="#i-medal"/></svg><span>Awards</span></button>
-    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div></div>
+    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div>
+    <button class="btn tbtn" id="tcrd"><svg class="ico"><use href="#i-medal"/></svg><span>Credits</span></button></div>
   <div id="tlbs" class="tcol hide"><div class="shead"><button class="btn" id="tb2"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Leaderboard</h2></div><div id="lb"></div></div>
+  <div id="tcr" class="tcol hide"><div id="cr">
+      <div class="cr-sub">Credits</div>
+      <div class="cr-rule"></div>
+      <div><div class="cr-role">Lead Designer &amp; Creator</div><div class="cr-name">Lucas Palmquist</div></div>
+      <div class="cr-rule"></div>
+      <div><div class="cr-role">QA Tester &amp; Co-Designer</div><div class="cr-name">Wynnsten Nells</div></div>
+      <div class="cr-thx">Thanks for playing</div>
+      <button class="btn tbtn" id="tb3"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button>
+    </div></div>
   <div id="tslots" class="tcol hide"><div class="shead"><button class="btn" id="tb"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Save slots</h2></div><div id="slist"></div><div class="mu" id="smsg"></div></div>
 </div>
 <div id="dlg" class="hide"><div class="card">
@@ -1511,6 +1533,8 @@ function renderLB(){const el=$('#lb');if(!el)return;if(!CLD.cfg){el.innerHTML='<
   el.innerHTML=`<div class="lbh"><div class="seg"><button class="btn ${m==='classic'?'on':''}" data-lb="classic">Classic</button><button class="btn ${m==='live'?'on':''}" data-lb="live">Live</button></div></div>${rows}${mine?'<ol>'+mine+'</ol>':''}<div class="lbf">${esc(foot||(tot?tot+' player'+(tot===1?'':'s')+' · best net worth save':''))}</div>`}
 $('#tlb').onclick=()=>{renderLB();views('lb');loadLB(true)};
 $('#tb2').onclick=()=>{showTitle()};
+$('#tb3').onclick=()=>{showTitle()};
+$('#tcrd').onclick=()=>{views('cr');const c=$('#cr');c.classList.remove('go');void c.offsetWidth;c.classList.add('go')};
 $('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
 async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
@@ -1548,7 +1572,7 @@ $('#set').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
 $('#menu').onclick=()=>{closeD();clearNotes();save();clearTimeout(loop.t);showTitle();cloudSoon()};
 const slotNW=o=>o.cash+(o.su&&o.su.list?o.su.list.reduce((a,l)=>a+l.n*l.p,0):0)+Object.entries(o.hold||{}).reduce((a,[k,h])=>a+h.n*(o.p[k]?o.p[k].p:0),0)+Object.values(o.priv||{}).reduce((a,p)=>a+p.v,0);
-function views(sl){$('#tmain').classList.toggle('hide',!!sl);$('#tslots').classList.toggle('hide',sl!==true);$('#tlbs').classList.toggle('hide',sl!=='lb');$('#title').classList.toggle('sl',!!sl)}
+function views(sl){$('#tmain').classList.toggle('hide',!!sl);$('#tslots').classList.toggle('hide',sl!==true);$('#tlbs').classList.toggle('hide',sl!=='lb');$('#tcr').classList.toggle('hide',sl!=='cr');$('#title').classList.toggle('sl',!!sl)}
 const ago=t=>{const d=(Date.now()-t)/1000;if(d<60)return 'just now';if(d<3600)return Math.floor(d/60)+' min ago';if(d<86400)return Math.floor(d/3600)+' h ago';if(d<604800)return Math.floor(d/86400)+' d ago';return new Date(t).toLocaleDateString([],{month:'short',day:'numeric'})};
 function renderSlots(msg){
   $('#slist').innerHTML=Array.from({length:SLOTS},(_,i)=>i+1).map(n=>{const o=peek(n),cur=n===slot;
