@@ -7,6 +7,9 @@
 //      users/<hash>/slot1.json .. slot3.json   { rev, at, data }
 //      users/<hash>/ach.json                    all-time achievements merged across devices
 //    On Railway attach a Volume and set DATA_DIR to its mount path (e.g. /data), otherwise saves vanish on redeploy.
+//  - Leaderboard: public top lists for Classic and Live. Each signed-in player's entry is their highest net worth among their
+//    current cloud slots of that mode. Net worth is recomputed on the server from the saved data (never sent by the client).
+//    Display name is "First L." from Google; players can hide themselves (users/<hash>/profile.json).
 //  - Conflicts: every slot has a revision number. A write must name the revision it was based on (baseRev);
 //    if the cloud moved on in the meantime the server answers 409 and the game asks the player which copy to keep.
 //
@@ -103,6 +106,56 @@ async function verifyGoogle(cred) {
   return { sub: payload.sub, name: String(payload.name || payload.given_name || 'Player').slice(0, 80), picture: /^https:\/\//.test(payload.picture || '') ? String(payload.picture).slice(0, 400) : '' };
 }
 
+// ---------- leaderboard ----------
+// In-memory index rebuilt from disk at startup, then updated whenever a slot is saved or deleted.
+// board: id -> { name, hide, classic: {nw, at} | null, live: {nw, at} | null }
+const board = new Map(), MODES = ['classic', 'live'];
+let lbCache = { at: 0, v: null };
+const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+function saveNW(o) { // same formula as the game's slotNW(), computed from the stored save
+  if (!o || typeof o !== 'object' || !o.p || typeof o.p !== 'object') return 0;
+  let t = num(o.cash);
+  if (o.su && Array.isArray(o.su.list)) for (const l of o.su.list) t += num(l && l.n) * num(l && l.p);
+  for (const k in (o.hold || {})) { const h = o.hold[k]; t += num(h && h.n) * num(o.p[k] && o.p[k].p); }
+  for (const k in (o.priv || {})) t += num(o.priv[k] && o.priv[k].v);
+  return t > 0 && t < 1e18 ? Math.round(t * 100) / 100 : 0;
+}
+function shortName(n) {
+  const w = String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return 'Player';
+  const f = w[0].slice(0, 20); return w.length > 1 ? f + ' ' + Array.from(w[w.length - 1])[0].toUpperCase() + '.' : f;
+}
+const profFile = id => path.join(udir(id), 'profile.json');
+function reindex(id) {
+  const pr = rj(profFile(id), {}), e = { name: pr.name || 'Player', hide: !!pr.hide, classic: null, live: null };
+  for (let n = 1; n <= SLOTS; n++) {
+    const s = rj(slotFile(id, n), null); if (!s || !s.data) continue;
+    const nw = saveNW(s.data), m = s.data.mode === 'live' ? 'live' : 'classic';
+    if (nw > 0 && (!e[m] || nw > e[m].nw)) e[m] = { nw, at: s.at || 0 };
+  }
+  if (e.classic || e.live) board.set(id, e); else board.delete(id);
+  lbCache = { at: 0, v: null };
+}
+function buildBoard() {
+  try { for (const id of fs.readdirSync(path.join(DATA, 'users'))) reindex(id); } catch (e) {}
+}
+function leaderboard(myId) {
+  if (!lbCache.v || Date.now() - lbCache.at > 10e3) {
+    const v = {};
+    for (const m of MODES) v[m] = [...board].filter(([, e]) => e[m] && !e.hide).sort((a, b) => b[1][m].nw - a[1][m].nw || a[1][m].at - b[1][m].at);
+    lbCache = { at: Date.now(), v };
+  }
+  const out = { ok: true };
+  for (const m of MODES) {
+    const l = lbCache.v[m];
+    out[m] = l.slice(0, 10).map(([id, e], i) => ({ r: i + 1, name: e.name, nw: e[m].nw, you: id === myId }));
+    out[m + 'Total'] = l.length;
+    if (myId) { const i = l.findIndex(([id]) => id === myId); const mine = board.get(myId); out.me = out.me || {}; out.me[m] = i >= 0 ? { r: i + 1, nw: l[i][1][m].nw } : mine && mine[m] ? { r: 0, nw: mine[m].nw } : null; }
+  }
+  return out;
+}
+buildBoard();
+
 // ---------- achievements merge (union, earliest unlock time wins; counters keep the highest) ----------
 function mergeAch(a, b) {
   const o = { a: {}, trades: 0, ticks: 0, best: 0 };
@@ -126,7 +179,14 @@ async function route(req, res, p) {
     const b = await readJson(req);
     let u;
     try { u = await verifyGoogle(b.credential); } catch (e) { return send(req, res, 401, { ok: false, error: 'invalid sign-in' }); }
+    { const id0 = uid(u.sub), pf = rj(profFile(id0), {}); try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide }); reindex(id0); } catch (e) {} }
     return send(req, res, 200, { ok: true, token: makeToken(u.sub), user: { name: u.name, picture: u.picture } });
+  }
+
+  if (p === '/api/leaderboard' && m === 'GET') {
+    if (limited('l:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    const s0 = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
+    return send(req, res, 200, leaderboard(s0 ? uid(s0) : ''));
   }
 
   const sub = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
@@ -137,7 +197,7 @@ async function route(req, res, p) {
   if (p === '/api/saves' && m === 'GET') {
     const slots = {};
     for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) slots[n] = s; }
-    return send(req, res, 200, { ok: true, slots, ach: rj(path.join(udir(id), 'ach.json'), { a: {}, trades: 0, ticks: 0, best: 0 }) });
+    return send(req, res, 200, { ok: true, hide: !!rj(profFile(id), {}).hide, slots, ach: rj(path.join(udir(id), 'ach.json'), { a: {}, trades: 0, ticks: 0, best: 0 }) });
   }
   let mm = /^\/api\/saves\/(\d+)$/.exec(p);
   if (mm) {
@@ -148,24 +208,30 @@ async function route(req, res, p) {
       if (!d || typeof d !== 'object' || Array.isArray(d) || !d.p || typeof d.p !== 'object') return send(req, res, 400, { ok: false, error: 'bad save' });
       if ((+b.baseRev || 0) !== rev) return send(req, res, 409, { ok: false, error: 'conflict', rev, at: cur ? cur.at : 0 });
       const rec = { rev: rev + 1, at: Date.now(), data: d };
-      wj(f, rec);
+      wj(f, rec); reindex(id);
       return send(req, res, 200, { ok: true, rev: rec.rev, at: rec.at });
     }
-    if (m === 'DELETE') { try { fs.unlinkSync(f); } catch (e) {} return send(req, res, 200, { ok: true }); }
+    if (m === 'DELETE') { try { fs.unlinkSync(f); } catch (e) {} reindex(id); return send(req, res, 200, { ok: true }); }
     return send(req, res, 405, { ok: false });
   }
   if (p === '/api/ach' && m === 'PUT') {
     const b = await readJson(req), f = path.join(udir(id), 'ach.json'), merged = mergeAch(rj(f, null), b.ach);
     wj(f, merged); return send(req, res, 200, { ok: true, ach: merged });
   }
+  if (p === '/api/profile' && m === 'PUT') {
+    const b = await readJson(req), pf = rj(profFile(id), {});
+    wj(profFile(id), { name: pf.name || 'Player', hide: !!b.hide }); reindex(id);
+    return send(req, res, 200, { ok: true, hide: !!b.hide });
+  }
   if (p === '/api/account' && m === 'DELETE') {
     try { fs.rmSync(udir(id), { recursive: true, force: true }); } catch (e) {}
+    board.delete(id); lbCache = { at: 0, v: null };
     return send(req, res, 200, { ok: true });
   }
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|account)$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|account|leaderboard|profile)$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
