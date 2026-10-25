@@ -483,7 +483,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.8.2</div>
+<div id="title"><div id="ver">v0.8.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1293,7 +1293,8 @@ function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   if(!silent)sfx(pr>0?'sell':'loss');if(fsort==='shares')RESORT=true;
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
-  if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);if(rev&&pr>0){bump('pd');toast('💰 Pump & dump! Sold into the hype for '+fmt(pr)+' profit')}
+  if(!silent){marketMove(s,-1,i);const rev=manip(s,-1,i,q);const gp=q*(p-h.c); // counts when the price was pushed above your cost, even if slippage and fees eat the profit
+    if(rev&&(pr>0||gp>0)){bump('pd');toast('💰 Pump & dump! Sold into the hype for '+fmt(Math.max(pr,gp))+' profit')}
     else if(i>=.015)toast('📉 Your sell pushed '+SM[s][1]+' down '+(i*100).toFixed(1)+'%')}
   draw()}
 let cur=null,dpts=[],dts=[],rng=0,lrng=0;const LR=[7,30,90,365,0],LL=['1W','1M','3M','1Y','All'],CL=['1m','5m','15m','1h','All'],lhOn=s=>isLive()&&!!HD[s];
