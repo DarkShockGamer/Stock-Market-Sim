@@ -482,7 +482,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.7.4</div>
+<div id="title"><div id="ver">v0.7.5</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -675,6 +675,10 @@ function privTick(){const k=Object.keys(S.priv);if(!k.length||isLive())return;co
   if(lab){S.privrp=(S.privrp||0)+k.length*Math.pow(2,lab-1)/3600; // 1 RP/hr per company at level 1, doubling each level
    let g=0;while(S.privrp>=1-1e-9){S.privrp--;g++}if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · private R&D labs',1)}}}
 function privFix(){if(!S.priv)S.priv={};for(const s in S.priv){const p=S.priv[s];if(p.c===undefined)p.c=p.v;if(p.gm===undefined)p.gm=.85+Math.random()*.3;if(p.news===undefined)p.news=''}if(S.privrp===undefined)S.privrp=0}
+// Capital gains tax: realized profits only. Free until your best net worth passes $50k, then +10 points per 10x, capped at 45% ($500M = 40%).
+const taxRate=()=>Math.min(.45,Math.max(0,.1*Math.log10(((S&&S.max)||0)/5e4)));
+function taxOn(pr,silent){if(!(pr>0))return 0;const r=taxRate(),t=pr*r;if(t<=0)return 0;S.cash-=t;S.tax=(S.tax||0)+t;
+  if(!silent&&t>=1)toast('🧾 Capital gains tax '+fmt(t)+' ('+(r*100).toFixed(0)+'%)');return t}
 const DIVR=.000008,INTR=.000008,chunk=()=>150+.04*S.max;
 const SAL=100000,PAYT=180,PAYC=Math.round(SAL/26); // $100k/yr, one $3,846 check every 180s (3 minutes)
 const UCATS=[['Trading','💱'],['Income','💰'],['Intel','🔭'],['Private','🏢'],['Shadow','🕶️']];
@@ -1098,7 +1102,7 @@ function suBuy(id,q){const l=S.su.list.find(q=>q.id===id);if(!l)return;const f=1
   S.cash-=q*l.p*f;l.c=(l.c*l.n+q*l.p)/(l.n+q);l.n+=q;bump('trades');bump('sinv');sfx('buy');draw()}
 function suSell(id,q){const l=S.su.list.find(q=>q.id===id);if(!l||l.n<1)return;
   q=Math.min(Math.floor(q),l.n);if(q<1)return;const f=feeRate(),pr=q*(l.p*(1-f)-l.c);
-  S.cash+=q*l.p*(1-f);l.n-=q;bump('trades');S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
+  S.cash+=q*l.p*(1-f);taxOn(pr);l.n-=q;bump('trades');S.su.net+=pr;if(l.n<1){l.n=0;l.c=0}sfx(pr>0?'sell':'loss');
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',l.sym,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales')}}
   draw()}
@@ -1252,7 +1256,7 @@ function ownCheck(s){const x=SM[s],h=S.hold[s];if(!h)return;let msg='';
   if(h.n>=maxSh(x)){const v=h.n*S.p[s].p;S.priv[s]={n:h.n,v,c:v,gm:.85+Math.random()*.3,news:''};delete S.hold[s];if(cur===s)closeD(); // 100% bought: the company is taken private and leaves the market
     msg=(msg?msg+' · ':'')+'🏢 You bought out '+x[1]+'. It is now private and pays you '+fmt(pInc(s,S.priv[s])*3600)+'/hr'}
   if(msg){toast(msg,1);sfx('win')}return !!msg}
-function sellPriv(s){const p=S.priv[s];if(!p)return;const pr=p.v-p.c;S.cash+=p.v;S.real=(S.real||0)+pr;delete S.priv[s];
+function sellPriv(s){const p=S.priv[s];if(!p)return;const pr=p.v-p.c;S.cash+=p.v;S.real=(S.real||0)+pr;taxOn(pr);delete S.priv[s];
   const o=S.p[s],np=Math.max(.5,p.v/p.n);if(o){o.p=o.fair=o.fp=np;o.m=0;o.h=Array(40).fill(np)} // it returns to the market at the value you built it up to
   let g=0;if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;while(S.prof>=chunk()){S.prof-=chunk();g++}if(g){S.rp+=g;S.rpt+=g}}
   toast('You sold '+SM[s][1]+' for '+fmt(p.v)+' ('+(pr>=0?'+':'−')+fmt(Math.abs(pr))+' since buyout) · it is public again'+(g?' · 🔬 +'+g+' RP':''),1);sfx(pr>0?'sell':'loss');draw()}
@@ -1265,7 +1269,7 @@ function drawPriv(){const el=$('#privbox');if(!el)return;const k=Object.keys(S.p
 function sell(s,q,silent){const h=S.hold[s];if(!h)return;
   q=Math.min(q,h.n);if(q<1)return;
   const p=S.p[s].p,f=feeRate(),i=silent?0:impOf(s,q),e=fillOf(i),ps=e>1e-9?p*(1-Math.exp(-e))/e:p,pr=q*(ps*(1-f)-h.c);
-  S.cash+=q*ps*(1-f);S.real=(S.real||0)+pr;if(pr>0)S.rw=(S.rw||0)+1;else S.rl=(S.rl||0)+1;S.rbest=Math.max(S.rbest||0,pr);S.rworst=Math.min(S.rworst||0,pr);logTrade('S',s,q,ps,pr,silent);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
+  S.cash+=q*ps*(1-f);S.real=(S.real||0)+pr;taxOn(pr,silent);if(pr>0)S.rw=(S.rw||0)+1;else S.rl=(S.rl||0)+1;S.rbest=Math.max(S.rbest||0,pr);S.rworst=Math.min(S.rworst||0,pr);logTrade('S',s,q,ps,pr,silent);if(!silent)bump('trades');h.n-=q;if(h.n<=0)delete S.hold[s];
   if(!silent)sfx(pr>0?'sell':'loss');if(fsort==='shares')RESORT=true;
   if(pr>0){bmax('best',pr);S.psell++;ctHook('sell',s,pr);S.prof+=pr;let g=0;while(S.prof>=chunk()){S.prof-=chunk();g++}
     if(g){S.rp+=g;S.rpt+=g;toast('🔬 +'+g+' Research Point'+(g>1?'s':'')+' · profit from sales');if(!silent)sfx('rp',.3)}}
@@ -1440,6 +1444,7 @@ function drawStats(){const el=$('#stats');if(el.classList.contains('hide'))retur
     ${kpi('Cash',fmt(S.cash),W>0?(S.cash/W*100).toFixed(0)+'% of net worth':'')}
     ${kpi('Invested',fmt(inv),W>0?(inv/W*100).toFixed(0)+'% of net worth':'')}
     ${kpi('Unrealized P/L',money(upl),cost>0?pct(upl/cost)+' on cost':'',upl>=0?'up':'dn')}
+    ${kpi('Capital gains tax',fmt(S.tax||0),'Current rate '+(taxRate()*100).toFixed(0)+'% on profits')}
     ${kpi('Realized P/L',money(real),rw+rl?'Win rate '+Math.round(rw/(rw+rl)*100)+'% · '+rw+'W '+rl+'L':'No sales yet',real>=0?'up':'dn')}
     ${kpi('Positions',hold.length+(svv>0?' + startups':'')+(pvv>0?' + private':''),new Set(hold.map(q=>SEC[q.k]||(isF(SM[q.k])?'Funds':isC(SM[q.k])?'Crypto':'Other'))).size+' sector'+(new Set(hold.map(q=>SEC[q.k]||'x')).size===1?'':'s'))}</div>`;
   // net worth over time
