@@ -483,7 +483,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.8.0</div>
+<div id="title"><div id="ver">v0.8.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -648,9 +648,7 @@ const maxSh=x=>S&&S.mode==='live'&&S.p[x[0]]?Math.max(1,Math.round((LMC[x[0]]||M
 const ownShort=x=>{const n=heldN(x);if(!n)return null;const p=ownPct(x);return{maj:n*2>maxSh(x),t:p<.1?'<0.1%':p.toFixed(1)+'%'}},
 valGap=x=>{const o=S.p[x[0]];return o.p/o.fair-1}, // below 0 = cheaper than fair value, and cheap stocks drift back up faster
 momOf=x=>S.p[x[0]].m||0, // each security's own hidden bull/bear mood, which pushes its price every second
-sigChips=x=>{if(!isOpen(x)||lv('ins')<2)return '';const m=momOf(x),sg=(k,l,v)=>`<span class="cc sg ${k}"><i>${l}</i>${v}</span>`;let h='';
-  if(lv('ins')>=3){if(m>.0028)h+=sg('up','Momentum','Hot ▲▲');else if(m>.0012)h+=sg('up','Momentum','Rising ▲');else if(m<-.0028)h+=sg('dn','Momentum','Cold ▼▼');else if(m<-.0012)h+=sg('dn','Momentum','Fading ▼')}
-  return h},
+sigChips=x=>'',
 capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</span>`;
   return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+sigChips(x)+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
 heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
@@ -695,7 +693,7 @@ const UPS=[ // Bought with Research Points. None of these change how prices beha
 {id:'int',cat:'Income',ic:'🏦',n:'Savings Account',d:'Idle cash earns interest',base:2,g:1.5,max:5,fx:l=>'+'+(l*INTR*360000).toFixed(1)+'% of cash per hour'},
 {id:'yld',cat:'Income',ic:'👑',n:'Dividend Aristocrat',d:'Boosts all dividends, interest and fund yield',base:3,g:1.7,max:4,fx:l=>'+'+15*l+'% income'},
 {id:'off',cat:'Income',ic:'🌙',n:'Overnight Analysts',d:'Earn more while you are away',base:2,g:1.6,max:5,fx:l=>(25+10*l)+'% offline rate, '+(8+2*l)+'h max'},
-{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and hot stocks before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheapest-stock pick in the header','+ Momentum tags and alerts for ones you do not own'][l]},
+{id:'ins',cat:'Intel',ic:'📊',n:'Market Insight',d:'Spot bargains and plan your taxes before everyone else',base:3,g:2,max:3,fx:l=>['Nothing extra','Trend arrows','+ Cheapest-stock pick in the header','+ After-tax profit preview on your positions, and event alerts for stocks you do not own'][l]},
 {id:'scout',cat:'Intel',ic:'📡',n:'Early Warning',d:'Big event alerts arrive sooner',base:3,g:1.7,max:4,fx:l=>(15+12*l)+'s notice'},
 {id:'brief',cat:'Intel',ic:'🧠',n:'Analyst Briefings',d:'Alerts reveal more about the coming event',base:4,g:2,max:3,fx:l=>['No details','Outlook','Outlook + odds','Outlook + odds + move size'][l]},
 {id:'sscout',cat:'Intel',ic:'🕵️',n:'Startup Scout',d:'Hints which startups will boom or go bust',base:3,g:1.8,max:4,fx:l=>['No hints','Red/green flags (noisy readings)','+ shows confidence (sharper)','+ odds estimate (sharper)','+ collapse warnings (sharpest)'][l]},
@@ -1326,7 +1324,7 @@ function drawD(){
   $('#dcap').innerHTML=st('Market cap',fmtMc(mcapOf(x)))+st('Total shares',maxSh(x).toLocaleString())+st('You own',h?h.n.toLocaleString():'None')+(ot?st('Ownership',(ownShort(x).maj?'👑 ':'')+ownShort(x).t+' of company'):'');
   const full=!!(h&&h.n>=maxSh(x));$('#dprop').textContent=propTxt(x);
   actUpd($('#dacts'),cur);
-  {const pl=h?o.p/h.c-1:0;$('#down').innerHTML=`<span>Cash <b>${fmt(S.cash)}</b></span><span>Fee <b>${(feeRate()*100).toFixed(1)}%</b></span>`+(h?`<span>Position <b>${fmt(h.n*o.p)}</b> <span class="${pl>=0?'up':'dn'}">(${pl>=0?'+':''}${(pl*100).toFixed(1)}%)</span></span>`:'<span>No position</span>')}
+  {const pl=h?o.p/h.c-1:0;$('#down').innerHTML=`<span>Cash <b>${fmt(S.cash)}</b></span><span>Fee <b>${(feeRate()*100).toFixed(1)}%</b></span>`+(h?`<span>Position <b>${fmt(h.n*o.p)}</b> <span class="${pl>=0?'up':'dn'}">(${pl>=0?'+':''}${(pl*100).toFixed(1)}%)</span>${lv('ins')>=3&&pl>0&&taxRate()>0?` <span class="mu" title="What you would keep if you sold everything now, after capital gains tax">· keep ${fmt(h.n*o.p-h.n*(o.p-h.c)*taxRate())}</span>`:''}</span>`:'<span>No position</span>')}
   if(!drawD.hold)$('#dtip').textContent='Touch or hover the chart to inspect · dashed line = start of range';
   drawNews();
 }
@@ -1371,8 +1369,7 @@ function draw(){
   $('#pay').textContent=isLive()?lvStatus():'💼 Payday in '+Math.max(0,S.payn-S.tick)+'s · '+fmt(S.paid)+' earned';
   const d=w-S.start;$('#chg').textContent=(d>=0?'+':'')+fmt(Math.abs(d)).replace('$','$')+' all-time';$('#chg').className='mu '+(d>=0?'up':'dn');
   const us=ST.filter(isOpen);
-  {let t='';if(lv('ins')>=2&&us.length){const ch=us.reduce((a,x)=>valGap(x)<valGap(a)?x:a),g=valGap(ch);t=g<=-.02?'Cheapest: '+ch[0]+' '+Math.round(g*100)+'%':'No bargains now';
-    if(lv('ins')>=3){const hot=us.reduce((a,x)=>momOf(x)>momOf(a)?x:a);if(momOf(hot)>.0012)t+=' · Hot: '+hot[0]}}
+  {let t='';if(lv('ins')>=2&&us.length){const ch=us.reduce((a,x)=>valGap(x)<valGap(a)?x:a),g=valGap(ch);t=g<=-.02?'Cheapest: '+ch[0]+' '+Math.round(g*100)+'%':'No bargains now';}
    $('#mood').textContent=t}
   document.querySelectorAll('.row[data-s]').forEach(r=>{
     const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=isOpen(x),h=S.hold[x[0]];
