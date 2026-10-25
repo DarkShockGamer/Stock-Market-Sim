@@ -1,5 +1,5 @@
 // Zero-dependency server (works on Railway, which provides PORT).
-// Serves the game and, for the "Live Market" mode, a small cached proxy for real stock quotes.
+// Serves the game and, for the "Live Market" mode, a small cached proxy for real stock quotes, price history and company news.
 //
 // Live quotes come from Finnhub (https://finnhub.io, free API key). Set it as an environment variable:
 //   FINNHUB_API_KEY=your_key node server.js
@@ -24,8 +24,37 @@ try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) || {}; } catch (e)
 const want = new Map();               // game ticker -> last time a player asked for it
 let hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false, authErr = 0;
 
+// ---- Company news (Finnhub /company-news). Cached per symbol; fetched through the same 1-call-per-tick loop as quotes,
+// so it never pushes the shared free-tier budget (60 calls/min) over the limit. Only fetched when a player opens a stock. ----
+const NEWS_TTL = 10 * 60e3;
+let news = {};                         // game ticker -> { items:[{h,s,t,u}], at }
+const newsQ = new Set();               // game tickers waiting for a fetch
+const dstr = d => d.toISOString().slice(0, 10);
+async function newsOne() {
+  const sym = newsQ.values().next().value;
+  if (!sym) return false;
+  newsQ.delete(sym);
+  try {
+    const to = new Date(), from = new Date(Date.now() - 10 * 86400e3);
+    const r = await fetch(BASE + '/company-news?symbol=' + encodeURIComponent(MAP[sym] || sym) + '&from=' + dstr(from) + '&to=' + dstr(to) + '&token=' + KEY, { signal: AbortSignal.timeout(8000) });
+    if (r.status === 429) { backoff = Date.now() + 20000; newsQ.add(sym); return true; }
+    if (r.status === 401 || r.status === 403) { authErr = r.status; backoff = Date.now() + 15000; return true; }
+    if (!r.ok) { news[sym] = { items: [], at: Date.now() }; return true; }
+    authErr = 0;
+    const j = await r.json(), seen = new Set(), items = [];
+    (Array.isArray(j) ? j : []).sort((a, b) => (b.datetime || 0) - (a.datetime || 0)).forEach(a => {
+      const h = String(a.headline || '').trim().slice(0, 220), u = String(a.url || '');
+      if (!h || !/^https?:\/\//i.test(u) || seen.has(h) || items.length >= 8) return;
+      seen.add(h); items.push({ h, s: String(a.source || '').slice(0, 40), t: a.datetime || 0, u });
+    });
+    news[sym] = { items, at: Date.now() };
+  } catch (e) { backoff = Date.now() + 5000; }
+  return true;
+}
+
 async function pollOne() {
   const now = Date.now();
+  if (KEY && now >= backoff && newsQ.size && await newsOne()) return;   // a player's news request goes first (uses this tick's call)
   if (!KEY || now < backoff || now - lastReq > 5 * 60e3) return;   // idle when nobody is playing Live
   const syms = [...want.keys()].filter(s => now - want.get(s) < 5 * 60e3);
   if (!syms.length) return;
@@ -120,6 +149,18 @@ function history(req, res) {
   res.end(JSON.stringify({ ok: true, pending, hist: out }));
 }
 
+function newsApi(req, res) {
+  const u = new URL(req.url, 'http://x');
+  const sym = (u.searchParams.get('s') || '').toUpperCase();
+  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  if (!KEY) return res.end(JSON.stringify({ ok: false, error: 'nokey' }));
+  if (!/^[A-Z0-9]{1,6}$/.test(sym) || NOQUOTE.has(sym)) return res.end(JSON.stringify({ ok: true, ready: true, items: [] }));
+  lastReq = Date.now();
+  const c = news[sym];
+  if ((!c || Date.now() - c.at > NEWS_TTL) && newsQ.size < 30) newsQ.add(sym);
+  res.end(JSON.stringify({ ok: true, ready: !!c, items: c ? c.items : [], at: c ? c.at : 0 }));
+}
+
 function quotes(req, res) {
   const u = new URL(req.url, 'http://x');
   const ok = s => /^[A-Z0-9]{1,6}$/.test(s) && !NOQUOTE.has(s);
@@ -140,6 +181,7 @@ http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/api/quotes') return quotes(req, res);
   if (p === '/api/history') return history(req, res);
+  if (p === '/api/news') return newsApi(req, res);
   if (p === '/') p = '/index.html';
   const f = path.normalize(path.join(PUB, p));
   if (!f.startsWith(PUB)) { res.writeHead(403); return res.end('Forbidden'); }
