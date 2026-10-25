@@ -335,6 +335,19 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 #dnews .nitem{display:flex;flex-direction:column;gap:.1rem;padding:.35rem 0;border-top:1px solid var(--line);color:var(--tx);text-decoration:none}
 #dnews .nitem:hover .nh{color:var(--ac)}.nh{font-size:.9em;line-height:1.25}
 /* ---- v0.6: cloud saves ---- */
+#lb{width:min(21rem,100%);background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.9rem;padding:.55rem .65rem;text-align:left;margin-top:.2rem}
+#lb.hide{display:none}
+#lb .lbh{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.35rem}
+#lb .lbh b{font-size:1.05em;letter-spacing:.08em;text-transform:uppercase;font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-weight:600}
+#lb .seg .btn{min-width:0;width:auto;font-size:.8em;padding:.15rem .55rem;letter-spacing:.04em}
+#lb .seg .btn.on{background:var(--ac);border-color:var(--ac);color:#fff}
+#lb ol{list-style:none;margin:0;padding:0}
+#lb li{display:grid;grid-template-columns:1.6rem 1fr auto;gap:.4rem;align-items:baseline;padding:.2rem .3rem;border-radius:.4rem;font-size:.9em;font-variant-numeric:tabular-nums}
+#lb li .rk{color:var(--mu);font-weight:700}
+#lb li:nth-child(1) .rk{color:#f1c40f}#lb li:nth-child(2) .rk{color:#c0c7d0}#lb li:nth-child(3) .rk{color:#cd7f32}
+#lb li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lb li.you{background:color-mix(in srgb,var(--ac) 18%,transparent);color:var(--ac);font-weight:700}
+#lb .lbf{font-size:.75em;color:var(--mu);margin-top:.3rem;text-align:center}
 .tcl{font-size:.82em;color:var(--mu);cursor:pointer;background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.7rem;padding:.3rem .7rem;max-width:100%;overflow-wrap:anywhere}
 .tcl:hover{border-color:var(--ac);color:var(--tx)}.tcl.hide{display:none}
 #cloudbox{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
@@ -395,7 +408,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.6.1</div>
+<div id="title"><div id="ver">v0.6.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -412,7 +425,8 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn main tbtn" id="tp"><svg class="ico"><use href="#i-play"/></svg><span>Play</span></button>
     <button class="btn tbtn" id="tl"><svg class="ico"><use href="#i-folder"/></svg><span>Saves</span></button>
     <div class="trow"><button class="btn tbtn" id="tach"><svg class="ico"><use href="#i-medal"/></svg><span>Awards</span></button>
-    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div></div>
+    <button class="btn tbtn" id="tset"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></button></div>
+    <div id="lb" class="hide"></div></div>
   <div id="tslots" class="tcol hide"><div class="shead"><button class="btn" id="tb"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Save slots</h2></div><div id="slist"></div><div class="mu" id="smsg"></div></div>
 </div>
 <div id="dlg" class="hide"><div class="card">
@@ -1391,7 +1405,7 @@ function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLiv
 // ===== Cloud saves: Google sign-in + sync (needs cloud.js on the server) =====
 // Local saves stay the primary copy and the game works offline. When signed in, each slot is mirrored to the server.
 // Every slot has a revision number; if both this device and the cloud changed since the last sync you are asked which copy to keep.
-const CLK='stockidle.cloud',CLD={cfg:null,tok:'',user:null,revs:{},ll:{},hold:{},auto:true,at:0,err:'',busy:false,lastPush:0,gis:null,gInit:false,sig:'',ask:null};
+const CLK='stockidle.cloud',CLD={cfg:null,tok:'',user:null,revs:{},ll:{},hold:{},auto:true,at:0,err:'',busy:false,lastPush:0,gis:null,gInit:false,sig:'',ask:null,hide:false};
 try{const o=JSON.parse(rd(CLK));if(o){CLD.tok=o.tok||'';CLD.user=o.user||null;CLD.revs=o.revs||{};CLD.ll=o.ll||{};CLD.auto=o.auto!==false;CLD.at=o.at||0}}catch(e){}
 const clSave=()=>wr(CLK,JSON.stringify({tok:CLD.tok,user:CLD.user,revs:CLD.revs,ll:CLD.ll,auto:CLD.auto,at:CLD.at}));
 async function gzip(str){const cs=new CompressionStream('gzip'),w=cs.writable.getWriter();w.write(new TextEncoder().encode(str));w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer())}
@@ -1419,7 +1433,7 @@ async function cloudSync(manual){
   if(!CLD.tok||CLD.busy)return;CLD.busy=true;CLD.err='';cloudUi();let replaced=false;
   try{
     if(S&&live())save();
-    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');
+    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');CLD.hide=!!j.hide;
     const conf=[];
     for(let n=1;n<=SLOTS;n++){
       const cs=j.slots&&j.slots[n],lo=peek(n),lrev=CLD.revs[n]||0;
@@ -1440,13 +1454,13 @@ async function cloudSync(manual){
     if(replaced){clearTimeout(loop.t);load(slot);build();draw();closeD();clearNotes();showTitle();toast('☁ Loaded your cloud save into slot '+slot,1)}
     else if(manual)toast('☁ Synced',1)
   }catch(e){if(e.message!=='expired')CLD.err=e.message==='race'?'A save changed while syncing, try again':'Could not sync (offline or server error)'}
-  CLD.busy=false;cloudUi()}
+  CLD.busy=false;cloudUi();loadLB(true)}
 async function cloudPushCur(){
   if(!CLD.tok||CLD.busy||!S||CLD.hold[slot])return;
   const raw=rd(SK(slot));if(!raw)return;let d;try{d=JSON.parse(raw)}catch(e){return}if(d.last===CLD.ll[slot])return;
   CLD.busy=true;let race=false;
   try{await pushSlot(slot,CLD.revs[slot]||0);CLD.err=''}catch(e){if(e.message==='race')race=true;else if(e.message!=='expired')CLD.err='Offline · will retry'}
-  CLD.busy=false;cloudUi();if(race)cloudSync()}
+  CLD.busy=false;cloudUi();if(race)cloudSync();else if(!live())loadLB(true)}
 const cloudSoon=()=>{if(CLD.auto)cloudPushCur()};
 function cloudDel(n){delete CLD.revs[n];delete CLD.ll[n];delete CLD.hold[n];clSave();if(CLD.tok)capi('DELETE','saves/'+n).catch(()=>{})}
 async function onCred(resp){
@@ -1461,16 +1475,17 @@ async function renderGBtn(){const el=$('#gbtn');if(!el||!CLD.cfg)return;
   catch(e){const e2=$('#gbtn');if(e2)e2.innerHTML='<span class="mu">Could not load Google sign-in. Check your connection.</span>'}}
 const cloudStat=()=>CLD.busy?'Syncing…':CLD.err?'⚠ '+CLD.err:CLD.at?'Synced '+ago(CLD.at):'Not synced yet';
 function renderCloud(){const el=$('#cloudbox');if(!el)return;
-  const sig=[!!CLD.cfg,!!CLD.tok,CLD.user&&CLD.user.name,CLD.auto,CFG.theme].join('|');
+  const sig=[!!CLD.cfg,!!CLD.tok,CLD.user&&CLD.user.name,CLD.auto,CLD.hide,CFG.theme].join('|');
   if(CLD.sig!==sig||!el.firstChild){CLD.sig=sig;
     if(!CLD.cfg)el.innerHTML='<div class="mu">☁ Cloud saves are not set up on this server (the owner needs to set GOOGLE_CLIENT_ID, see the README). Your saves stay on this device.</div>';
     else if(!CLD.tok){el.innerHTML='<div class="srow"><b>☁ Cloud saves</b></div><div id="gbtn" class="gbtn"></div><div class="mu">Sign in with Google to back up your saves and continue on another device. Saves also stay on this device.</div><div class="mu" id="clst"></div>';renderGBtn()}
     else el.innerHTML=`<div class="srow"><span class="who">${CLD.user&&CLD.user.picture?`<img class="av" src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:''}<b>☁ ${esc(CLD.user?CLD.user.name:'Signed in')}</b></span><button class="btn" data-cl="out">Sign out</button></div>
       <div class="srow"><span>Auto-sync while playing</span><button class="btn tg ${CLD.auto?'on':''}" data-cl="auto">${CLD.auto?'On':'Off'}</button></div>
+      <div class="srow"><span>Show me on the leaderboard</span><button class="btn tg ${CLD.hide?'':'on'}" data-cl="hide">${CLD.hide?'Off':'On'}</button></div>
       <div class="srow"><button class="btn" data-cl="sync">Sync now</button><button class="btn warn" data-cl="wipe">Delete cloud data</button></div><div class="mu" id="clst"></div>
       <div class="mu">Deleting a slot while signed in also deletes its cloud copy.</div>`}
   const st=$('#clst');if(st)st.textContent=CLD.tok?cloudStat():CLD.err}
-function cloudUi(){renderCloud();const t=$('#tcl');
+function cloudUi(){renderCloud();renderLB();const t=$('#tcl');
   if(t){if(!CLD.cfg)t.classList.add('hide');else{t.classList.remove('hide');t.textContent=CLD.tok?'☁ '+(CLD.user?CLD.user.name:'Signed in')+' · '+cloudStat():'☁ Sign in to save to the cloud'+(CLD.err?' · '+CLD.err:'')}}
   if(!$('#tslots').classList.contains('hide'))renderSlots()}
 $('#tcl').onclick=()=>openSet();
@@ -1478,12 +1493,25 @@ $('#cloudbox').addEventListener('click',async e=>{const b=e.target.closest('butt
   if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}
   else if(a==='auto'){CLD.auto=!CLD.auto;clSave();CLD.sig='';renderCloud()}
   else if(a==='sync'){CLD.hold={};cloudSync(true)}
+  else if(a==='hide'){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
   else if(a==='wipe'){
     if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to delete';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Delete cloud data'}},3000);return}
     try{const r=await capi('DELETE','account');if(r.j.ok){cloudOut();toast('Cloud data deleted and signed out. Saves on this device are untouched.',1)}else toast('Could not delete cloud data',1)}catch(e){}}});
+// ---- global leaderboard (best net worth save per signed-in player, per mode) ----
+const LB={m:'classic',d:null,at:0,busy:false};
+async function loadLB(force){if(!CLD.cfg||LB.busy||(!force&&Date.now()-LB.at<30e3))return;LB.busy=true;
+  try{const r=await capi('GET','leaderboard');if(r.j.ok){LB.d=r.j;LB.at=Date.now()}}catch(e){}
+  LB.busy=false;renderLB()}
+function renderLB(){const el=$('#lb');if(!el)return;if(!CLD.cfg){el.classList.add('hide');return}
+  const d=LB.d,m=LB.m,list=d?d[m]:[],me=d&&d.me&&d.me[m],tot=d?d[m+'Total']:0;el.classList.remove('hide');
+  const rows=!d?'<div class="mu" style="padding:.3rem">Loading…</div>':list.length?'<ol>'+list.map(r=>`<li class="${r.you?'you':''}"><span class="rk">${r.r}</span><span class="nm">${esc(r.name)}</span><span>${fmt(r.nw)}</span></li>`).join('')+'</ol>':'<div class="mu" style="padding:.3rem">No scores yet. Sign in and save to be the first!</div>';
+  const mine=me&&!list.some(r=>r.you)?`<li class="you"><span class="rk">${me.r||'–'}</span><span class="nm">You${me.r?'':' (hidden)'}</span><span>${fmt(me.nw)}</span></li>`:'';
+  const foot=!CLD.tok?'Sign in with Google to join the leaderboard.':CLD.hide?'You are hidden from the leaderboard (Settings).':me?'':'Save a '+(m==='live'?'Live':'Classic')+' game to the cloud to appear here.';
+  el.innerHTML=`<div class="lbh"><b>Leaderboard</b><div class="seg"><button class="btn ${m==='classic'?'on':''}" data-lb="classic">Classic</button><button class="btn ${m==='live'?'on':''}" data-lb="live">Live</button></div></div>${rows}${mine?'<ol>'+mine+'</ol>':''}<div class="lbf">${esc(foot||(tot?tot+' player'+(tot===1?'':'s')+' · best net worth save':''))}</div>`}
+$('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
 async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
-  cloudUi();if(CLD.cfg&&CLD.tok)cloudSync(false);
+  cloudUi();loadLB(true);if(CLD.cfg&&CLD.tok)cloudSync(false);
   setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
@@ -1559,7 +1587,7 @@ function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7
 function play(){lvStart();sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){const c=S.tick>0;
   $('#ts').textContent=c?'Play continues Slot '+slot+' · Net worth '+fmt(nw()):'Play starts a new game in Slot '+slot+' with $2,000';
-  views(false);$('#title').classList.remove('hide');cloudUi()}
+  views(false);$('#title').classList.remove('hide');cloudUi();loadLB()}
 {const old=rd('stockidle.v1');if(old&&!rd(SK(1))){wr(SK(1),old);rm('stockidle.v1')}
 let best=1,bl=-1;for(let n=1;n<=SLOTS;n++){const o=peek(n);if(o&&(o.last||0)>bl){bl=o.last||0;best=n}}
 load(best)}
