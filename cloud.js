@@ -167,6 +167,23 @@ function mergeAch(a, b) {
   return o;
 }
 
+// ---------- achievement stats: how many players (with cloud saves) hold each achievement; cached 5 min ----------
+let achCache = { at: 0, v: null };
+function achStats() {
+  if (achCache.v && Date.now() - achCache.at < 300e3) return achCache.v;
+  const c = {}; let n = 0;
+  try {
+    for (const id of fs.readdirSync(path.join(DATA, 'users'))) {
+      const x = rj(path.join(udir(id), 'ach.json'), null);
+      if (!x || typeof x.a !== 'object') continue;
+      n++;
+      for (const k in x.a) if (+x.a[k] > 0) c[k] = (c[k] || 0) + 1;
+    }
+  } catch (e) {}
+  achCache = { at: Date.now(), v: { ok: true, n, c } };
+  return achCache.v;
+}
+
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -187,6 +204,11 @@ async function route(req, res, p) {
     if (limited('l:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
     const s0 = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
     return send(req, res, 200, leaderboard(s0 ? uid(s0) : ''));
+  }
+
+  if (p === '/api/ach-stats' && m === 'GET') {
+    if (limited('s:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return send(req, res, 200, achStats());
   }
 
   const sub = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
