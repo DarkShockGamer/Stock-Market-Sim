@@ -17,7 +17,7 @@ const BASE = process.env.FINNHUB_BASE || 'https://finnhub.io/api/v1';
 // Game ticker -> real ticker, where they differ (GLD and BND are the same in both).
 const MAP = { IDX:'SPY', TECH:'QQQ', DIV:'SCHD', BRKB:'BRK.B', SQ:'XYZ' };
 // Fictional or unpriceable in this mode: Starlink is a SpaceX subsidiary (not listed), crypto is not supported yet.
-const NOQUOTE = new Set(['STRL','BTC','ETH','SOL','DOGE']);
+const NOQUOTE = new Set(['STRL','BTC','ETH','SOL','DOGE','CSCO','PANW','CRWD','SMCI','ASML','NET','DDOG','HLT','LUV','DKNG','LOW','HSY','MDLZ','FDX','NOC','MMM','WFC','MS','AXP','SCHW','SONY','EA','TTWO','GILD','CVS','SLB','OXY','FSLR','HMC','LCID','SPX','DOW','RUT','INTL','REIT','TIPS','SLV','OIL','ESG','LEV','LTC','BNB','XRP','ADA','LINK','AVAX','SHIB','PEPE']);
 
 const CACHE_FILE = path.join(os.tmpdir(), 'idle-stocks-quotes.json');
 let cache = {};                       // game ticker -> { c, pc, t, at, none? }
