@@ -167,26 +167,32 @@ function mergeAch(a, b) {
   return o;
 }
 
-// ---------- achievement stats: how many players (with cloud saves) hold each achievement; cached 5 min ----------
-let achCache = { at: 0, v: null };
+// ---------- achievement stats: anonymous per-browser reports (works with or without cloud sign-in) ----------
+const ACH_FILE = path.join(DATA, 'achstats.json');
+let achRep = rj(ACH_FILE, {}), achDirty = false, achCache = { at: 0, v: null };
+setInterval(() => { if (achDirty) { achDirty = false; try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(ACH_FILE, JSON.stringify(achRep)); } catch (e) {} } }, 20000).unref();
 function achStats() {
-  if (achCache.v && Date.now() - achCache.at < 300e3) return achCache.v;
+  if (achCache.v && Date.now() - achCache.at < 120e3) return achCache.v;
   const c = {}; let n = 0;
-  try {
-    for (const id of fs.readdirSync(path.join(DATA, 'users'))) {
-      const x = rj(path.join(udir(id), 'ach.json'), null);
-      if (!x || typeof x.a !== 'object') continue;
-      n++;
-      for (const k in x.a) if (+x.a[k] > 0) c[k] = (c[k] || 0) + 1;
-    }
-  } catch (e) {}
+  for (const id in achRep) { n++; for (const k of achRep[id]) c[k] = (c[k] || 0) + 1; }
   achCache = { at: Date.now(), v: { ok: true, n, c } };
   return achCache.v;
+}
+async function achRoute(req, res, p, m, ip) {
+  if (p === '/api/ach-stats' && m === 'GET') return send(req, res, 200, achStats());
+  if (m !== 'POST' || limited('r:' + ip, 30, 60e3)) return send(req, res, 429, { ok: false });
+  const b = await readJson(req);
+  if (!b || !/^[a-z0-9]{8,40}$/.test(b.id || '') || !Array.isArray(b.a)) return send(req, res, 400, { ok: false });
+  if (!achRep[b.id] && Object.keys(achRep).length > 200000) return send(req, res, 200, { ok: true });
+  achRep[b.id] = [...new Set(b.a.filter(x => typeof x === 'string' && /^[a-z0-9]{1,12}$/.test(x)))].slice(0, 100);
+  achDirty = true;
+  return send(req, res, 200, { ok: true });
 }
 
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (p === '/api/ach-stats' || p === '/api/ach-report') return achRoute(req, res, p, m, ip);
   if (p === '/api/config' && m === 'GET') return send(req, res, 200, { cloud: enabled, clientId: enabled ? CLIENT_ID : '', slots: SLOTS });
   if (!enabled) return send(req, res, 503, { ok: false, error: 'disabled' });
 
@@ -204,11 +210,6 @@ async function route(req, res, p) {
     if (limited('l:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
     const s0 = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
     return send(req, res, 200, leaderboard(s0 ? uid(s0) : ''));
-  }
-
-  if (p === '/api/ach-stats' && m === 'GET') {
-    if (limited('s:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
-    return send(req, res, 200, achStats());
   }
 
   const sub = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
@@ -253,7 +254,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|account|leaderboard|profile)$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile)$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
