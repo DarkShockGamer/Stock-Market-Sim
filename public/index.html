@@ -338,11 +338,11 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
 .tcl{font-size:.82em;color:var(--mu);cursor:pointer;background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--line);border-radius:.7rem;padding:.3rem .7rem;max-width:100%;overflow-wrap:anywhere}
 .tcl:hover{border-color:var(--ac);color:var(--tx)}.tcl.hide{display:none}
 #cloudbox{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
-.gbtn{min-height:2.5rem;display:flex;justify-content:center;align-items:center}
+.gbtn{min-height:2.5rem;display:flex;justify-content:center;align-items:center;color-scheme:light}
 .who{display:flex;align-items:center;gap:.5rem;min-width:0}.av{width:1.8rem;height:1.8rem;border-radius:50%;flex:0 0 auto}
 #cdlg{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:40}#cdlg.hide{display:none}
 #cdc{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
-.cc{border:1px solid var(--line);border-radius:.7rem;padding:.5rem;display:flex;flex-direction:column;gap:.1rem;background:var(--bg)}.big2{font-size:1.2em;font-weight:700}
+#cdc .cc{border:1px solid var(--line);border-radius:.7rem;padding:.5rem;display:flex;flex-direction:column;gap:.1rem;background:var(--bg);white-space:normal;font-size:1em}.big2{font-size:1.2em;font-weight:700}
 #cdb{display:flex;flex-wrap:wrap;gap:.3rem}#cdb .btn{flex:1 1 auto}
 </style>
 </head>
@@ -395,7 +395,7 @@ nav button{flex:1 0 auto;padding:.4286rem .5rem}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.6.0</div>
+<div id="title"><div id="ver">v0.6.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
