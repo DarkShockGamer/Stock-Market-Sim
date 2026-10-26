@@ -483,7 +483,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.8.5</div>
+<div id="title"><div id="ver">v0.9.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -537,6 +537,8 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="srow"><span>Mini charts in stock list</span><button class="btn tg" data-k="spark"></button></div>
   <div class="srow"><span>Sound effects</span><button class="btn tg" data-k="sound"></button></div>
   <div class="srow"><span>Volume <b id="volv"></b></span><input type="range" id="vol" min="0" max="100" step="5"></div>
+  <div class="srow"><span>Background music</span><button class="btn tg" data-k="music"></button></div>
+  <div class="srow"><span>Music volume <b id="mvolv"></b></span><input type="range" id="mvol" min="0" max="100" step="5"></div>
   <div class="srow"><button class="btn" id="sreset">Reset settings</button><button class="btn warn" id="sdel">Delete all saves</button></div>
   <div class="mu">Settings are saved on this device and apply to every save slot.</div>
 </div></div>
@@ -826,7 +828,7 @@ const NWM=[[2250,1],[2500,1],[3000,1],[3500,1],[4000,1],[5000,2],[6000,1],[7500,
 const $=s=>document.querySelector(s);
 const fmt=n=>n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e4?'$'+Math.round(n).toLocaleString():'$'+n.toFixed(2);
 let S;
-const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60};
+const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60,music:true,mvol:35};
 let CFG={...CFG0},colUp='#2ecc71',colDn='#ff5c5c';
 try{Object.assign(CFG,JSON.parse(rd(CFGK)))}catch(e){}
 // ---- Sound: everything is synthesized with Web Audio, so there are no audio files to host ----
@@ -864,6 +866,48 @@ const SFX=(()=>{let ac=null,mg=null;const last={};
     const c=ctx();if(!c)return;const now=performance.now();if(now-(last[n]||0)<45)return;last[n]=now;
     mg.gain.value=Math.max(0,Math.min(1,(CFG.vol===undefined?60:CFG.vol)/100));
     if(delay>0)setTimeout(()=>{try{D[n]()}catch(e){}},delay*1000);else{try{D[n]()}catch(e){}}};f.unlock=ctx;return f})();
+// ---- Music: a quiet, generative lo-fi loop (soft pads, a slow bass and sparse electric-piano notes through an echo). Synthesized, no audio files. ----
+// Progressions are shuffled so it never loops the same way twice. It leans warm and major while you are up, and a little more mellow and minor while you are down.
+const MUSIC=(()=>{let ac=null,mast=null,fx=null,timer=null,on=false,nextT=0,bar=0,prog=null,pi=0,lastKind='';
+  const M7=[0,4,7,11],m7=[0,3,7,10],D7=[0,4,7,10];
+  const UP=[[[0,M7],[9,m7],[5,M7],[7,D7]],[[2,m7],[7,D7],[0,M7],[9,m7]],[[5,M7],[4,m7],[2,m7],[0,M7]]];
+  const DN=[[[9,m7],[2,m7],[5,M7],[4,D7]],[[9,m7],[5,M7],[0,M7],[7,D7]],[[2,m7],[10,M7],[7,m7],[9,D7]]];
+  const BEAT=1.6,BAR=BEAT*4,mf=n=>440*Math.pow(2,(n-69)/12),rnd=(a,b)=>a+Math.random()*(b-a);
+  const vol=()=>Math.max(0,Math.min(1,(CFG.mvol===undefined?35:CFG.mvol)/100))*1.2;
+  function ensure(){if(ac)return true;const A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
+    try{ac=new A();mast=ac.createGain();mast.gain.value=0;
+      const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;lp.Q.value=.3;mast.connect(lp);lp.connect(ac.destination);
+      fx=ac.createGain();fx.gain.value=.4; // echo send
+      const dl=ac.createDelay(2);dl.delayTime.value=BEAT*.75;const fb=ac.createGain();fb.gain.value=.38;const df=ac.createBiquadFilter();df.type='lowpass';df.frequency.value=1500;
+      fx.connect(dl);dl.connect(df);df.connect(fb);fb.connect(dl);df.connect(mast)}catch(e){ac=null;return false}return true}
+  function voice(t,f,d,o){const{type='sine',v=.05,at=.02,send=0,det=0}=o||{},os=ac.createOscillator(),g=ac.createGain();
+    os.type=type;os.frequency.value=f;os.detune.value=det;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    os.connect(g);g.connect(mast);if(send>0){const s=ac.createGain();s.gain.value=send;g.connect(s);s.connect(fx)}os.start(t);os.stop(t+d+.1)}
+  function place(pc,lo,hi){let n=pc+12*Math.floor(lo/12);while(n<lo)n+=12;while(n>hi)n-=12;return n}
+  function pickProg(){let kind='up';try{if(typeof S!=='undefined'&&S&&S.start>0&&nw()<S.start*.9)kind='dn'}catch(e){}
+    const set=kind==='dn'?DN:UP;let p;do{p=set[Math.random()*set.length|0]}while(p===prog&&set.length>1);lastKind=kind;prog=p;pi=0}
+  function schedBar(t){if(!prog||pi>=prog.length)pickProg();const [root,iv]=prog[pi++];
+    const tones=iv.map(i=>root+i);
+    // pad: slow swell, two soft layers per note
+    tones.forEach((pc,k)=>{const n=place(pc,55,70);[-6,6].forEach(dt=>voice(t,mf(n),BAR*1.25,{type:'triangle',v:.011,at:BAR*.45,det:dt}))});
+    // bass: one low note on beat 1, a softer fifth on beat 3
+    const b=place(root,36,47);voice(t,mf(b),BEAT*2.6,{v:.09,at:.05});voice(t+BEAT*2,mf(b+7),BEAT*1.6,{v:.045,at:.05});
+    // electric-piano notes: sparse, on an eighth-note grid, mostly chord tones plus the 9th
+    const pool=tones.map(pc=>place(pc,72,88)).concat([place(root+2,72,88)]);
+    let last=-9;for(let s=0;s<8;s++){if(Math.random()<(s===0?.7:.32)){const n=pool[Math.random()*pool.length|0];if(n===last)continue;last=n;
+      const tt=t+s*BEAT*.5+rnd(0,.03),f=mf(n);voice(tt,f,2.2,{v:.03,at:.008,send:.8});voice(tt,f*2,.9,{v:.006,at:.008,send:.4})}}}
+  function pump(){if(!on||!ac)return;while(nextT<ac.currentTime+2.5){schedBar(nextT);nextT+=BAR;bar++}}
+  function setLevel(sec){if(!mast)return;const t=ac.currentTime;mast.gain.cancelScheduledValues(t);mast.gain.setValueAtTime(mast.gain.value,t);mast.gain.linearRampToValueAtTime(on?vol():0,t+sec)}
+  const api={
+    start(){if(!CFG.music)return;if(!ensure())return;if(ac.state==='suspended')ac.resume().catch(()=>{});
+      if(on){setLevel(.4);return}on=true;nextT=ac.currentTime+.3;bar=0;prog=null;pump();clearInterval(timer);timer=setInterval(pump,400);setLevel(4)},
+    stop(){if(!ac||!on)return;on=false;setLevel(1.2);clearInterval(timer);timer=null;const a=ac;setTimeout(()=>{if(!on&&a.state==='running')a.suspend().catch(()=>{})},1600)},
+    update(){if(!CFG.music){api.stop();return}if(on)setLevel(.4);else if(started)api.start()},
+    hide(h){if(!ac||!on)return;if(h)ac.suspend().catch(()=>{});else ac.resume().catch(()=>{})}};
+  let started=false;api.arm=()=>{started=true;api.start()};return api})();
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{try{MUSIC.arm()}catch(e){}},{once:true,capture:true}));
+document.addEventListener('visibilitychange',()=>{try{MUSIC.hide(document.hidden)}catch(e){}});
 const sfx=SFX;
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{try{SFX.unlock()}catch(e){}},{once:true,capture:true}));
 // generic click for menus, tabs, chips, settings (trades, upgrades and slots have their own sounds)
@@ -1724,8 +1768,8 @@ function renderSet(){renderCloud();
   document.querySelectorAll('#set [data-k]').forEach(b=>{const k=b.dataset.k;
     if(b.dataset.v!==undefined)b.classList.toggle('on',CFG[k]===b.dataset.v);
     else{b.textContent=CFG[k]?'On':'Off';b.classList.toggle('on',!!CFG[k])}});
-  $('#sc').value=CFG.scale;$('#scv').textContent=CFG.scale+'%';$('#vol').value=CFG.vol;$('#volv').textContent=CFG.vol+'%'}
-function cfgChanged(){wr(CFGK,JSON.stringify(CFG));applyCfg();renderSet();if(S)draw()}
+  $('#sc').value=CFG.scale;$('#scv').textContent=CFG.scale+'%';$('#vol').value=CFG.vol;$('#volv').textContent=CFG.vol+'%';$('#mvol').value=CFG.mvol;$('#mvolv').textContent=CFG.mvol+'%'}
+function cfgChanged(){wr(CFGK,JSON.stringify(CFG));try{MUSIC.update()}catch(e){}applyCfg();renderSet();if(S)draw()}
 function openSet(){renderSet();$('#set').classList.remove('hide')}
 function closeSet(){$('#set').classList.add('hide')}
 $('#gear').onclick=$('#tset').onclick=openSet;
@@ -1734,6 +1778,7 @@ $('#tach').onclick=()=>{renderAch(true);$('#ach').classList.remove('hide')};
 $('#ach').addEventListener('click',e=>{if(e.target.id==='ach'||e.target.id==='ax')$('#ach').classList.add('hide')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#ach').classList.add('hide')});
 $('#sc').oninput=e=>{CFG.scale=+e.target.value;cfgChanged()};
+$('#mvol').oninput=e=>{CFG.mvol=+e.target.value;cfgChanged()};
 $('#vol').oninput=e=>{CFG.vol=+e.target.value;cfgChanged()};$('#vol').onchange=()=>sfx('buy');
 $('#set').addEventListener('click',e=>{
   if(e.target.id==='set'||e.target.id==='sx'){closeSet();return}
