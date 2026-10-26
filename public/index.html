@@ -31,6 +31,7 @@ nav{display:flex;gap:0.2857rem}
 nav button,.btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:0.5714rem;padding:0.4286rem 0.5714rem;font:inherit;cursor:pointer}
 nav button{flex:1}
 nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.18rem;line-height:1.1}nav button .ico{width:1.45em;height:1.45em;vertical-align:0}nav button span{font-size:.92em}
 .btn:hover:not(:disabled){border-color:var(--ac)}
 .btn:disabled{opacity:.4;cursor:default}
 main{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.3571rem;min-height:0}
@@ -305,7 +306,7 @@ html[data-theme=light] .cc.maj{color:#9a7400}
 /* ---- v0.5: search, stats, news, challenges ---- */
 nav{overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
 nav button{flex:1 0 auto;padding:.4286rem .5rem}
-#t-l{display:none}body.live-mode #t-l{display:block}
+#t-l{display:none}body.live-mode #t-l{display:flex}
 #stats:not(.hide),#live:not(.hide){display:flex;flex-direction:column;gap:.3571rem}
 .srchw{position:sticky;top:0;z-index:3;background:var(--bg);padding:0 0 .3rem}
 #msearch{width:100%;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:.5714rem;padding:.4286rem .6rem;font:inherit}
@@ -466,6 +467,14 @@ main:has(#market:not(.hide)){overflow:hidden}
 <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9.5 3.5h5M10.5 3.5v6L5 19a1.5 1.5 0 0 0 1.3 2.2h11.4A1.5 1.5 0 0 0 19 19l-5.5-9.5v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 11V7.8a3.5 3.5 0 0 1 6.8-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
 <symbol id="i-sync" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 0 0-13-5.1L4.5 9"/><path d="M4.5 4.5V9H9"/><path d="M4.5 12a7.5 7.5 0 0 0 13 5.1l2-2.1"/><path d="M19.5 19.5V15H15"/></g></symbol>
+<symbol id="i-tm" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v3M7 15v4M12 8v2M12 17v3M17 3v3M17 13v5"/><rect x="5" y="7" width="4" height="8" rx="1" fill="currentColor" fill-opacity=".25"/><rect x="10" y="10" width="4" height="7" rx="1" fill="currentColor" fill-opacity=".25"/><rect x="15" y="6" width="4" height="7" rx="1" fill="currentColor" fill-opacity=".25"/></g></symbol>
+<symbol id="i-tf" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5"/><path d="M12 3.5V12h8.5" fill="currentColor" fill-opacity=".25"/><path d="M3.8 9.2A8.5 8.5 0 0 1 9.2 3.8"/></g></symbol>
+<symbol id="i-tc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><path d="M9.5 9.5h4a1.7 1.7 0 0 1 0 3.4h-4m0 0h4.4a1.7 1.7 0 0 1 0 3.4H9.5M9.5 9.5v6.8M11 8v1.5M11 16.3v1.5M13 8v1.5M13 16.3v1.5"/></g></symbol>
+<symbol id="i-ts" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8c3 2 4.6 5 4.6 8.4v3.6H7.4v-3.6c0-3.4 1.6-6.4 4.6-8.4z" fill="currentColor" fill-opacity=".25"/><circle cx="12" cy="9.5" r="1.4"/><path d="M7.4 11.5 4.8 15l2.6-.3M16.6 11.5 19.2 15l-2.6-.3M10 17.5c0 1.6.8 2.8 2 3.7 1.2-.9 2-2.1 2-3.7"/></g></symbol>
+<symbol id="i-tk" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h8l3.5 3.5V19a2 2 0 0 1-2 2h-9.5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="currentColor" fill-opacity=".2"/><path d="M14.5 3v4H18M8.5 12h7M8.5 15h4"/><path d="M13.2 18.2l1.4 1.4 2.8-3"/></g></symbol>
+<symbol id="i-tu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity=".2"/><path d="M8 13l4-4 4 4M8 17l4-4 4 4" /></g></symbol>
+<symbol id="i-tp" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><rect x="7" y="12" width="3" height="6" rx=".8" fill="currentColor" fill-opacity=".25"/><rect x="12" y="8" width="3" height="10" rx=".8" fill="currentColor" fill-opacity=".25"/><rect x="17" y="5" width="3" height="13" rx=".8" fill="currentColor" fill-opacity=".25"/></g></symbol>
+<symbol id="i-tl" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V3.5"/><path d="M5 4.5c3-1.6 5 1.6 8 0s4.5-.4 6 .2v8c-1.5-.6-3-1.6-6 0s-5-1.6-8 0z" fill="currentColor" fill-opacity=".25"/></g></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
 </svg>
@@ -476,14 +485,14 @@ main:has(#market:not(.hide)){overflow:hidden}
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
     <div style="text-align:right"><div class="mu">Cash</div><div id="cash" style="font-weight:600">$0</div><div class="mu" id="rp"></div><div class="mu" id="pay"></div><div class="mu" id="mood"></div></div>
   </header>
-  <nav><button id="t-m" class="on">Market</button><button id="t-f">Funds</button><button id="t-c">Crypto</button><button id="t-s">Startups</button><button id="t-k">Contracts</button><button id="t-u">Upgrades</button><button id="t-p">📊 Stats</button><button id="t-l">🏁 Goals</button></nav>
+  <nav><button id="t-m" class="on" title="Market"><svg class="ico"><use href="#i-tm"/></svg><span>Market</span></button><button id="t-f" title="Funds"><svg class="ico"><use href="#i-tf"/></svg><span>Funds</span></button><button id="t-c" title="Crypto"><svg class="ico"><use href="#i-tc"/></svg><span>Crypto</span></button><button id="t-s" title="Startups"><svg class="ico"><use href="#i-ts"/></svg><span>Startups</span></button><button id="t-k" title="Contracts"><svg class="ico"><use href="#i-tk"/></svg><span>Contracts</span></button><button id="t-u" title="Upgrades"><svg class="ico"><use href="#i-tu"/></svg><span>Upgrades</span></button><button id="t-p" title="Stats"><svg class="ico"><use href="#i-tp"/></svg><span>Stats</span></button><button id="t-l" title="Goals"><svg class="ico"><use href="#i-tl"/></svg><span>Goals</span></button></nav>
   <main id="main"><div id="market"></div><div id="funds" class="hide"></div><div id="crypto" class="hide"></div><div id="contracts" class="hide"></div><div id="startups" class="hide"></div><div id="ups" class="hide"></div><div id="stats" class="hide"></div><div id="live" class="hide"></div></main>
   <div class="foot"><button class="btn" id="pop" title="Open the game in a small separate window you can park in a corner"><span class="ic">🗗</span><span>Mini window</span></button>
     <button class="btn" id="trophy" title="Achievements"><span class="ic"><svg class="ico"><use href="#i-medal"/></svg></span><span>Achievements</span></button>
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.9.0</div>
+<div id="title"><div id="ver">v0.9.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
