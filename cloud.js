@@ -224,6 +224,72 @@ function dailyRoute(req, res, id, p, m) {
   return send(req, res, 405, { ok: false });
 }
 
+// ---------- goal cash (Live mode): challenge wins, win streaks and net worth milestones pay cash ----------
+// The server owns every amount (GOAL_PAY) and pays each goal ONCE: the browser only says "I earned goal g for period k". A paid key is
+// remembered outside users/<hash>/ (like the daily bonus), so deleting cloud data or using other save slots cannot pay a goal twice.
+// Payouts are tuned so a day above about $1000 is very hard: daily goals top out at $400 and weekly goals only pay on the day the week closes.
+// Grants stay "pending" until acknowledged, the same lost-response-safe pattern as the daily bonus.
+const GOAL_PAY = { d1: 150, d2: 250, w1: 200, w2: 300, s3: 75, s7: 150, n15: 250, n25: 400, n50: 500, n100: 750, n250: 1000 };
+const GOAL_DIR = path.join(DATA, 'goals'), GOAL_WIN = 14 * 864e5, DAY_MS = 864e5;
+const goalFile = id => path.join(GOAL_DIR, id + '.json');
+function goalGet(id) {
+  const d = rj(goalFile(id), null);
+  return d && typeof d === 'object' ? { done: d.done && typeof d.done === 'object' && !Array.isArray(d.done) ? d.done : {}, pending: Array.isArray(d.pending) ? d.pending : [] } : { done: {}, pending: [] };
+}
+// g = goal id, k = period key: "d1:2026-10-30" (day), "w1:2026-10-26" (the Monday of the week), "s3:2026-10-30" (day the streak hit), "n15" (one time ever)
+function goalOk(g, k, now) {
+  if (!Object.prototype.hasOwnProperty.call(GOAL_PAY, g)) return false;
+  if (g[0] === 'n') return k === g;
+  const m = /^(d1|d2|w1|w2|s3|s7):(\d{4})-(\d{2})-(\d{2})$/.exec(k);
+  if (!m || m[1] !== g) return false;
+  const t = Date.UTC(+m[2], +m[3] - 1, +m[4]);
+  if (!(t > 0) || new Date(t).getUTCDate() !== +m[4]) return false;      // reject dates like Feb 31
+  if (t < now - GOAL_WIN || t > now + 2 * DAY_MS) return false;           // only recent periods can be claimed
+  if (g[0] === 'w' && new Date(t).getUTCDay() !== 1) return false;       // a week key is always a Monday
+  return true;
+}
+// a win streak needs 3 (or 7) winning days, so the same streak bonus cannot be paid again sooner than that
+function goalGapOk(done, g, k) {
+  if (g !== 's3' && g !== 's7') return true;
+  const gap = (g === 's3' ? 3 : 7) * DAY_MS, t = Date.parse(k.slice(3) + 'T00:00:00Z');
+  return !Object.keys(done).some(o => o.startsWith(g + ':') && Math.abs(Date.parse(o.slice(3) + 'T00:00:00Z') - t) < gap);
+}
+function goalView(d, now) {
+  let day = 0;
+  for (const k in d.done) { const e = d.done[k]; if (e && now - e.at < DAY_MS) day += +e.amt || 0; }
+  return { ok: true, now, pay: GOAL_PAY, day, once: Object.keys(d.done).filter(k => /^n\d+$/.test(k)), pending: d.pending.map(g => ({ id: g.id, amt: g.amt })) };
+}
+function goalsRoute(req, res, id, p, m) {
+  // NOTE: no await between reading and writing the record (the body is read first), so two simultaneous claims can never both pass.
+  if (p === '/api/goals' && m === 'GET') return send(req, res, 200, goalView(goalGet(id), Date.now()));
+  if (p === '/api/goals/claim' && m === 'POST') {
+    return readJson(req).then(b => {
+      const now = Date.now(), d = goalGet(id), list = Array.isArray(b.claims) ? b.claims.slice(0, 12) : [], results = [];
+      for (const c of list) {
+        const g = c && typeof c.g === 'string' ? c.g : '', k = c && typeof c.k === 'string' ? c.k : '';
+        if (!goalOk(g, k, now)) { results.push('bad'); continue; }
+        if (d.done[k] || !goalGapOk(d.done, g, k)) { results.push('dup'); continue; }
+        const amt = GOAL_PAY[g];
+        d.done[k] = { at: now, amt };
+        d.pending.push({ id: crypto.randomBytes(12).toString('hex'), amt, at: now });
+        results.push('ok');
+      }
+      if (d.pending.length > 60) d.pending = d.pending.slice(-60);
+      for (const k of Object.keys(d.done)) if (k[0] !== 'n' && now - (d.done[k].at || 0) > 30 * DAY_MS) delete d.done[k]; // dated keys can no longer be claimed anyway
+      wj(goalFile(id), d);
+      send(req, res, 200, Object.assign(goalView(d, now), { results }));
+    });
+  }
+  if (p === '/api/goals/ack' && m === 'POST') {
+    return readJson(req).then(b => {
+      const ids = new Set(Array.isArray(b.ids) ? b.ids.filter(x => typeof x === 'string').slice(0, 30) : []), d = goalGet(id);
+      d.pending = d.pending.filter(g => !ids.has(g.id)); wj(goalFile(id), d);
+      send(req, res, 200, goalView(d, Date.now()));
+    });
+  }
+  return send(req, res, 405, { ok: false });
+}
+
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -254,6 +320,11 @@ async function route(req, res, p) {
   if (p.startsWith('/api/daily')) {
     if (m === 'POST' && p === '/api/daily/claim' && limited('dc:' + id, 10, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
     return dailyRoute(req, res, id, p, m);
+  }
+
+  if (p.startsWith('/api/goals')) {
+    if (m === 'POST' && p === '/api/goals/claim' && limited('gc:' + id, 20, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return goalsRoute(req, res, id, p, m);
   }
 
   if (p === '/api/saves' && m === 'GET') {
@@ -293,7 +364,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|daily(\/claim|\/ack)?)$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?)$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
