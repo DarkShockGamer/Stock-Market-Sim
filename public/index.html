@@ -1044,7 +1044,7 @@ function lvStatus(){
   return Date.now()/1000-LV.maxT<1500?'🟢 LIVE · market open':'🌙 Market closed · last close';}
 function lvTick(){
   STOCKS.forEach(x=>{const o=S.p[x[0]];if(o&&o.live&&o.tgt>0){o.p+=(o.tgt-o.p)*.3;if(Math.abs(o.tgt-o.p)<.004)o.p=o.tgt}}); // ease toward the latest real quote
-  S.max=Math.max(S.max,nw());bump('ticks');lvChTick();nwSample();if(S.tick%5===0)checkAch();draw()}
+  S.max=Math.max(S.max,nw());bump('ticks');lvChTick();goalNw();nwSample();if(S.tick%5===0)checkAch();draw()}
 function tick(){
   S.tick++;
   if(isLive()){lvTick();return}
@@ -1595,6 +1595,7 @@ function chSettle(per,r){const C=chInit();if(r.en<60)return; // under a minute o
   C.hist.unshift({per,k:r.k,pr:x.pr,sr:x.sr,ex,flat:x.flat,inv,won});if(C.hist.length>40)C.hist.length=40;
   if(x.flat)C.dr++;else if(!inv)C.st[per]=0;else if(prim){C.st[per]++;C.best[per]=Math.max(C.best[per],C.st[per]);C.w++}else{C.st[per]=0;C.l++}
   won.forEach(id=>C.ids[id]=(C.ids[id]||0)+1);
+  won.forEach(id=>goalQ(id,id+':'+r.k));if(per==='d'&&prim&&(C.st.d===3||C.st.d===7))goalQ('s'+C.st.d,'s'+C.st.d+':'+r.k); // goal cash: see Goal rewards below
   const nm=per==='d'?'Daily':'Weekly',body=nm+': you '+pct(x.pr,2)+' vs S&P '+pct(x.sr,2),ttl=x.flat?'➖ '+nm+' challenge: market did not move':!inv?'⚠ '+nm+' challenge skipped: not invested enough':prim?'🏆 You beat the S&P!':'📉 The S&P won this round';
   if(!note(prim?'up':'inf',ttl,body,{ttl:14000}))toast(ttl+' · '+body,1)}
 function lvChTick(){const I=S.p.IDX;if(!I||!I.live||!(I.p>0)||!LV.at)return;
@@ -1640,7 +1641,41 @@ function dlyDraw(el){if(!DLY.el){DLY.el=document.createElement('div');DLY.el.id=
 $('#live').addEventListener('click',e=>{if(e.target.closest('[data-dly]'))dlyClaim()});
 setInterval(()=>{if(!live()||!isLive()||!CLD.tok)return;
   if(DLY.st&&!DLY.busy&&DLY.st.next<=dlyNow()&&!DLY.ready){DLY.ready=true;note('up','🎁 Daily bonus ready','Open the Live tab to claim $'+DLY.st.amount,{ttl:12000})}
-  if(Date.now()-DLY.chk>300e3)dlyRefresh()},15000);
+  goalFlush();if(Date.now()-DLY.chk>300e3){dlyRefresh();goalRefresh()}},15000);
+// ---- Goal rewards (Live mode): winning a challenge, a daily win streak and net worth milestones pay cash. ----
+// The server owns the amounts and pays each goal once per period (see cloud.js). This only reports what you earned, queues it while you are
+// offline or signed out, and credits what the server grants. Amounts below are only used for display until the server answers.
+const GL={st:null,busy:false,err:''},GP0={d1:150,d2:250,w1:200,w2:300,s3:75,s7:150,n15:250,n25:400,n50:500,n100:750,n250:1000},
+  NWT=[[15000,'n15'],[25000,'n25'],[50000,'n50'],[100000,'n100'],[250000,'n250']];
+const gpay=g=>(GL.st&&GL.st.pay&&GL.st.pay[g])||GP0[g]||0;
+function goalQ(g,k){const C=chInit(),q=C.q||(C.q=[]);if(!q.some(x=>x.g===g&&x.k===k)){q.push({g,k});if(q.length>30)q.shift()}goalFlush()}
+function goalNw(){if(!isLive())return;const C=chInit(),n=nw();NWT.forEach(([v,g])=>{if(n>=v&&(C.n||0)<v){C.n=v;goalQ(g,g)}})}
+async function goalApply(list){if(!isLive()||!Array.isArray(list)||!list.length)return;
+  const done=G.gg||(G.gg=[]),ack=[];let got=0;
+  for(const g of list){if(!g||typeof g.id!=='string'||!(g.amt>0&&g.amt<=1000))continue;
+    if(!done.includes(g.id)){dlyDeposit(g.amt);done.push(g.id);got+=g.amt}ack.push(g.id)}
+  if(done.length>100)done.splice(0,done.length-100);
+  if(got){save();note('up','🎯 Goal reward','+'+fmt(got)+' added to your cash',{ttl:9000});sfx('cash');draw()}
+  if(ack.length){try{await capi('POST','goals/ack',{ids:ack})}catch(e){}}}
+async function goalFlush(){if(!CLD.tok||GL.busy||!isLive())return;const C=chInit(),sent=(C.q||[]).slice(0,12);if(!sent.length)return;
+  GL.busy=true;
+  try{const r=await capi('POST','goals/claim',{claims:sent});
+    if(r.j.ok){C.q=(C.q||[]).filter(x=>!sent.some(s=>s.g===x.g&&s.k===x.k));GL.st=r.j;GL.err='';save();await goalApply(r.j.pending)}}
+  catch(e){if(e.message!=='expired')GL.err='Offline · will retry'}
+  GL.busy=false;if(isLive())drawLive()}
+async function goalRefresh(){if(!CLD.tok||GL.busy||!isLive())return;GL.busy=true;
+  try{const r=await capi('GET','goals');if(r.j.ok){GL.st=r.j;GL.err='';await goalApply(r.j.pending)}else GL.err='Could not check goal rewards'}
+  catch(e){if(e.message!=='expired')GL.err='Offline · will retry'}
+  GL.busy=false;if(isLive())drawLive();goalFlush()}
+function goalCard(){const q=(chInit().q||[]).length;let b;
+  if(!CLD.cfg)b='<div class="mu">Goal rewards need cloud saves, which are not set up on this server.</div>';
+  else if(!CLD.tok)b='<div class="mu">Sign in with Google (Settings) to be paid for goals. Goals you finish while signed out are paid once you sign in.</div>';
+  else{const once=new Set(GL.st&&GL.st.once||[]);
+    b=`<div class="mu">Earned in the last 24 hours: <b class="up">${fmt(GL.st?GL.st.day:0)}</b>${q?' · '+q+' waiting to be paid':''}</div>`
+     +`<div class="crow"><span>🔥 Daily win streak</span><span class="mu">3 in a row +$${gpay('s3')} · 7 in a row +$${gpay('s7')}</span></div>`
+     +NWT.map(([v,g])=>`<div class="crow ${once.has(g)?'ok':''}"><span>${once.has(g)?'✅':'⏳'} Reach ${fmt(v)} net worth</span><span class="mu">+$${gpay(g)} once</span></div>`).join('')
+     +(GL.err?`<div class="mu dn">${esc(GL.err)}</div>`:'')}
+  return `<div class="sec">🎯 Goal rewards</div><div class="pcard">${b}</div>`}
 function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLive())return;
   const C=chInit(),I=S.p.IDX,now=Date.now();let h='';
   const dayCh=I&&I.live&&I.pc>0?I.p/I.pc-1:0;
@@ -1651,10 +1686,11 @@ function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLiv
     const x=chRes(r),ex=r.en?r.es/r.en:0,sc=Math.max(Math.abs(x.pr),Math.abs(x.sr),.005),bar=(l,v)=>`<div class="cbar"><span>${l}</span><div class="bar"><i style="width:${(Math.abs(v)/sc*100).toFixed(1)}%;background:${v>=0?colUp:colDn}"></i></div><b class="${v>=0?'up':'dn'}">${pct(v,2)}</b></div>`;
     h+=bar('You',x.pr)+bar('S&amp;P',x.sr)+`<div class="mu" style="margin:.15rem 0 .3rem">Gap <b class="${x.al>=0?'up':'dn'}">${sgn(x.al)}${Math.abs(x.al*100).toFixed(2)} pts</b> · invested ${(ex*100).toFixed(0)}% on average${ex<EXMIN?' <span class="dn">(needs '+EXMIN*100+'%)</span>':''} · since ${new Date(r.t0).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}</div>`;
     h+=defs.map(c=>{const won=!x.flat&&ex>=EXMIN&&x.al>c.min+1e-9,gap=c.min-x.al;
-      return `<div class="crow ${won?'ok':''}"><span>${won?'✅':'⏳'} ${c.n}</span><span class="mu">${won?'on track':x.flat?'no movement yet':ex<EXMIN?'invest more':'need '+(gap*100).toFixed(2)+' pts more'}</span></div>`}).join('')+'</div>'});
+      return `<div class="crow ${won?'ok':''}"><span>${won?'✅':'⏳'} ${c.n} <span class="mu">· +$${gpay(c.id)}</span></span><span class="mu">${won?'on track':x.flat?'no movement yet':ex<EXMIN?'invest more':'need '+(gap*100).toFixed(2)+' pts more'}</span></div>`}).join('')+'</div>'});
   h+=`<div class="sec">Record</div><div class="pcard hl"><div><span class="mu">Daily streak</span><b>🔥 ${C.st.d}</b><span>best ${C.best.d}</span></div><div><span class="mu">Weekly streak</span><b>🔥 ${C.st.w}</b><span>best ${C.best.w}</span></div><div><span class="mu">Wins · losses</span><b>${C.w} · ${C.l}</b><span>${C.dr} flat</span></div><div><span class="mu">Big wins</span><b>${(C.ids.d2||0)+(C.ids.w2||0)}</b><span>+0.5% / +2% tiers</span></div></div>`;
   if(C.hist.length)h+='<div class="sec">Past results</div><div class="pcard">'+C.hist.slice(0,10).map(e=>{const d=new Date(e.k+'T00:00:00'),lb=e.per==='d'?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'Week of '+d.toLocaleDateString([],{month:'short',day:'numeric'}),win=e.won.includes(e.per+'1');
     return `<div class="lrow"><span>${e.flat?'➖':!e.inv?'⚠':win?'✅':'❌'} ${lb}</span><span class="mu">you ${pct(e.pr,2)} · S&amp;P ${pct(e.sr,2)}</span><span class="${win?'up':'mu'}">${e.flat?'flat':!e.inv?'skipped':win?'win':'loss'}</span></div>`}).join('')+'</div>';
+  h+=goalCard();
   h+='<div class="mu" style="padding:.4rem .2rem">Scored on the prices the game sees while it is open. You must keep at least '+EXMIN*100+'% of your net worth invested on average, so sitting in cash does not count.</div>';
   el.innerHTML=h;dlyDraw(el)}
 // ===== Cloud saves: Google sign-in + sync (needs cloud.js on the server) =====
@@ -1721,7 +1757,7 @@ function cloudDel(n){delete CLD.revs[n];delete CLD.ll[n];delete CLD.hold[n];clSa
 async function onCred(resp){
   try{const r=await capi('POST','auth/google',{credential:resp.credential});
     if(!r.j.ok){CLD.err='Google sign-in was rejected';cloudUi();return}
-    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true);if(live()&&isLive())dlyRefresh()}
+    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true);if(live()&&isLive()){dlyRefresh();goalRefresh()}}
   catch(e){CLD.err='Could not reach the server';cloudUi()}}
 const gisLoad=()=>CLD.gis||(CLD.gis=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=res;s.onerror=()=>{CLD.gis=null;rej(new Error('gis'))};document.head.appendChild(s)}));
 async function renderGBtn(sel='#gbtn'){const el=$(sel);if(!el||!CLD.cfg)return;
@@ -1878,7 +1914,7 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){
   $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
