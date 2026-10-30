@@ -1604,6 +1604,43 @@ function lvChTick(){const I=S.p.IDX;if(!I||!I.live||!(I.p>0)||!LV.at)return;
     if(!r)r=C.cur[per]={k,t0:Date.now(),a0:n,b0:ix,a1:n,b1:ix,es:0,en:0};
     r.a1=n;r.b1=ix;r.es+=ex;r.en++})}
 const leftTxt=ms=>{const m=Math.max(0,Math.round(ms/60000)),d=m/1440|0,h=(m%1440)/60|0;return d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':(m%60)+'m'};
+// ---- Daily bonus (Live mode): $200 per real day. The server owns the timer and the amount (see cloud.js); this only displays it and credits grants. ----
+const DLY={st:null,off:0,busy:false,err:'',ready:false,el:null,sig:'',chk:0};
+const dlyNow=()=>Date.now()+DLY.off; // server time, so changing this device's clock changes nothing
+function dlyDeposit(amt){const n0=nw();S.cash+=amt;S.start+=amt;S.max+=amt; // a deposit is not a trading gain: keep all-time gain and S&P challenge returns fair
+  if(S.ch&&n0>0){const f=(n0+amt)/n0;['d','w'].forEach(per=>{const r=S.ch.cur&&S.ch.cur[per];if(r){r.a0*=f}})}}
+async function dlyApply(list){if(!isLive()||!Array.isArray(list)||!list.length)return;
+  const done=G.dg||(G.dg=[]),ack=[];let got=0;
+  for(const g of list){if(!g||typeof g.id!=='string'||!(g.amt>0&&g.amt<=1000))continue;
+    if(!done.includes(g.id)){dlyDeposit(g.amt);done.push(g.id);got+=g.amt}ack.push(g.id)}
+  if(done.length>60)done.splice(0,done.length-60);
+  if(got){save();note('up','🎁 Daily bonus claimed','+'+fmt(got)+' added to your cash',{ttl:9000});sfx('cash');draw()}
+  if(ack.length){try{await capi('POST','daily/ack',{ids:ack})}catch(e){}}}
+function dlyStore(j){DLY.st=j;DLY.off=j.now-Date.now();DLY.err='';if(!j.can)DLY.ready=false}
+async function dlyRefresh(){if(!CLD.tok||DLY.busy)return;DLY.busy=true;DLY.chk=Date.now();
+  try{const r=await capi('GET','daily');if(r.j.ok){dlyStore(r.j);await dlyApply(r.j.pending)}else DLY.err='Could not check the daily bonus'}
+  catch(e){if(e.message!=='expired')DLY.err='Offline · will retry'}
+  DLY.busy=false;if(isLive())drawLive()}
+async function dlyClaim(){if(!CLD.tok||DLY.busy||!isLive())return;DLY.busy=true;drawLive();
+  try{const r=await capi('POST','daily/claim');
+    if(r.j.ok||r.j.error==='early'){dlyStore(r.j);if(r.j.ok){DLY.ready=false;await dlyApply(r.j.pending)}else toast('Not ready yet',1)}
+    else toast('Could not claim right now, try again',1)}
+  catch(e){if(e.message!=='expired')toast('Could not reach the server',1)}
+  DLY.busy=false;if(isLive())drawLive()}
+function dlyCard(){const st=DLY.st,amt=st?st.amount:200,dm=Math.max(0,Math.ceil(((st?st.next:0)-dlyNow())/60000)),lt=(dm/60|0)+'h '+pad2(dm%60)+'m',date=new Date(dlyNow()).toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});let b;
+  if(!CLD.cfg)b='<div class="mu">The daily bonus needs cloud saves, which are not set up on this server.</div>';
+  else if(!CLD.tok)b='<div class="mu">Sign in with Google (Settings) to claim $'+amt+' every 24 hours. Your account is what keeps the bonus cheat-proof.</div>';
+  else if(!st)b='<div class="mu">'+esc(DLY.err||'Checking your daily bonus…')+'</div>';
+  else{const left=st.next-dlyNow();
+    b=left<=0?`<button class="btn" data-dly="1" style="background:var(--ac);border-color:var(--ac);color:#fff"${DLY.busy?' disabled':''}>🎁 Claim $${amt}</button>`
+      :'<div class="mu">Next bonus in <b>'+lt+'</b> · $'+amt+' every 24 hours</div>'+(DLY.err?'<div class="mu dn">'+esc(DLY.err)+'</div>':'')}
+  return `<div class="pcard"><div class="up-row"><b>🎁 Daily bonus</b><span class="mu">${esc(date)}</span></div>${b}</div>`}
+function dlyDraw(el){if(!DLY.el){DLY.el=document.createElement('div');DLY.el.id='dlybox'}
+  const h=dlyCard();if(h!==DLY.sig){DLY.sig=h;DLY.el.innerHTML=h}el.prepend(DLY.el)} // same node every time, so a click is never lost to a redraw
+$('#live').addEventListener('click',e=>{if(e.target.closest('[data-dly]'))dlyClaim()});
+setInterval(()=>{if(!live()||!isLive()||!CLD.tok)return;
+  if(DLY.st&&!DLY.busy&&DLY.st.next<=dlyNow()&&!DLY.ready){DLY.ready=true;note('up','🎁 Daily bonus ready','Open the Live tab to claim $'+DLY.st.amount,{ttl:12000})}
+  if(Date.now()-DLY.chk>300e3)dlyRefresh()},15000);
 function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLive())return;
   const C=chInit(),I=S.p.IDX,now=Date.now();let h='';
   const dayCh=I&&I.live&&I.pc>0?I.p/I.pc-1:0;
@@ -1619,7 +1656,7 @@ function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLiv
   if(C.hist.length)h+='<div class="sec">Past results</div><div class="pcard">'+C.hist.slice(0,10).map(e=>{const d=new Date(e.k+'T00:00:00'),lb=e.per==='d'?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'Week of '+d.toLocaleDateString([],{month:'short',day:'numeric'}),win=e.won.includes(e.per+'1');
     return `<div class="lrow"><span>${e.flat?'➖':!e.inv?'⚠':win?'✅':'❌'} ${lb}</span><span class="mu">you ${pct(e.pr,2)} · S&amp;P ${pct(e.sr,2)}</span><span class="${win?'up':'mu'}">${e.flat?'flat':!e.inv?'skipped':win?'win':'loss'}</span></div>`}).join('')+'</div>';
   h+='<div class="mu" style="padding:.4rem .2rem">Scored on the prices the game sees while it is open. You must keep at least '+EXMIN*100+'% of your net worth invested on average, so sitting in cash does not count.</div>';
-  el.innerHTML=h}
+  el.innerHTML=h;dlyDraw(el)}
 // ===== Cloud saves: Google sign-in + sync (needs cloud.js on the server) =====
 // Local saves stay the primary copy and the game works offline. When signed in, each slot is mirrored to the server.
 // Every slot has a revision number; if both this device and the cloud changed since the last sync you are asked which copy to keep.
@@ -1633,7 +1670,7 @@ async function capi(method,path,body){
   const r=await fetch('/api/'+path,{method,headers:h,body:b,cache:'no-store'});let j=null;try{j=await r.json()}catch(e){}
   if(r.status===401&&CLD.tok&&path!=='auth/google'){cloudOut('Your cloud session expired. Sign in again to keep syncing.');throw new Error('expired')}
   return {status:r.status,j:j||{}}}
-function cloudOut(msg){CLD.tok='';CLD.user=null;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
+function cloudOut(msg){DLY.st=null;DLY.ready=false;CLD.tok='';CLD.user=null;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
 function mergeG(c){if(!c)return false;let ch=false;for(const k in (c.a||{})){const t=+c.a[k];if(t>0&&(!G.a[k]||t<G.a[k])){G.a[k]=t;ch=true}}
   ['trades','ticks','best'].forEach(k=>{if((+c[k]||0)>(G[k]||0)){G[k]=+c[k];ch=true}});if(ch)wr(GK,JSON.stringify(G));return ch}
 async function pushSlot(n,base){const raw=rd(SK(n));if(!raw)return;const d=JSON.parse(raw);
@@ -1684,7 +1721,7 @@ function cloudDel(n){delete CLD.revs[n];delete CLD.ll[n];delete CLD.hold[n];clSa
 async function onCred(resp){
   try{const r=await capi('POST','auth/google',{credential:resp.credential});
     if(!r.j.ok){CLD.err='Google sign-in was rejected';cloudUi();return}
-    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true)}
+    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true);if(live()&&isLive())dlyRefresh()}
   catch(e){CLD.err='Could not reach the server';cloudUi()}}
 const gisLoad=()=>CLD.gis||(CLD.gis=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=res;s.onerror=()=>{CLD.gis=null;rej(new Error('gis'))};document.head.appendChild(s)}));
 async function renderGBtn(sel='#gbtn'){const el=$(sel);if(!el||!CLD.cfg)return;
@@ -1841,7 +1878,7 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){lvStart();sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
 function showTitle(){
   $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
