@@ -431,6 +431,58 @@ main:has(#market:not(.hide)){overflow:hidden}
 #cdc{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
 #cdc .cc{border:1px solid var(--line);border-radius:.7rem;padding:.5rem;display:flex;flex-direction:column;gap:.1rem;background:var(--bg);white-space:normal;font-size:1em}.big2{font-size:1.2em;font-weight:700}
 #cdb{display:flex;flex-wrap:wrap;gap:.3rem}#cdb .btn{flex:1 1 auto}
+
+/* ---- Goals page ---- */
+.g-hero{background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 22%,var(--card)),var(--card) 72%);border:1px solid color-mix(in srgb,var(--ac) 38%,var(--line));border-radius:.9rem;padding:.7rem .8rem;display:flex;flex-direction:column;gap:.3rem}
+.g-hero-top{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.g-k{color:var(--mu);font-size:.74em;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.g-big{font-size:1.7em;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.g-sub{color:var(--mu);font-size:.82em;line-height:1.35}
+.g-pill{font-weight:700;font-size:.95em;padding:.25rem .7rem;border-radius:2rem;background:color-mix(in srgb,currentColor 14%,transparent);white-space:nowrap}
+.g-card{background:var(--card);border:1px solid var(--line);border-radius:.9rem;padding:.65rem .75rem;display:flex;flex-direction:column;gap:.6rem}
+.g-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem}.g-head b{font-size:1.02em}
+.g-chip{font-size:.74em;color:var(--mu);background:color-mix(in srgb,var(--mu) 14%,transparent);border-radius:2rem;padding:.15rem .6rem;white-space:nowrap;font-weight:600}
+.g-chip.good{color:var(--up);background:color-mix(in srgb,var(--up) 15%,transparent)}
+.g-chip.warn{color:var(--dn);background:color-mix(in srgb,var(--dn) 15%,transparent)}
+.g-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.5rem}
+.g-side{display:flex;flex-direction:column;gap:.1rem;min-width:0}.g-side.r{text-align:right;align-items:flex-end}
+.g-num{font-size:1.45em;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.g-mid{display:flex;flex-direction:column;align-items:center;font-size:.78em;line-height:1.2;padding:.3rem .65rem;border-radius:.7rem;background:color-mix(in srgb,currentColor 11%,transparent);text-align:center}
+.g-mid b{font-size:1.12em;font-variant-numeric:tabular-nums}
+.g-track{position:relative;height:.6rem;background:var(--line);border-radius:1rem;overflow:hidden}
+.g-track .mid{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:color-mix(in srgb,var(--tx) 50%,transparent);z-index:1}
+.g-track .fill{position:absolute;top:0;bottom:0}
+.g-track .fill.up{background:var(--up)}.g-track .fill.dn{background:var(--dn)}
+.g-track .tick{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--tx);z-index:1}
+.g-scale{position:relative;height:.9rem;font-size:.7em;color:var(--mu);margin-top:.2rem}
+.g-scale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.g-goals{display:flex;flex-direction:column;gap:.4rem}
+.g-goal{display:flex;align-items:center;gap:.6rem;padding:.45rem .55rem;border-radius:.7rem;background:color-mix(in srgb,var(--mu) 8%,transparent);border:1px solid transparent}
+.g-goal.ok{background:color-mix(in srgb,var(--up) 11%,transparent);border-color:color-mix(in srgb,var(--up) 40%,transparent)}
+.g-ic{width:1.5rem;height:1.5rem;border-radius:50%;display:grid;place-items:center;font-size:.8em;font-weight:700;flex:0 0 auto;background:var(--line);color:var(--mu)}
+.g-goal.ok .g-ic{background:var(--up);color:var(--bg)}
+.g-gt{flex:1;min-width:0;display:flex;flex-direction:column}.g-gt b{font-size:.92em}
+.g-rew{font-weight:700;font-size:.86em;padding:.2rem .6rem;border-radius:2rem;background:var(--line);color:var(--mu);white-space:nowrap}
+.g-goal.ok .g-rew{background:var(--up);color:var(--bg)}
+.g-dots{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}
+.g-dot{width:1.65rem;height:1.65rem;border-radius:50%;display:grid;place-items:center;font-size:.72em;font-weight:700;background:var(--line);color:var(--mu);border:2px solid transparent}
+.g-dot.on{background:#ff9f43;color:#2b1500}.g-dot.m{border-color:#ff9f43}
+.g-dot.m:not(.on){color:#ff9f43}
+.g-prog{height:.6rem;background:var(--line);border-radius:1rem;overflow:hidden}
+.g-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 50%,var(--up)));border-radius:1rem}
+.g-ms{display:flex;flex-wrap:wrap;gap:.35rem}
+.g-m{font-size:.76em;font-weight:600;padding:.25rem .6rem;border-radius:2rem;background:var(--line);color:var(--mu)}
+.g-m.ok{background:color-mix(in srgb,var(--up) 18%,transparent);color:var(--up)}
+.g-tiles{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+.g-tile{background:color-mix(in srgb,var(--mu) 8%,transparent);border-radius:.7rem;padding:.5rem .65rem;display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.g-tile b{font-size:1.15em;font-variant-numeric:tabular-nums}
+.g-hr{display:grid;grid-template-columns:auto 1fr auto;gap:.6rem;align-items:center;font-size:.85em;padding:.4rem 0;border-top:1px solid var(--line)}
+.g-hr:first-of-type{border-top:0}
+.g-hr .mu{min-width:0}
+.g-bonus{background:linear-gradient(135deg,color-mix(in srgb,#f5b942 20%,var(--card)),var(--card) 75%);border-color:color-mix(in srgb,#f5b942 42%,var(--line))}
+.g-claim{background:var(--ac);border:1px solid var(--ac);color:#fff;border-radius:.7rem;padding:.6rem;font:inherit;font-weight:700;cursor:pointer}
+.g-claim:hover:not(:disabled){filter:brightness(1.1)}.g-claim:disabled{opacity:.5;cursor:default}
+.g-foot{color:var(--mu);font-size:.78em;padding:.2rem .3rem .6rem;line-height:1.4}
 </style>
 </head>
 <body>
@@ -492,7 +544,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v0.9.1</div>
+<div id="title"><div id="ver">v1.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1629,13 +1681,14 @@ async function dlyClaim(){if(!CLD.tok||DLY.busy||!isLive())return;DLY.busy=true;
   catch(e){if(e.message!=='expired')toast('Could not reach the server',1)}
   DLY.busy=false;if(isLive())drawLive()}
 function dlyCard(){const st=DLY.st,amt=st?st.amount:200,dm=Math.max(0,Math.ceil(((st?st.next:0)-dlyNow())/60000)),lt=(dm/60|0)+'h '+pad2(dm%60)+'m',date=new Date(dlyNow()).toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});let b;
-  if(!CLD.cfg)b='<div class="mu">The daily bonus needs cloud saves, which are not set up on this server.</div>';
-  else if(!CLD.tok)b='<div class="mu">Sign in with Google (Settings) to claim $'+amt+' every 24 hours. Your account is what keeps the bonus cheat-proof.</div>';
-  else if(!st)b='<div class="mu">'+esc(DLY.err||'Checking your daily bonus…')+'</div>';
+  if(!CLD.cfg)b='<div class="g-sub">The daily bonus needs cloud saves, which are not set up on this server.</div>';
+  else if(!CLD.tok)b='<div class="g-sub">Sign in with Google (Settings) to claim $'+amt+' every 24 hours. Your account is what keeps the bonus cheat-proof.</div>';
+  else if(!st)b='<div class="g-sub">'+esc(DLY.err||'Checking your daily bonus…')+'</div>';
   else{const left=st.next-dlyNow();
-    b=left<=0?`<button class="btn" data-dly="1" style="background:var(--ac);border-color:var(--ac);color:#fff"${DLY.busy?' disabled':''}>🎁 Claim $${amt}</button>`
-      :'<div class="mu">Next bonus in <b>'+lt+'</b> · $'+amt+' every 24 hours</div>'+(DLY.err?'<div class="mu dn">'+esc(DLY.err)+'</div>':'')}
-  return `<div class="pcard"><div class="up-row"><b>🎁 Daily bonus</b><span class="mu">${esc(date)}</span></div>${b}</div>`}
+    b=left<=0?`<button class="g-claim" data-dly="1"${DLY.busy?' disabled':''}>🎁 Claim $${amt}</button>`
+      :'<div class="g-sub">Next bonus in <b>'+lt+'</b> · $'+amt+' every 24 hours</div>'+(DLY.err?'<div class="g-sub dn">'+esc(DLY.err)+'</div>':'')}
+  const ready=!!st&&st.next-dlyNow()<=0&&!!CLD.tok;
+  return `<div class="g-card g-bonus"><div class="g-head"><b>🎁 Daily bonus</b><span class="g-chip ${ready?'good':''}">${ready?'Ready':esc(date)}</span></div>${b}</div>`}
 function dlyDraw(el){if(!DLY.el){DLY.el=document.createElement('div');DLY.el.id='dlybox'}
   const h=dlyCard();if(h!==DLY.sig){DLY.sig=h;DLY.el.innerHTML=h}el.prepend(DLY.el)} // same node every time, so a click is never lost to a redraw
 $('#live').addEventListener('click',e=>{if(e.target.closest('[data-dly]'))dlyClaim()});
@@ -1667,31 +1720,40 @@ async function goalRefresh(){if(!CLD.tok||GL.busy||!isLive())return;GL.busy=true
   try{const r=await capi('GET','goals');if(r.j.ok){GL.st=r.j;GL.err='';await goalApply(r.j.pending)}else GL.err='Could not check goal rewards'}
   catch(e){if(e.message!=='expired')GL.err='Offline · will retry'}
   GL.busy=false;if(isLive())drawLive();goalFlush()}
-function goalCard(){const q=(chInit().q||[]).length;let b;
-  if(!CLD.cfg)b='<div class="mu">Goal rewards need cloud saves, which are not set up on this server.</div>';
-  else if(!CLD.tok)b='<div class="mu">Sign in with Google (Settings) to be paid for goals. Goals you finish while signed out are paid once you sign in.</div>';
-  else{const once=new Set(GL.st&&GL.st.once||[]);
-    b=`<div class="mu">Earned in the last 24 hours: <b class="up">${fmt(GL.st?GL.st.day:0)}</b>${q?' · '+q+' waiting to be paid':''}</div>`
-     +`<div class="crow"><span>🔥 Daily win streak</span><span class="mu">3 in a row +$${gpay('s3')} · 7 in a row +$${gpay('s7')}</span></div>`
-     +NWT.map(([v,g])=>`<div class="crow ${once.has(g)?'ok':''}"><span>${once.has(g)?'✅':'⏳'} Reach ${fmt(v)} net worth</span><span class="mu">+$${gpay(g)} once</span></div>`).join('')
-     +(GL.err?`<div class="mu dn">${esc(GL.err)}</div>`:'')}
-  return `<div class="sec">🎯 Goal rewards</div><div class="pcard">${b}</div>`}
+function goalCard(){const C=chInit(),q=(C.q||[]).length,n=nw(),sd=C.st.d;let b='';
+  const once=new Set(GL.st&&GL.st.once||[]),next=NWT.find(([v,g])=>!once.has(g)&&n<v)||NWT.find(([v,g])=>!once.has(g)),
+    prev=next?(NWT[NWT.indexOf(next)-1]||[10000])[0]:0,pr=next?Math.max(0,Math.min(1,(n-prev)/(next[0]-prev))):1;
+  let top;
+  if(!CLD.cfg)top='<div class="g-sub">Goal rewards need cloud saves, which are not set up on this server.</div>';
+  else if(!CLD.tok)top='<div class="g-sub">Sign in with Google (Settings) to be paid for goals. Goals you finish while signed out are paid once you sign in.</div>';
+  else top=GL.err?`<div class="g-sub dn">${esc(GL.err)}</div>`:'';
+  const chip=CLD.tok?`<span class="g-chip ${GL.st&&GL.st.day>0?'good':''}">Last 24h: ${fmt(GL.st?GL.st.day:0)}${q?' · '+q+' pending':''}</span>`:'';
+  b+=`<div class="g-head"><b>🎯 Goal rewards</b>${chip}</div>${top}`;
+  b+=`<div class="g-goals"><div class="g-head"><span class="g-k">🔥 Daily win streak</span><span class="g-sub">${sd} now · best ${C.best.d}</span></div><div class="g-dots">${[1,2,3,4,5,6,7].map(i=>`<span class="g-dot ${i<=sd?'on':''} ${i===3||i===7?'m':''}">${i===3||i===7?'★':i}</span>`).join('')}</div><div class="g-sub">3 wins in a row pays <b>$${gpay('s3')}</b> · 7 in a row pays <b>$${gpay('s7')}</b></div></div>`;
+  b+=`<div class="g-goals"><div class="g-head"><span class="g-k">📈 Net worth milestones</span><span class="g-sub">paid once ever</span></div>`
+    +(next?`<div class="g-prog"><i style="width:${(pr*100).toFixed(1)}%"></i></div><div class="g-sub">${fmt(n)} of <b>${fmt(next[0])}</b> · next reward <b>+$${gpay(next[1])}</b></div>`:'<div class="g-sub">Every milestone claimed. Legend.</div>')
+    +`<div class="g-ms">${NWT.map(([v,g])=>`<span class="g-m ${once.has(g)?'ok':''}">${once.has(g)?'✓ ':''}${fmt(v)} · $${gpay(g)}</span>`).join('')}</div></div>`;
+  return `<div class="g-card">${b}</div>`}
 function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLive())return;
   const C=chInit(),I=S.p.IDX,now=Date.now();let h='';
   const dayCh=I&&I.live&&I.pc>0?I.p/I.pc-1:0;
-  h+=`<div class="pcard"><div class="up-row"><b>S&amp;P 500 (SPY)</b><span class="${dayCh>=0?'up':'dn'}"><b>${I&&I.live?'$'+I.p.toFixed(2)+' · '+pct(dayCh,2):'…'}</b></span></div><div class="mu">${esc(lvStatus())}</div><div class="mu">Beat the real index. Your trades never move real prices, so skill is all that counts.</div></div>`;
+  h+=`<div class="g-hero"><div class="g-hero-top"><div><div class="g-k">S&amp;P 500 · SPY</div><div class="g-big">${I&&I.live?'$'+I.p.toFixed(2):'…'}</div></div><div class="g-pill ${dayCh>=0?'up':'dn'}">${I&&I.live?(dayCh>=0?'▲ ':'▼ ')+Math.abs(dayCh*100).toFixed(2)+'% today':'…'}</div></div><div class="g-sub">${esc(lvStatus())}</div><div class="g-sub">Beat the real index to earn cash. Your trades never move real prices, so skill is all that counts.</div></div>`;
   [['d','Today'],['w','This week']].forEach(([per,nm])=>{const r=C.cur[per],defs=CHD.filter(c=>c.per===per);
-    h+=`<div class="sec">${nm}${r?' <span class="mu">· resets in '+leftTxt(pend(per,now)-now)+'</span>':''}</div><div class="pcard">`;
-    if(!r){h+='<div class="mu">Waiting for live prices…</div></div>';return}
-    const x=chRes(r),ex=r.en?r.es/r.en:0,sc=Math.max(Math.abs(x.pr),Math.abs(x.sr),.005),bar=(l,v)=>`<div class="cbar"><span>${l}</span><div class="bar"><i style="width:${(Math.abs(v)/sc*100).toFixed(1)}%;background:${v>=0?colUp:colDn}"></i></div><b class="${v>=0?'up':'dn'}">${pct(v,2)}</b></div>`;
-    h+=bar('You',x.pr)+bar('S&amp;P',x.sr)+`<div class="mu" style="margin:.15rem 0 .3rem">Gap <b class="${x.al>=0?'up':'dn'}">${sgn(x.al)}${Math.abs(x.al*100).toFixed(2)} pts</b> · invested ${(ex*100).toFixed(0)}% on average${ex<EXMIN?' <span class="dn">(needs '+EXMIN*100+'%)</span>':''} · since ${new Date(r.t0).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}</div>`;
-    h+=defs.map(c=>{const won=!x.flat&&ex>=EXMIN&&x.al>c.min+1e-9,gap=c.min-x.al;
-      return `<div class="crow ${won?'ok':''}"><span>${won?'✅':'⏳'} ${c.n} <span class="mu">· +$${gpay(c.id)}</span></span><span class="mu">${won?'on track':x.flat?'no movement yet':ex<EXMIN?'invest more':'need '+(gap*100).toFixed(2)+' pts more'}</span></div>`}).join('')+'</div>'});
-  h+=`<div class="sec">Record</div><div class="pcard hl"><div><span class="mu">Daily streak</span><b>🔥 ${C.st.d}</b><span>best ${C.best.d}</span></div><div><span class="mu">Weekly streak</span><b>🔥 ${C.st.w}</b><span>best ${C.best.w}</span></div><div><span class="mu">Wins · losses</span><b>${C.w} · ${C.l}</b><span>${C.dr} flat</span></div><div><span class="mu">Big wins</span><b>${(C.ids.d2||0)+(C.ids.w2||0)}</b><span>+0.5% / +2% tiers</span></div></div>`;
-  if(C.hist.length)h+='<div class="sec">Past results</div><div class="pcard">'+C.hist.slice(0,10).map(e=>{const d=new Date(e.k+'T00:00:00'),lb=e.per==='d'?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'Week of '+d.toLocaleDateString([],{month:'short',day:'numeric'}),win=e.won.includes(e.per+'1');
-    return `<div class="lrow"><span>${e.flat?'➖':!e.inv?'⚠':win?'✅':'❌'} ${lb}</span><span class="mu">you ${pct(e.pr,2)} · S&amp;P ${pct(e.sr,2)}</span><span class="${win?'up':'mu'}">${e.flat?'flat':!e.inv?'skipped':win?'win':'loss'}</span></div>`}).join('')+'</div>';
+    h+=`<div class="g-card"><div class="g-head"><b>${per==='d'?'📅':'🗓️'} ${nm}</b>${r?`<span class="g-chip">resets in ${leftTxt(pend(per,now)-now)}</span>`:''}</div>`;
+    if(!r){h+='<div class="g-sub">Waiting for live prices…</div></div>';return}
+    const x=chRes(r),ex=r.en?r.es/r.en:0,up=x.al>=0,sc=per==='d'?.01:.04,gp=Math.max(-1,Math.min(1,x.al/sc))*50,hard=defs[defs.length-1].min,tk=50+hard/sc*50;
+    h+=`<div class="g-vs"><div class="g-side"><span class="g-k">You</span><b class="g-num ${x.pr>=0?'up':'dn'}">${pct(x.pr,2)}</b></div><div class="g-mid ${up?'up':'dn'}"><span>${up?'ahead by':'behind by'}</span><b>${Math.abs(x.al*100).toFixed(2)} pts</b></div><div class="g-side r"><span class="g-k">S&amp;P</span><b class="g-num ${x.sr>=0?'up':'dn'}">${pct(x.sr,2)}</b></div></div>`;
+    h+=`<div><div class="g-track"><i class="mid"></i><i class="fill ${up?'up':'dn'}" style="left:${up?50:50+gp}%;width:${Math.abs(gp)}%"></i><i class="tick" style="left:${tk}%"></i></div><div class="g-scale"><span style="left:50%">level</span><span style="left:${tk}%">+${+(hard*100).toFixed(1)}% goal</span></div></div>`;
+    h+=`<div class="g-sub">Invested <b>${(ex*100).toFixed(0)}%</b> on average ${ex<EXMIN?`<span class="g-chip warn">needs ${EXMIN*100}%</span>`:'<span class="g-chip good">counts</span>'} · since ${new Date(r.t0).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}</div>`;
+    h+='<div class="g-goals">'+defs.map(c=>{const won=!x.flat&&ex>=EXMIN&&x.al>c.min+1e-9,gap=c.min-x.al,
+      st=won?'on track · paid when the '+(per==='d'?'day':'week')+' ends':x.flat?'no movement yet':ex<EXMIN?'invest more to qualify':'need '+(gap*100).toFixed(2)+' more pts';
+      return `<div class="g-goal ${won?'ok':''}"><span class="g-ic">${won?'✓':'·'}</span><div class="g-gt"><b>${c.n}</b><span class="g-sub">${st}</span></div><span class="g-rew">+$${gpay(c.id)}</span></div>`}).join('')+'</div></div>'});
   h+=goalCard();
-  h+='<div class="mu" style="padding:.4rem .2rem">Scored on the prices the game sees while it is open. You must keep at least '+EXMIN*100+'% of your net worth invested on average, so sitting in cash does not count.</div>';
+  h+=`<div class="sec">Record</div><div class="g-tiles"><div class="g-tile"><span class="g-k">Daily streak</span><b>🔥 ${C.st.d}</b><span class="g-sub">best ${C.best.d}</span></div><div class="g-tile"><span class="g-k">Weekly streak</span><b>🔥 ${C.st.w}</b><span class="g-sub">best ${C.best.w}</span></div><div class="g-tile"><span class="g-k">Wins · losses</span><b>${C.w} · ${C.l}</b><span class="g-sub">${C.dr} flat</span></div><div class="g-tile"><span class="g-k">Big wins</span><b>${(C.ids.d2||0)+(C.ids.w2||0)}</b><span class="g-sub">+0.5% / +2% tiers</span></div></div>`;
+  if(C.hist.length)h+='<div class="sec">Past results</div><div class="g-card" style="gap:0">'+C.hist.slice(0,10).map(e=>{const d=new Date(e.k+'T00:00:00'),lb=e.per==='d'?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'Week of '+d.toLocaleDateString([],{month:'short',day:'numeric'}),win=e.won.includes(e.per+'1'),
+      tag=e.flat?['flat','']:!e.inv?['skipped','warn']:win?['win','good']:['loss','warn'];
+    return `<div class="g-hr"><span>${e.flat?'➖':!e.inv?'⚠':win?'✅':'❌'} ${lb}</span><span class="mu">you ${pct(e.pr,2)} · S&amp;P ${pct(e.sr,2)}</span><span class="g-chip ${tag[1]}">${tag[0]}</span></div>`}).join('')+'</div>';
+  h+='<div class="g-foot">Scored on the prices the game sees while it is open. You must keep at least '+EXMIN*100+'% of your net worth invested on average, so sitting in cash does not count.</div>';
   el.innerHTML=h;dlyDraw(el)}
 // ===== Cloud saves: Google sign-in + sync (needs cloud.js on the server) =====
 // Local saves stay the primary copy and the game works offline. When signed in, each slot is mirrored to the server.
