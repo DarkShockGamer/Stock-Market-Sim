@@ -97,16 +97,53 @@ html[data-ns] .sp{display:none}
 .note div{font-size:.9em}.note small{display:block}
 #ach{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
 #ach.hide{display:none}
-#adm{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
+#adm{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35;backdrop-filter:blur(3px)}
 #adm.hide{display:none}
-#admq{width:100%;box-sizing:border-box;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:.5714rem;padding:.4286rem .6rem;font:inherit}
-#admq:focus{outline:none;border-color:var(--ac)}
-#admlist{display:flex;flex-direction:column;gap:.25rem;max-height:34vh;overflow-y:auto}
-#adm .adr{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;width:100%;max-width:none;text-align:left}
-#adm .adr.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 18%,transparent)}
-#adm .adr i{color:var(--mu);font-style:normal;font-size:.85em}
-#adm .adc{font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ac);border:1px solid var(--ac);border-radius:.4rem;padding:0 .3rem;margin-left:.3rem}
-#admsel{display:flex;flex-direction:column;gap:.35rem;border-top:1px solid var(--line);padding-top:.5rem}
+.admc{background:var(--card);border:1px solid var(--line);border-radius:1rem;width:100%;max-width:54rem;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1rem 3rem #000a}
+.admh{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.8rem 1rem;border-bottom:1px solid var(--line);background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 10%,var(--card)),var(--card))}
+.admt{display:flex;align-items:center;gap:.7rem;min-width:0}
+.admlogo{width:2.3rem;height:2.3rem;border-radius:.7rem;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac) 22%,var(--card));color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent)}
+.admt b{display:block;font-size:1.1em;letter-spacing:.01em}.admt .mu{font-size:.8em}
+.admbody{display:flex;flex-direction:column;gap:.7rem;padding:.8rem 1rem 1rem;overflow-y:auto;min-height:0}
+.admstats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.admstat{background:var(--bg);border:1px solid var(--line);border-radius:.7rem;padding:.5rem .7rem;display:flex;flex-direction:column}
+.admstat span{color:var(--mu);font-size:.72em;text-transform:uppercase;letter-spacing:.06em}.admstat b{font-size:1.35em;font-variant-numeric:tabular-nums}
+.admtabs{display:flex;gap:.25rem;background:var(--bg);border:1px solid var(--line);border-radius:.8rem;padding:.2rem}
+.admtabs button{flex:1;background:none;border:0;color:var(--mu);padding:.4rem .5rem;border-radius:.6rem;font:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem}
+.admtabs button:hover{color:var(--tx)}.admtabs button.on{background:var(--ac);color:#fff}
+.admmsg{border-radius:.6rem;padding:.45rem .7rem;font-size:.9em;border:1px solid var(--line)}
+.admmsg.ok{border-color:var(--up);color:var(--up);background:color-mix(in srgb,var(--up) 10%,transparent)}
+.admmsg.bad{border-color:var(--dn);color:var(--dn);background:color-mix(in srgb,var(--dn) 10%,transparent)}
+.admmsg.hide{display:none}
+.admbar{display:flex;gap:.5rem}
+#admq,#admsort{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:.6rem;padding:.45rem .7rem;font:inherit;box-sizing:border-box}
+#admq{flex:1;min-width:0;padding-left:2rem;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a0' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat .65rem center/1rem}
+#admq:focus,#admsort:focus{outline:none;border-color:var(--ac)}
+.admgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:.8rem;align-items:start}
+#admlist{display:flex;flex-direction:column;gap:.3rem;max-height:46vh;overflow-y:auto;padding-right:.15rem}
+.adr{display:flex;align-items:center;gap:.6rem;width:100%;max-width:none;text-align:left;padding:.45rem .6rem;border-radius:.7rem}
+.adr.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,var(--card))}
+.adr .adm1{display:flex;flex-direction:column;min-width:0;flex:1}.adr .adm1 b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adr .adm1 .mu,.adr i{font-size:.8em}.adr i,.admbox i{color:var(--mu);font-style:normal;font-weight:400}
+.adch{display:flex;gap:.25rem;flex-wrap:wrap;justify-content:flex-end}
+.adav{flex:0 0 auto;width:2rem;height:2rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+.adav.big{width:3rem;height:3rem;font-size:1.3em}
+.adc{font-size:.66em;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--mu);color:var(--mu);border-radius:.4rem;padding:.05rem .35rem}
+.adc.owner{color:#f1c40f;border-color:#f1c40f}.adc.admin{color:var(--ac);border-color:var(--ac)}.adc.off{color:var(--dn);border-color:var(--dn)}
+.admbox{background:var(--bg);border:1px solid var(--line);border-radius:.8rem;padding:.8rem;display:flex;flex-direction:column;gap:.6rem;position:sticky;top:0}
+.admbox .addh{display:flex;align-items:center;gap:.7rem}.admbox .addh b{font-size:1.05em}.admbox .addh div{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.adslots{display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));gap:.4rem}
+.adslot{background:var(--card);border:1px solid var(--line);border-radius:.6rem;padding:.4rem .55rem;display:flex;flex-direction:column}
+.adslot span{color:var(--mu);font-size:.75em}.adslot b{font-variant-numeric:tabular-nums}
+.adact{display:flex;flex-direction:column;gap:.35rem}
+.adact .btn{display:flex;align-items:center;justify-content:center;gap:.45rem;width:100%;max-width:none}
+.adnote{color:var(--mu);font-size:.8em;line-height:1.35}
+.admempty{color:var(--mu);text-align:center;padding:1.2rem .5rem;border:1px dashed var(--line);border-radius:.8rem;font-size:.9em}
+.admlog{display:flex;flex-direction:column}
+.adlg{display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .2rem;border-bottom:1px solid var(--line);font-size:.92em}
+.adlg:last-child{border:0}.adlg .ico{margin-top:.15rem;color:var(--ac);flex:0 0 auto}.adlg .adlt{margin-left:auto;color:var(--mu);font-size:.8em;white-space:nowrap}
+.adlg.dn .ico{color:var(--dn)}
+@media(max-width:40rem){.admgrid{grid-template-columns:1fr}#admlist{max-height:32vh}.admstats{grid-template-columns:repeat(2,1fr)}.admbox{position:static}}
 .chips{display:flex;flex-wrap:wrap;gap:.25rem;padding:0 0 .3rem}
 .chip{padding:.15rem .55rem;font-size:.85em;border-radius:1rem}
 .foot{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.2rem;background:var(--card);border:1px solid var(--line);border-radius:.9rem;padding:.2rem}
@@ -554,7 +591,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.0.3</div>
+<div id="title"><div id="ver">v1.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -618,12 +655,19 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="mu" id="adesc"></div>
   <div id="alist"></div>
 </div></div>
-<div id="adm" class="hide"><div class="card">
-  <div class="up-row"><b class="ahead">🛠 Admin</b><button class="btn" id="admx">✕</button></div>
-  <div class="mu" id="admd"></div>
-  <input id="admq" type="search" placeholder="Search players by name" autocomplete="off" spellcheck="false">
-  <div id="admlist"></div>
-  <div id="admsel"></div>
+<div id="adm" class="hide"><div class="admc">
+  <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-lock"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
+  <div class="admbody">
+    <div class="admstats" id="admstats"></div>
+    <div class="admtabs" id="admtabs"><button class="on" data-t="players"><svg class="ico"><use href="#i-people"/></svg>Players</button><button data-t="admins"><svg class="ico"><use href="#i-unlock"/></svg>Admins</button><button data-t="log"><svg class="ico"><use href="#i-clock"/></svg>Activity</button></div>
+    <div class="admmsg hide" id="admd"></div>
+    <div id="ap-players">
+      <div class="admbar"><input id="admq" type="search" placeholder="Search players by name" autocomplete="off" spellcheck="false"><select id="admsort" aria-label="Sort"><option value="recent">Recently saved</option><option value="worth">Highest net worth</option><option value="name">Name</option></select></div>
+      <div class="admgrid" style="margin-top:.7rem"><div id="admlist"></div><div id="admsel"></div></div>
+    </div>
+    <div id="ap-admins" class="hide"><div id="admadmins" class="admlog"></div></div>
+    <div id="ap-log" class="hide"><div id="admlog" class="admlog"></div></div>
+  </div>
 </div></div>
 <div id="cdlg" class="hide"><div class="card"><b>Which save do you want to keep?</b><div class="mu" id="cdt"></div><div id="cdc"></div><div id="cdb"><button class="btn" data-cd="dev">Keep this device</button><button class="btn" data-cd="cloud">Use cloud</button><button class="btn" data-cd="skip">Decide later</button></div></div></div>
 <div id="notes"></div>
@@ -1930,39 +1974,57 @@ $('#tb2').onclick=()=>{showTitle()};
 $('#tb3').onclick=()=>{showTitle()};
 $('#tcrd').onclick=()=>{views('cr');const c=$('#cr');c.classList.remove('go');void c.offsetWidth;c.classList.add('go')};
 $('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
-// ---- Admin panel (owner + admins): pick ONE player, delete their saves. The owner can also make/remove admins. The server enforces all of it. ----
-const ADM={q:'',rows:[],total:0,sel:'',me:'',busy:false,msg:'',t:0};
-const admSum=x=>x.slots.length?x.slots.map(s=>s.n+': '+(s.mode==='live'?'Live ':'Classic ')+fmt(s.nw)).join(' · ')+' · saved '+ago(Math.max(...x.slots.map(s=>s.at))):'no cloud saves';
-function admDraw(){const me=CLD.role==='owner';
-  $('#admd').textContent=ADM.msg||(me?'You are the owner: you can delete one player\'s saves at a time and choose who is an admin.':'Pick one player, then delete their saves.');
-  $('#admlist').innerHTML=ADM.rows.length?ADM.rows.map(x=>`<button class="btn adr ${x.id===ADM.sel?'on':''}" data-p="${x.id}"><span>${esc(x.name)} <i>#${x.ref}</i>${x.id===ADM.me?' <i>(you)</i>':''}${x.role?`<span class="adc">${x.role}</span>`:''}</span><span class="mu">${admSum(x)}</span></button>`).join('')+(ADM.total>ADM.rows.length?`<div class="mu">Showing ${ADM.rows.length} of ${ADM.total}. Search to narrow it down.</div>`:''):`<div class="mu">${ADM.busy?'Loading…':'No players found.'}</div>`;
+// ---- Admin console (owner + admins): pick ONE player at a time. The owner can also make/remove admins. The server enforces every rule. ----
+const ADM={q:'',sort:'recent',tab:'players',rows:[],total:0,stats:null,sel:'',me:'',busy:false,msg:'',bad:false,t:0,staff:[],log:[]};
+const admAv=(x,c)=>`<span class="adav ${c||''}" style="background:hsl(${parseInt(x.ref,16)%360} 45% 32%)">${esc((x.name||'?').trim().charAt(0).toUpperCase()||'?')}</span>`;
+const admChips=x=>(x.role?`<span class="adc ${x.role}">${x.role}</span>`:'')+(x.ban?'<span class="adc off">hidden</span>':'');
+const admSum=x=>x.slots.length?x.slots.length+' save'+(x.slots.length>1?'s':'')+' · best '+fmt(x.best)+' · '+ago(x.last):'no cloud saves';
+const admMsg=(m,bad)=>{ADM.msg=m;ADM.bad=!!bad;const e=$('#admd');e.textContent=m;e.className='admmsg'+(m?(bad?' bad':' ok'):' hide')};
+const ADLOG={wipe:['trash','deleted the saves of',1],'make-admin':['unlock','made an admin:'],'remove-admin':['lock','removed admin from',1],'hide-leaderboard':['chart','hid from the leaderboard:',1],'show-leaderboard':['chart','restored to the leaderboard:']};
+function admDraw(){const own=CLD.role==='owner',st=ADM.stats;
+  $('#admrole').textContent=own?'Signed in as owner':'Signed in as admin';
+  $('#admstats').innerHTML=st?[['Players',st.players],['With saves',st.withSaves],['Admins',st.admins],['Hidden',st.hidden]].map(([k,v])=>`<div class="admstat"><span>${k}</span><b>${v}</b></div>`).join(''):'';
+  document.querySelectorAll('#admtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===ADM.tab));
+  ['players','admins','log'].forEach(t=>$('#ap-'+t).classList.toggle('hide',t!==ADM.tab));
+  $('#admlist').innerHTML=ADM.rows.length?ADM.rows.map(x=>`<button class="btn adr ${x.id===ADM.sel?'on':''}" data-p="${x.id}">${admAv(x)}<span class="adm1"><b>${esc(x.name)} <i>#${x.ref}${x.id===ADM.me?' · you':''}</i></b><span class="mu">${admSum(x)}</span></span><span class="adch">${admChips(x)}</span></button>`).join('')+(ADM.total>ADM.rows.length?`<div class="adnote" style="text-align:center;padding:.3rem">Showing ${ADM.rows.length} of ${ADM.total}. Search to narrow it down.</div>`:''):`<div class="admempty">${ADM.busy?'Loading…':'No players found.'}</div>`;
   const x=ADM.rows.find(r=>r.id===ADM.sel),el=$('#admsel');
-  if(!x){el.innerHTML='';return}
-  const self=x.id===ADM.me,lock=x.role==='owner'||(x.role==='admin'&&!me)||self;
-  el.innerHTML=`<div class="srow"><b>${esc(x.name)} <i class="mu">#${x.ref}</i></b></div><div class="mu">${admSum(x)}</div>
-    <div class="srow"><button class="btn warn" data-aa="wipe" ${lock||ADM.busy?'disabled':''}>Delete their saves</button>${me&&!self&&x.role!=='owner'?`<button class="btn" data-aa="${x.role==='admin'?'unadmin':'admin'}" ${ADM.busy?'disabled':''}>${x.role==='admin'?'Remove admin':'Make admin'}</button>`:''}</div>
-    <div class="mu">${self?'Use Settings > Delete all saves for your own saves.':lock?'Only the owner can delete an admin\'s saves.':'Deletes their cloud slots now. Their devices clear their local saves the next time they are online (about 20 seconds). Achievements are kept.'}</div>`}
+  if(!x)el.innerHTML=`<div class="admempty">Select a player to see their saves and actions.</div>`;
+  else{const self=x.id===ADM.me,lock=x.role==='owner'||(x.role==='admin'&&!own),dis=ADM.busy?'disabled':'';
+    el.innerHTML=`<div class="admbox"><div class="addh">${admAv(x,'big')}<div><b>${esc(x.name)}</b><span class="mu">#${x.ref}${self?' · you':''}</span><span class="adch" style="justify-content:flex-start">${admChips(x)}</span></div></div>
+      ${x.slots.length?`<div class="adslots">${x.slots.map(sl=>`<div class="adslot"><span>Slot ${sl.n} · ${sl.mode==='live'?'Live':'Classic'}</span><b>${fmt(sl.nw)}</b><span>saved ${ago(sl.at)}</span></div>`).join('')}</div>`:'<div class="adnote">No cloud saves right now.</div>'}
+      <div class="adact">
+        <button class="btn warn" data-aa="wipe" ${lock||self||ADM.busy?'disabled':''}>${IC('trash')}<span>Delete their saves</span></button>
+        <button class="btn" data-aa="lbhide" ${lock||ADM.busy?'disabled':''}>${IC('chart')}<span>${x.ban?'Show on leaderboard':'Hide from leaderboard'}</span></button>
+        ${own&&!self&&x.role!=='owner'?`<button class="btn" data-aa="${x.role==='admin'?'unadmin':'admin'}" ${dis}>${IC(x.role==='admin'?'lock':'unlock')}<span>${x.role==='admin'?'Remove admin':'Make admin'}</span></button>`:''}
+      </div>
+      <div class="adnote">${self?'Use Settings > Delete all saves for your own saves.':lock?'Only the owner can change an admin.':'Deleting clears their cloud slots now and their devices\' local saves the next time they are online (about 20 seconds). Achievements are kept.'}</div></div>`}
+  const staff=ADM.staff;
+  $('#admadmins').innerHTML=(staff.length?staff.map(x=>`<div class="adlg">${admAv(x)}<div style="min-width:0"><b>${esc(x.name)}</b> <i class="mu" style="font-style:normal">#${x.ref}</i><div class="mu" style="font-size:.85em">${x.role==='owner'?'Owner (set by OWNER_EMAIL)':'Admin: can delete one player\'s saves at a time'}</div></div><span class="adlt">${x.role==='admin'&&own?`<button class="btn warn" data-aa="unadmin" data-id="${x.id}">Remove</button>`:`<span class="adc ${x.role}">${x.role}</span>`}</span></div>`).join(''):'<div class="admempty">No admins yet.</div>')+'<div class="adnote" style="padding:.6rem .2rem">'+(own?'To add an admin, select a player in the Players tab and press Make admin.':'Only the owner can add or remove admins.')+'</div>';
+  $('#admlog').innerHTML=ADM.log.length?ADM.log.map(l=>{const d=ADLOG[l.action]||['gear',l.action];return `<div class="adlg ${d[2]?'dn':''}">${IC(d[0])}<div><b>${esc(l.by)}</b> ${d[1]} <b>${esc(l.target)}</b></div><span class="adlt">${ago(l.at)}</span></div>`}).join(''):'<div class="admempty">No admin activity yet.</div>'}
+async function admGet(path,fn){try{const r=await capi('GET',path);if(r.j.ok)fn(r.j);else if(r.status===403){CLD.role='';admMsg('You are not an admin on this server.',1);ADM.rows=[];cloudUi()}else admMsg('Could not load data',1)}catch(e){if(e.message!=='expired')admMsg('Could not reach the server',1)}admDraw()}
 async function admLoad(){if(!CLD.tok||ADM.busy)return;ADM.busy=true;
-  try{const r=await capi('GET','admin/users?q='+encodeURIComponent(ADM.q));
-    if(r.j.ok){ADM.rows=r.j.rows;ADM.total=r.j.total;ADM.me=r.j.me;if(r.j.role!==CLD.role){CLD.role=r.j.role;cloudUi()}if(!ADM.rows.some(x=>x.id===ADM.sel))ADM.sel=''}
-    else if(r.status===403){CLD.role='';ADM.msg='You are not an admin on this server.';ADM.rows=[];cloudUi()}
-    else ADM.msg='Could not load players'}
-  catch(e){if(e.message!=='expired')ADM.msg='Could not reach the server'}
+  await admGet('admin/users?q='+encodeURIComponent(ADM.q)+'&sort='+ADM.sort,j=>{ADM.rows=j.rows;ADM.total=j.total;ADM.stats=j.stats;ADM.me=j.me;if(j.role!==CLD.role){CLD.role=j.role;cloudUi()}if(!ADM.rows.some(x=>x.id===ADM.sel))ADM.sel=''});
   ADM.busy=false;admDraw()}
-function openAdm(){ADM.msg='';ADM.sel='';ADM.q='';$('#admq').value='';$('#adm').classList.remove('hide');admDraw();admLoad()}
+const admLoadStaff=()=>admGet('admin/users?only=staff&sort=name',j=>{ADM.staff=j.rows});
+const admLoadLog=()=>admGet('admin/log',j=>{ADM.log=j.log});
+const admRefresh=()=>ADM.tab==='admins'?admLoadStaff():ADM.tab==='log'?admLoadLog():admLoad();
+function openAdm(){ADM.sel='';ADM.q='';ADM.tab='players';$('#admq').value='';admMsg('');$('#adm').classList.remove('hide');admDraw();admLoad()}
 const closeAdm=()=>$('#adm').classList.add('hide');
 $('#admq').oninput=()=>{clearTimeout(ADM.t);ADM.t=setTimeout(()=>{ADM.q=$('#admq').value;admLoad()},300)};
+$('#admsort').onchange=()=>{ADM.sort=$('#admsort').value;admLoad()};
 $('#adm').addEventListener('click',async e=>{
   if(e.target.id==='adm'||e.target.id==='admx'){closeAdm();return}
-  const pk=e.target.closest('button[data-p]');if(pk){ADM.sel=ADM.sel===pk.dataset.p?'':pk.dataset.p;sfx('click');admDraw();return}
-  const b=e.target.closest('button[data-aa]');if(!b||b.disabled)return;const x=ADM.rows.find(r=>r.id===ADM.sel);if(!x)return;const a=b.dataset.aa;
-  if(a==='wipe'&&!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to delete '+x.name+'\'s saves';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Delete their saves'}},3500);return}
+  const tb=e.target.closest('button[data-t]');if(tb){ADM.tab=tb.dataset.t;sfx('click');admDraw();admRefresh();return}
+  const pk=e.target.closest('button[data-p]');if(pk){ADM.sel=ADM.sel===pk.dataset.p?'':pk.dataset.p;sfx('click');admDraw();if(ADM.sel)$('#admsel').scrollIntoView({block:'nearest',behavior:'smooth'});return}
+  const b=e.target.closest('button[data-aa]');if(!b||b.disabled)return;const a=b.dataset.aa,tid=b.dataset.id||ADM.sel,x=[...ADM.rows,...ADM.staff].find(r=>r.id===tid);if(!x)return;
+  if(a==='wipe'&&!b.dataset.arm){b.dataset.arm=1;b.querySelector('span').textContent='Tap again to delete '+x.name+'\'s saves';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.querySelector('span').textContent='Delete their saves'}},3500);return}
   clearTimeout(b.t);ADM.busy=true;admDraw();
   try{
-    if(a==='wipe'){const r=await capi('POST','admin/wipe',{target:x.id});ADM.msg=r.j.ok?'Deleted '+x.name+'\'s saves. Pick another player to continue.':'Could not delete: '+(r.j.error||'server error');if(r.j.ok){sfx('delete');ADM.sel=''}}
-    else{const r=await capi('POST','admin/role',{target:x.id,admin:a==='admin'});ADM.msg=r.j.ok?(a==='admin'?x.name+' is now an admin.':x.name+' is no longer an admin.'):'Could not change that: '+(r.j.error||'server error')}}
-  catch(e){if(e.message!=='expired')ADM.msg='Could not reach the server'}
-  ADM.busy=false;await admLoad()});
+    if(a==='wipe'){const r=await capi('POST','admin/wipe',{target:x.id});if(r.j.ok){admMsg('Deleted '+x.name+'\'s saves. Pick another player to continue.');sfx('delete');ADM.sel=''}else admMsg('Could not delete: '+(r.j.error||'server error'),1)}
+    else if(a==='lbhide'){const r=await capi('POST','admin/lbhide',{target:x.id,hide:!x.ban});r.j.ok?admMsg(x.name+(x.ban?' is back on the leaderboard.':' is hidden from the leaderboard.')):admMsg('Could not change that: '+(r.j.error||'server error'),1)}
+    else{const r=await capi('POST','admin/role',{target:x.id,admin:a==='admin'});r.j.ok?admMsg(a==='admin'?x.name+' is now an admin.':x.name+' is no longer an admin.'):admMsg('Could not change that: '+(r.j.error||'server error'),1)}}
+  catch(err){if(err.message!=='expired')admMsg('Could not reach the server',1)}
+  ADM.busy=false;await admLoad();if(ADM.tab!=='players')await admRefresh()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAdm()});
 async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
