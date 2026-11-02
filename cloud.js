@@ -13,7 +13,12 @@
 //  - Conflicts: every slot has a revision number. A write must name the revision it was based on (baseRev);
 //    if the cloud moved on in the meantime the server answers 409 and the game asks the player which copy to keep.
 //
-// Environment: GOOGLE_CLIENT_ID (required to enable), DATA_DIR, SESSION_SECRET (optional; generated and stored otherwise).
+//  - Admins: the OWNER is whoever signs in with the Google account in OWNER_EMAIL. The owner assigns admins from the in-game Admin panel.
+//    Owner and admins can delete ONE player's saves at a time (cloud slots now; the player's own devices clear their local saves the next
+//    time they sync, see /api/wipe). Roles and wipe markers live under DATA_DIR (admins.json, owner.json, wipes/), outside users/<hash>/.
+//
+// Environment: GOOGLE_CLIENT_ID (required to enable), DATA_DIR, SESSION_SECRET (optional; generated and stored otherwise),
+//              OWNER_EMAIL (optional; the Google account that is the owner/super admin).
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), zlib = require('zlib');
 
 const CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim();
@@ -103,7 +108,7 @@ async function verifyGoogle(cred) {
   if (payload.aud !== CLIENT_ID) throw new Error('audience');
   if (!(payload.exp * 1000 > Date.now())) throw new Error('expired');
   if (typeof payload.sub !== 'string' || !payload.sub) throw new Error('subject');
-  return { sub: payload.sub, name: String(payload.name || payload.given_name || 'Player').slice(0, 80), picture: /^https:\/\//.test(payload.picture || '') ? String(payload.picture).slice(0, 400) : '' };
+  return { sub: payload.sub, email: (payload.email_verified === true || payload.email_verified === 'true') ? String(payload.email || '').trim().toLowerCase() : '', name: String(payload.name || payload.given_name || 'Player').slice(0, 80), picture: /^https:\/\//.test(payload.picture || '') ? String(payload.picture).slice(0, 400) : '' };
 }
 
 // ---------- leaderboard ----------
@@ -318,6 +323,77 @@ function offlineRoute(req, res, id, p, m) {
   });
 }
 
+// ---------- admin tools ----------
+// Roles are looked up from disk on every request, so removing an admin takes effect immediately.
+//   owner  = the player whose verified Google email equals OWNER_EMAIL (remembered by hashed id in owner.json; ignored if OWNER_EMAIL is unset)
+//   admin  = anybody the owner promoted (admins.json)
+// A "wipe" deletes one player's cloud slots right away and leaves a marker wipes/<hash>.json { at }. The marker does two jobs:
+//   1. the player's devices see it on their next sync/poll and clear their LOCAL saves once (the browser remembers the marker it already handled);
+//   2. until a device has handled it, the server refuses its save uploads (409 "wiped"), so an old copy can never re-upload itself.
+// Daily bonus, goal cash and offline records are stored elsewhere and are NOT reset by a wipe (so a wipe cannot be used to farm them).
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').trim().toLowerCase();
+const OWNER_FILE = path.join(DATA, 'owner.json'), ADMINS_FILE = path.join(DATA, 'admins.json'), WIPE_DIR = path.join(DATA, 'wipes'), ADMIN_LOG = path.join(DATA, 'admin-log.jsonl');
+try { fs.mkdirSync(WIPE_DIR, { recursive: true }); } catch (e) {}
+const IDRE = /^[0-9a-f]{64}$/;
+const ownerId = () => OWNER_EMAIL ? String(rj(OWNER_FILE, {}).id || '') : '';
+const adminMap = () => { const a = rj(ADMINS_FILE, {}); return a && typeof a === 'object' && !Array.isArray(a) ? a : {}; };
+const roleOf = id => id && id === ownerId() ? 'owner' : Object.prototype.hasOwnProperty.call(adminMap(), id) ? 'admin' : '';
+const wipeFile = id => path.join(WIPE_DIR, id + '.json');
+const wipeAt = id => +rj(wipeFile(id), {}).at || 0;
+const adminLog = o => { try { fs.appendFileSync(ADMIN_LOG, JSON.stringify(Object.assign({ at: Date.now() }, o)) + '\n'); } catch (e) {} };
+const nameOf = id => rj(profFile(id), {}).name || 'Player';
+function slotSummary(id) {
+  const out = [];
+  for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) out.push({ n, mode: s.data.mode === 'live' ? 'live' : 'classic', nw: saveNW(s.data), at: s.at || 0 }); }
+  return out;
+}
+function adminUsers(q, owner, admins) {
+  let ids = []; try { ids = fs.readdirSync(path.join(DATA, 'users')).filter(x => IDRE.test(x)); } catch (e) {}
+  q = String(q || '').trim().toLowerCase().slice(0, 40);
+  const rows = [];
+  for (const id of ids) {
+    const name = nameOf(id);
+    if (q && !name.toLowerCase().includes(q) && !id.startsWith(q.replace(/^#/, ''))) continue;
+    rows.push({ id, name, ref: id.slice(0, 6), role: id === owner ? 'owner' : Object.prototype.hasOwnProperty.call(admins, id) ? 'admin' : '' });
+  }
+  rows.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  const page = rows.slice(0, 30); page.forEach(r => { r.slots = slotSummary(r.id); });
+  return { rows: page, total: rows.length };
+}
+async function adminRoute(req, res, id, p, m) {
+  const role = roleOf(id);
+  if (!role) return send(req, res, 403, { ok: false, error: 'not an admin' });
+  if (p === '/api/admin/users' && m === 'GET') {
+    const q = new URL(req.url, 'http://x').searchParams.get('q');
+    return send(req, res, 200, Object.assign({ ok: true, role, me: id }, adminUsers(q, ownerId(), adminMap())));
+  }
+  if (m !== 'POST') return send(req, res, 405, { ok: false });
+  if (limited('adm:' + id, 30, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+  const b = await readJson(req), t = typeof b.target === 'string' ? b.target : '';   // ONE target id (a string): lists are rejected, so there is no "everyone at once"
+  if (!IDRE.test(t)) return send(req, res, 400, { ok: false, error: 'pick one player' });
+  if (!fs.existsSync(udir(t))) return send(req, res, 404, { ok: false, error: 'player not found' });
+  const tr = roleOf(t), tname = nameOf(t);
+  if (p === '/api/admin/wipe') {
+    if (t === id) return send(req, res, 400, { ok: false, error: 'use Settings > Delete all saves for your own saves' });
+    if (tr === 'owner' || (tr === 'admin' && role !== 'owner')) return send(req, res, 403, { ok: false, error: 'only the owner can delete an admin\'s saves' });
+    for (let n = 1; n <= SLOTS; n++) { try { fs.unlinkSync(slotFile(t, n)); } catch (e) {} }
+    wj(wipeFile(t), { at: Math.max(Date.now(), wipeAt(t) + 1), by: id });
+    reindex(t);
+    adminLog({ by: id, byName: nameOf(id), action: 'wipe', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname });
+  }
+  if (p === '/api/admin/role') {
+    if (role !== 'owner') return send(req, res, 403, { ok: false, error: 'only the owner can assign admins' });
+    if (t === ownerId()) return send(req, res, 400, { ok: false, error: 'that is the owner' });
+    const a = adminMap();
+    if (b.admin === true) a[t] = { at: Date.now(), name: tname }; else delete a[t];
+    wj(ADMINS_FILE, a);
+    adminLog({ by: id, byName: nameOf(id), action: b.admin === true ? 'make-admin' : 'remove-admin', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname, role: b.admin === true ? 'admin' : '' });
+  }
+  return send(req, res, 404, { ok: false });
+}
+
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -331,8 +407,10 @@ async function route(req, res, p) {
     const b = await readJson(req);
     let u;
     try { u = await verifyGoogle(b.credential); } catch (e) { return send(req, res, 401, { ok: false, error: 'invalid sign-in' }); }
-    { const id0 = uid(u.sub), pf = rj(profFile(id0), {}); try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide }); reindex(id0); } catch (e) {} }
-    return send(req, res, 200, { ok: true, token: makeToken(u.sub), user: { name: u.name, picture: u.picture } });
+    const id0 = uid(u.sub), pf = rj(profFile(id0), {});
+    try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide }); reindex(id0); } catch (e) {}
+    if (OWNER_EMAIL && u.email === OWNER_EMAIL) { try { wj(OWNER_FILE, { id: id0 }); } catch (e) {} }   // only the hashed id is kept, never the email
+    return send(req, res, 200, { ok: true, token: makeToken(u.sub), user: { name: u.name, picture: u.picture }, role: roleOf(id0), ref: id0.slice(0, 12) });
   }
 
   if (p === '/api/leaderboard' && m === 'GET') {
@@ -345,6 +423,8 @@ async function route(req, res, p) {
   if (!sub) return send(req, res, 401, { ok: false, error: 'unauthorized' });
   const id = uid(sub);
   if (limited('u:' + id, 120, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+  if (p.startsWith('/api/admin')) return adminRoute(req, res, id, p, m);
+  if (p === '/api/wipe' && m === 'GET') return send(req, res, 200, { ok: true, wipe: wipeAt(id), ref: id.slice(0, 12) });
   if (p.startsWith('/api/daily')) {
     if (m === 'POST' && p === '/api/daily/claim' && limited('dc:' + id, 10, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
     return dailyRoute(req, res, id, p, m);
@@ -363,7 +443,7 @@ async function route(req, res, p) {
   if (p === '/api/saves' && m === 'GET') {
     const slots = {};
     for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) slots[n] = s; }
-    return send(req, res, 200, { ok: true, hide: !!rj(profFile(id), {}).hide, slots, ach: rj(path.join(udir(id), 'ach.json'), { a: {}, trades: 0, ticks: 0, best: 0 }) });
+    return send(req, res, 200, { ok: true, role: roleOf(id), wipe: wipeAt(id), ref: id.slice(0, 12), hide: !!rj(profFile(id), {}).hide, slots, ach: rj(path.join(udir(id), 'ach.json'), { a: {}, trades: 0, ticks: 0, best: 0 }) });
   }
   let mm = /^\/api\/saves\/(\d+)$/.exec(p);
   if (mm) {
@@ -372,6 +452,8 @@ async function route(req, res, p) {
     if (m === 'PUT') {
       const b = await readJson(req), d = b.data;
       if (!d || typeof d !== 'object' || Array.isArray(d) || !d.p || typeof d.p !== 'object') return send(req, res, 400, { ok: false, error: 'bad save' });
+      const w = wipeAt(id);
+      if (w > (+b.wipe || 0)) return send(req, res, 409, { ok: false, error: 'wiped', wipe: w });   // this device has not cleared its old saves yet
       if ((+b.baseRev || 0) !== rev) return send(req, res, 409, { ok: false, error: 'conflict', rev, at: cur ? cur.at : 0 });
       const rec = { rev: rev + 1, at: Date.now(), data: d };
       wj(f, rec); reindex(id);
@@ -397,7 +479,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
