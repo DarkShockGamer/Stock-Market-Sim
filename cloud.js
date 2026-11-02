@@ -290,6 +290,34 @@ function goalsRoute(req, res, id, p, m) {
   return send(req, res, 405, { ok: false });
 }
 
+// ---------- offline earnings clock (Classic mode): the SERVER decides how long you were away ----------
+// The browser used to compute "time away" from its own clock (Date.now() - save time), so changing the device clock, or opening the same
+// save on two devices, paid the same away time again. Now the server keeps one "last seen" time per Google account, using the SERVER clock:
+//   POST /api/offline/seen   heartbeat while a game is open (moves "last seen" to now; the browser cannot choose the time)
+//   POST /api/offline/claim  returns the seconds away (capped at OFF_MAX) and resets "last seen" to now in the same step, so the same
+//                            away time can never be claimed twice, not from a second tab, a second device, or a clock change.
+// Stored outside users/<hash>/ (like the daily bonus), so "Delete cloud data" cannot be used to reset it.
+// First claim ever for an account (no record yet): the browser's own "since" is accepted ONCE, clamped to [now - OFF_MAX, now].
+const OFF_MAX = 18 * 3600e3, OFF_DIR = path.join(DATA, 'offline');
+try { fs.mkdirSync(OFF_DIR, { recursive: true }); } catch (e) {}
+const offFile = id => path.join(OFF_DIR, id + '.json');
+function offlineRoute(req, res, id, p, m) {
+  if (m !== 'POST') return send(req, res, 405, { ok: false });
+  // NOTE: the body is read first, then the record is read and written with no await in between, so two simultaneous claims cannot both pass.
+  return readJson(req).then(b => {
+    const now = Date.now(), d = rj(offFile(id), null), seen = d && +d.seen > 0 ? +d.seen : 0;
+    if (p === '/api/offline/seen') {
+      if (!seen || now - seen > 20e3) wj(offFile(id), { seen: now });   // do not rewrite the file on every beat
+      return send(req, res, 200, { ok: true, now });
+    }
+    let from = seen;
+    if (!from) { const since = +b.since; from = since > 0 && isFinite(since) ? Math.min(now, Math.max(now - OFF_MAX, since)) : now; }
+    from = Math.min(now, Math.max(now - OFF_MAX, from));   // a record from the future (never expected) or older than the cap is clamped
+    wj(offFile(id), { seen: now });
+    return send(req, res, 200, { ok: true, now, sec: Math.floor((now - from) / 1000) });
+  });
+}
+
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -320,6 +348,11 @@ async function route(req, res, p) {
   if (p.startsWith('/api/daily')) {
     if (m === 'POST' && p === '/api/daily/claim' && limited('dc:' + id, 10, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
     return dailyRoute(req, res, id, p, m);
+  }
+
+  if (p.startsWith('/api/offline')) {
+    if (limited('of:' + id, 30, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return offlineRoute(req, res, id, p, m);
   }
 
   if (p.startsWith('/api/goals')) {
@@ -364,7 +397,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?)$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
