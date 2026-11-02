@@ -544,7 +544,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.0.1</div>
+<div id="title"><div id="ver">v1.0</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1967,20 +1967,37 @@ $('#pop').onclick=()=>{const w=360,h=520,L=(screen.availLeft||0)+screen.availWid
   closeD();clearNotes();save();clearTimeout(loop.t);showTitle();
   $('#ts').textContent='The game is open in the mini window. Close it to continue here.'};
 function loop(){tick();loop.t=setTimeout(loop,interval())}
-function offline(){if(isLive())return;const sec=Math.min((Date.now()-S.last)/1000,(8+2*lv('off'))*3600);
+// Offline earnings. When signed in to cloud saves, the SERVER says how long you were away (its own clock, one "last seen" time per account, see cloud.js),
+// so changing this device's clock or opening the same save on two devices cannot pay the same away time twice. Signed out (or cloud not set up),
+// the device clock is used as a fallback. If the server cannot be reached while signed in, nothing is paid now: the server keeps the away time,
+// so the next successful claim pays it (up to the 18h max).
+const OFFMAX=h=>(8+2*h)*3600;
+async function offlineSec(){
+  const cap=OFFMAX(lv('off'));
+  if(!CLD.tok)return Math.min(Math.max(0,(Date.now()-S.last)/1000),cap);
+  try{const r=await Promise.race([capi('POST','offline/claim',{since:S.last}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))]);
+    if(r.j&&r.j.ok)return Math.min(Math.max(0,+r.j.sec||0),cap);
+    throw new Error('claim')}
+  catch(e){if(e.message!=='expired')setTimeout(()=>toast('Offline earnings need a server connection. They will be paid next time you start the game online.',1),400);return 0}}
+async function offline(){if(isLive())return;const sec=await offlineSec();
   if(sec>30){const ym=1+.15*lv('yld'),fy=Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p*(SM[k][8]||0),0)+pvI();
     const k=Math.floor(sec*(.25+.1*lv('off'))/PAYT);S.paid+=k*PAYC;
     let g=(hv()*lv('div')*DIVR+S.cash*lv('int')*INTR+fy)*ym*sec*(.25+.1*lv('off'))+k*PAYC;
     // anti-exploit: offline income is capped as a share of net worth per hour away (1%/h base + 0.4%/h per Analysts level, e.g. lvl 5 = 3%/h, 54% over the 18h max),
     // so it cannot compound at the live rate. The paychecks are always paid in full.
     const cap=nw()*(.01+.004*lv('off'))*(sec/3600)+k*PAYC;if(g>cap)g=cap;
-    S.last=Date.now(); // mark the time as credited so reloading / re-entering cannot claim it twice
-    if(g>=.01){S.cash+=g;save();setTimeout(()=>{toast('While away you earned '+fmt(g));sfx('cash')},400)}}}
+    if(g>=.01){S.cash+=g;S.last=Date.now();save();setTimeout(()=>{toast('While away you earned '+fmt(g));sfx('cash')},400)}}}
+// heartbeat: tells the server this account is playing right now, so time spent playing is never counted as time away
+const offBeat=(keep)=>{if(!CLD.tok||!live()||isLive())return;
+  try{fetch('/api/offline/seen',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+CLD.tok},body:'{}',keepalive:!!keep,cache:'no-store'}).catch(()=>{})}catch(e){}};
+setInterval(()=>offBeat(false),60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')offBeat(true)});
+addEventListener('pagehide',()=>offBeat(true));
 const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');offline();clearTimeout(loop.t);loop()}
+async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);try{await offline()}catch(e){}clearTimeout(loop.t);loop()}
 function showTitle(){
   $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
