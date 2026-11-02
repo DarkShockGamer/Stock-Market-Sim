@@ -108,17 +108,22 @@ html[data-ns] .sp{display:none}
 .admstats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
 .admstat{background:var(--bg);border:1px solid var(--line);border-radius:.7rem;padding:.5rem .7rem;display:flex;flex-direction:column}
 .admstat span{color:var(--mu);font-size:.72em;text-transform:uppercase;letter-spacing:.06em}.admstat b{font-size:1.35em;font-variant-numeric:tabular-nums}
-.admtabs{display:flex;gap:.25rem;background:var(--bg);border:1px solid var(--line);border-radius:.8rem;padding:.2rem}
-.admtabs button{flex:1;background:none;border:0;color:var(--mu);padding:.4rem .5rem;border-radius:.6rem;font:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem}
-.admtabs button:hover{color:var(--tx)}.admtabs button.on{background:var(--ac);color:#fff}
+.admtabs{position:relative;display:flex;background:var(--bg);border:1px solid var(--line);border-radius:.8rem;padding:.2rem}
+.admpill{position:absolute;top:.2rem;bottom:.2rem;left:.2rem;width:calc((100% - .4rem)/3);border-radius:.6rem;background:var(--ac);box-shadow:0 .2rem .6rem color-mix(in srgb,var(--ac) 40%,transparent);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.admtabs button{position:relative;z-index:1;flex:1;background:none;border:0;color:var(--mu);padding:.4rem .5rem;border-radius:.6rem;font:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;transition:color .2s}
+.admtabs button:hover{color:var(--tx)}.admtabs button.on{color:#fff}
+.admpanes{min-height:min(24rem,46vh)}
+.admpane{animation:admIn .26s cubic-bezier(.2,.7,.2,1) both}.admpane.hide{display:none}
+@keyframes admIn{from{opacity:0;transform:translateY(.45rem)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.admpane{animation:none}.admpill{transition:none}}
 .admmsg{border-radius:.6rem;padding:.45rem .7rem;font-size:.9em;border:1px solid var(--line)}
 .admmsg.ok{border-color:var(--up);color:var(--up);background:color-mix(in srgb,var(--up) 10%,transparent)}
 .admmsg.bad{border-color:var(--dn);color:var(--dn);background:color-mix(in srgb,var(--dn) 10%,transparent)}
 .admmsg.hide{display:none}
 .admbar{display:flex;gap:.5rem}
-#admq,#admsort{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:.6rem;padding:.45rem .7rem;font:inherit;box-sizing:border-box}
-#admq{flex:1;min-width:0;padding-left:2rem;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a0' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat .65rem center/1rem}
-#admq:focus,#admsort:focus{outline:none;border-color:var(--ac)}
+#admq{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:.7rem;height:2.3rem;padding:0 .7rem;font:inherit;box-sizing:border-box;flex:1;min-width:0;padding-left:2rem;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a0' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat .65rem center/1rem}
+#admq:focus{outline:none;border-color:var(--ac)}
+.admbar .dd{width:11.5rem}.admbar .dd-menu{left:auto;right:0}
 .admgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:.8rem;align-items:start}
 #admlist{display:flex;flex-direction:column;gap:.3rem;max-height:46vh;overflow-y:auto;padding-right:.15rem}
 .adr{display:flex;align-items:center;gap:.6rem;width:100%;max-width:none;text-align:left;padding:.45rem .6rem;border-radius:.7rem}
@@ -659,14 +664,16 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-lock"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
   <div class="admbody">
     <div class="admstats" id="admstats"></div>
-    <div class="admtabs" id="admtabs"><button class="on" data-t="players"><svg class="ico"><use href="#i-people"/></svg>Players</button><button data-t="admins"><svg class="ico"><use href="#i-unlock"/></svg>Admins</button><button data-t="log"><svg class="ico"><use href="#i-clock"/></svg>Activity</button></div>
+    <div class="admtabs" id="admtabs"><span class="admpill" id="admpill"></span><button class="on" data-t="players"><svg class="ico"><use href="#i-people"/></svg>Players</button><button data-t="admins"><svg class="ico"><use href="#i-unlock"/></svg>Admins</button><button data-t="log"><svg class="ico"><use href="#i-clock"/></svg>Activity</button></div>
     <div class="admmsg hide" id="admd"></div>
-    <div id="ap-players">
-      <div class="admbar"><input id="admq" type="search" placeholder="Search players by name" autocomplete="off" spellcheck="false"><select id="admsort" aria-label="Sort"><option value="recent">Recently saved</option><option value="worth">Highest net worth</option><option value="name">Name</option></select></div>
+    <div class="admpanes">
+    <div id="ap-players" class="admpane">
+      <div class="admbar"><input id="admq" type="search" placeholder="Search players by name" autocomplete="off" spellcheck="false"><div class="dd" id="admsort" data-cur="recent"><button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sort players"><span class="dd-v">Recently saved</span><span class="dd-c"></span></button><div class="dd-menu" role="listbox" aria-label="Sort players"><button type="button" role="option" class="dd-opt sel" data-v="recent" aria-selected="true"><svg class="ico"><use href="#i-check"/></svg><span>Recently saved</span></button><button type="button" role="option" class="dd-opt" data-v="worth" aria-selected="false"><svg class="ico"><use href="#i-check"/></svg><span>Highest net worth</span></button><button type="button" role="option" class="dd-opt" data-v="name" aria-selected="false"><svg class="ico"><use href="#i-check"/></svg><span>Name</span></button></div></div></div>
       <div class="admgrid" style="margin-top:.7rem"><div id="admlist"></div><div id="admsel"></div></div>
     </div>
-    <div id="ap-admins" class="hide"><div id="admadmins" class="admlog"></div></div>
-    <div id="ap-log" class="hide"><div id="admlog" class="admlog"></div></div>
+    <div id="ap-admins" class="admpane hide"><div id="admadmins" class="admlog"></div></div>
+    <div id="ap-log" class="admpane hide"><div id="admlog" class="admlog"></div></div>
+    </div>
   </div>
 </div></div>
 <div id="cdlg" class="hide"><div class="card"><b>Which save do you want to keep?</b><div class="mu" id="cdt"></div><div id="cdc"></div><div id="cdb"><button class="btn" data-cd="dev">Keep this device</button><button class="btn" data-cd="cloud">Use cloud</button><button class="btn" data-cd="skip">Decide later</button></div></div></div>
@@ -1599,7 +1606,8 @@ function ddOpen(d){ddClose(d);d.classList.remove('up');d.classList.add('open');d
   const mn=d.querySelector('.dd-menu'),r=d.getBoundingClientRect(),mb=($('#main')||document.body).getBoundingClientRect().bottom;
   mn.style.maxHeight=Math.max(120,Math.min(248,mb-r.bottom-10))+'px';
   const sel=d.querySelector('.dd-opt.sel');if(sel)mn.scrollTop=Math.max(0,sel.offsetTop-mn.clientHeight/2+sel.offsetHeight/2)}
-function ddPick(id,v){if(id==='mcat'){fsec=v}else{fsort=v;try{localStorage.setItem('stockidle.msort',fsort)}catch(_){}RESORT=true}applyFilter()}
+function ddPick(id,v){if(id==='admsort'){ADM.sort=v;ddSync($('#admsort'),v);admLoad();return}
+  if(id==='mcat'){fsec=v}else{fsort=v;try{localStorage.setItem('stockidle.msort',fsort)}catch(_){}RESORT=true}applyFilter()}
 document.addEventListener('click',e=>{const t=e.target,btn=t.closest('.dd-btn');
   if(btn){const d=btn.closest('.dd');d.classList.contains('open')?ddClose():ddOpen(d);return}
   const o=t.closest('.dd-opt');if(o){const d=o.closest('.dd');ddPick(d.id,o.dataset.v);ddClose();d.querySelector('.dd-btn').focus();return}
@@ -1975,7 +1983,7 @@ $('#tb3').onclick=()=>{showTitle()};
 $('#tcrd').onclick=()=>{views('cr');const c=$('#cr');c.classList.remove('go');void c.offsetWidth;c.classList.add('go')};
 $('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
 // ---- Admin console (owner + admins): pick ONE player at a time. The owner can also make/remove admins. The server enforces every rule. ----
-const ADM={q:'',sort:'recent',tab:'players',rows:[],total:0,stats:null,sel:'',me:'',busy:false,msg:'',bad:false,t:0,staff:[],log:[]};
+const ADM={staffOk:false,logOk:false,q:'',sort:'recent',tab:'players',rows:[],total:0,stats:null,sel:'',me:'',busy:false,msg:'',bad:false,t:0,staff:[],log:[]};
 const admAv=(x,c)=>`<span class="adav ${c||''}" style="background:hsl(${parseInt(x.ref,16)%360} 45% 32%)">${esc((x.name||'?').trim().charAt(0).toUpperCase()||'?')}</span>`;
 const admChips=x=>(x.role?`<span class="adc ${x.role}">${x.role}</span>`:'')+(x.ban?'<span class="adc off">hidden</span>':'');
 const admSum=x=>x.slots.length?x.slots.length+' save'+(x.slots.length>1?'s':'')+' · best '+fmt(x.best)+' · '+ago(x.last):'no cloud saves';
@@ -1985,6 +1993,7 @@ function admDraw(){const own=CLD.role==='owner',st=ADM.stats;
   $('#admrole').textContent=own?'Signed in as owner':'Signed in as admin';
   $('#admstats').innerHTML=st?[['Players',st.players],['With saves',st.withSaves],['Admins',st.admins],['Hidden',st.hidden]].map(([k,v])=>`<div class="admstat"><span>${k}</span><b>${v}</b></div>`).join(''):'';
   document.querySelectorAll('#admtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===ADM.tab));
+  $('#admpill').style.transform='translateX('+['players','admins','log'].indexOf(ADM.tab)*100+'%)';
   ['players','admins','log'].forEach(t=>$('#ap-'+t).classList.toggle('hide',t!==ADM.tab));
   $('#admlist').innerHTML=ADM.rows.length?ADM.rows.map(x=>`<button class="btn adr ${x.id===ADM.sel?'on':''}" data-p="${x.id}">${admAv(x)}<span class="adm1"><b>${esc(x.name)} <i>#${x.ref}${x.id===ADM.me?' · you':''}</i></b><span class="mu">${admSum(x)}</span></span><span class="adch">${admChips(x)}</span></button>`).join('')+(ADM.total>ADM.rows.length?`<div class="adnote" style="text-align:center;padding:.3rem">Showing ${ADM.rows.length} of ${ADM.total}. Search to narrow it down.</div>`:''):`<div class="admempty">${ADM.busy?'Loading…':'No players found.'}</div>`;
   const x=ADM.rows.find(r=>r.id===ADM.sel),el=$('#admsel');
@@ -1999,19 +2008,18 @@ function admDraw(){const own=CLD.role==='owner',st=ADM.stats;
       </div>
       <div class="adnote">${self?'Use Settings > Delete all saves for your own saves.':lock?'Only the owner can change an admin.':'Deleting clears their cloud slots now and their devices\' local saves the next time they are online (about 20 seconds). Achievements are kept.'}</div></div>`}
   const staff=ADM.staff;
-  $('#admadmins').innerHTML=(staff.length?staff.map(x=>`<div class="adlg">${admAv(x)}<div style="min-width:0"><b>${esc(x.name)}</b> <i class="mu" style="font-style:normal">#${x.ref}</i><div class="mu" style="font-size:.85em">${x.role==='owner'?'Owner (set by OWNER_EMAIL)':'Admin: can delete one player\'s saves at a time'}</div></div><span class="adlt">${x.role==='admin'&&own?`<button class="btn warn" data-aa="unadmin" data-id="${x.id}">Remove</button>`:`<span class="adc ${x.role}">${x.role}</span>`}</span></div>`).join(''):'<div class="admempty">No admins yet.</div>')+'<div class="adnote" style="padding:.6rem .2rem">'+(own?'To add an admin, select a player in the Players tab and press Make admin.':'Only the owner can add or remove admins.')+'</div>';
-  $('#admlog').innerHTML=ADM.log.length?ADM.log.map(l=>{const d=ADLOG[l.action]||['gear',l.action];return `<div class="adlg ${d[2]?'dn':''}">${IC(d[0])}<div><b>${esc(l.by)}</b> ${d[1]} <b>${esc(l.target)}</b></div><span class="adlt">${ago(l.at)}</span></div>`}).join(''):'<div class="admempty">No admin activity yet.</div>'}
+  $('#admadmins').innerHTML=(!ADM.staffOk?'<div class="admempty">Loading…</div>':staff.length?staff.map(x=>`<div class="adlg">${admAv(x)}<div style="min-width:0"><b>${esc(x.name)}</b> <i class="mu" style="font-style:normal">#${x.ref}</i><div class="mu" style="font-size:.85em">${x.role==='owner'?'Owner (set by OWNER_EMAIL)':'Admin: can delete one player\'s saves at a time'}</div></div><span class="adlt">${x.role==='admin'&&own?`<button class="btn warn" data-aa="unadmin" data-id="${x.id}">Remove</button>`:`<span class="adc ${x.role}">${x.role}</span>`}</span></div>`).join(''):'<div class="admempty">No admins yet.</div>')+'<div class="adnote" style="padding:.6rem .2rem">'+(own?'To add an admin, select a player in the Players tab and press Make admin.':'Only the owner can add or remove admins.')+'</div>';
+  $('#admlog').innerHTML=!ADM.logOk?'<div class="admempty">Loading…</div>':ADM.log.length?ADM.log.map(l=>{const d=ADLOG[l.action]||['gear',l.action];return `<div class="adlg ${d[2]?'dn':''}">${IC(d[0])}<div><b>${esc(l.by)}</b> ${d[1]} <b>${esc(l.target)}</b></div><span class="adlt">${ago(l.at)}</span></div>`}).join(''):'<div class="admempty">No admin activity yet.</div>'}
 async function admGet(path,fn){try{const r=await capi('GET',path);if(r.j.ok)fn(r.j);else if(r.status===403){CLD.role='';admMsg('You are not an admin on this server.',1);ADM.rows=[];cloudUi()}else admMsg('Could not load data',1)}catch(e){if(e.message!=='expired')admMsg('Could not reach the server',1)}admDraw()}
 async function admLoad(){if(!CLD.tok||ADM.busy)return;ADM.busy=true;
   await admGet('admin/users?q='+encodeURIComponent(ADM.q)+'&sort='+ADM.sort,j=>{ADM.rows=j.rows;ADM.total=j.total;ADM.stats=j.stats;ADM.me=j.me;if(j.role!==CLD.role){CLD.role=j.role;cloudUi()}if(!ADM.rows.some(x=>x.id===ADM.sel))ADM.sel=''});
   ADM.busy=false;admDraw()}
-const admLoadStaff=()=>admGet('admin/users?only=staff&sort=name',j=>{ADM.staff=j.rows});
-const admLoadLog=()=>admGet('admin/log',j=>{ADM.log=j.log});
+const admLoadStaff=()=>admGet('admin/users?only=staff&sort=name',j=>{ADM.staff=j.rows;ADM.staffOk=true});
+const admLoadLog=()=>admGet('admin/log',j=>{ADM.log=j.log;ADM.logOk=true});
 const admRefresh=()=>ADM.tab==='admins'?admLoadStaff():ADM.tab==='log'?admLoadLog():admLoad();
 function openAdm(){ADM.sel='';ADM.q='';ADM.tab='players';$('#admq').value='';admMsg('');$('#adm').classList.remove('hide');admDraw();admLoad()}
 const closeAdm=()=>$('#adm').classList.add('hide');
 $('#admq').oninput=()=>{clearTimeout(ADM.t);ADM.t=setTimeout(()=>{ADM.q=$('#admq').value;admLoad()},300)};
-$('#admsort').onchange=()=>{ADM.sort=$('#admsort').value;admLoad()};
 $('#adm').addEventListener('click',async e=>{
   if(e.target.id==='adm'||e.target.id==='admx'){closeAdm();return}
   const tb=e.target.closest('button[data-t]');if(tb){ADM.tab=tb.dataset.t;sfx('click');admDraw();admRefresh();return}
