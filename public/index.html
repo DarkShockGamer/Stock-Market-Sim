@@ -97,6 +97,16 @@ html[data-ns] .sp{display:none}
 .note div{font-size:.9em}.note small{display:block}
 #ach{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
 #ach.hide{display:none}
+#adm{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
+#adm.hide{display:none}
+#admq{width:100%;box-sizing:border-box;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:.5714rem;padding:.4286rem .6rem;font:inherit}
+#admq:focus{outline:none;border-color:var(--ac)}
+#admlist{display:flex;flex-direction:column;gap:.25rem;max-height:34vh;overflow-y:auto}
+#adm .adr{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;width:100%;max-width:none;text-align:left}
+#adm .adr.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 18%,transparent)}
+#adm .adr i{color:var(--mu);font-style:normal;font-size:.85em}
+#adm .adc{font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ac);border:1px solid var(--ac);border-radius:.4rem;padding:0 .3rem;margin-left:.3rem}
+#admsel{display:flex;flex-direction:column;gap:.35rem;border-top:1px solid var(--line);padding-top:.5rem}
 .chips{display:flex;flex-wrap:wrap;gap:.25rem;padding:0 0 .3rem}
 .chip{padding:.15rem .55rem;font-size:.85em;border-radius:1rem}
 .foot{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.2rem;background:var(--card);border:1px solid var(--line);border-radius:.9rem;padding:.2rem}
@@ -544,7 +554,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.0.2</div>
+<div id="title"><div id="ver">v1.0.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -607,6 +617,13 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="up-row"><b class="ahead" id="achh">Achievements</b><button class="btn" id="ax">✕</button></div>
   <div class="mu" id="adesc"></div>
   <div id="alist"></div>
+</div></div>
+<div id="adm" class="hide"><div class="card">
+  <div class="up-row"><b class="ahead">🛠 Admin</b><button class="btn" id="admx">✕</button></div>
+  <div class="mu" id="admd"></div>
+  <input id="admq" type="search" placeholder="Search players by name" autocomplete="off" spellcheck="false">
+  <div id="admlist"></div>
+  <div id="admsel"></div>
 </div></div>
 <div id="cdlg" class="hide"><div class="card"><b>Which save do you want to keep?</b><div class="mu" id="cdt"></div><div id="cdc"></div><div id="cdb"><button class="btn" data-cd="dev">Keep this device</button><button class="btn" data-cd="cloud">Use cloud</button><button class="btn" data-cd="skip">Decide later</button></div></div></div>
 <div id="notes"></div>
@@ -1758,9 +1775,9 @@ function drawLive(){const el=$('#live');if(el.classList.contains('hide')||!isLiv
 // ===== Cloud saves: Google sign-in + sync (needs cloud.js on the server) =====
 // Local saves stay the primary copy and the game works offline. When signed in, each slot is mirrored to the server.
 // Every slot has a revision number; if both this device and the cloud changed since the last sync you are asked which copy to keep.
-const CLK='stockidle.cloud',CLD={cfg:null,tok:'',user:null,revs:{},ll:{},hold:{},auto:true,at:0,err:'',busy:false,lastPush:0,gis:null,gInit:false,sig:'',ask:null,hide:false};
-try{const o=JSON.parse(rd(CLK));if(o){CLD.tok=o.tok||'';CLD.user=o.user||null;CLD.revs=o.revs||{};CLD.ll=o.ll||{};CLD.auto=o.auto!==false;CLD.at=o.at||0}}catch(e){}
-const clSave=()=>wr(CLK,JSON.stringify({tok:CLD.tok,user:CLD.user,revs:CLD.revs,ll:CLD.ll,auto:CLD.auto,at:CLD.at}));
+const CLK='stockidle.cloud',CLD={cfg:null,tok:'',user:null,revs:{},ll:{},hold:{},auto:true,at:0,err:'',busy:false,lastPush:0,gis:null,gInit:false,sig:'',ask:null,hide:false,role:'',ref:'',wp:{}};
+try{const o=JSON.parse(rd(CLK));if(o){CLD.tok=o.tok||'';CLD.user=o.user||null;CLD.revs=o.revs||{};CLD.ll=o.ll||{};CLD.auto=o.auto!==false;CLD.at=o.at||0;CLD.ref=o.ref||'';CLD.wp=o.wp&&typeof o.wp==='object'?o.wp:{}}}catch(e){}
+const clSave=()=>wr(CLK,JSON.stringify({tok:CLD.tok,user:CLD.user,revs:CLD.revs,ll:CLD.ll,auto:CLD.auto,at:CLD.at,ref:CLD.ref,wp:CLD.wp}));
 async function gzip(str){const cs=new CompressionStream('gzip'),w=cs.writable.getWriter();w.write(new TextEncoder().encode(str));w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer())}
 async function capi(method,path,body){
   const h={'Content-Type':'application/json'};if(CLD.tok)h.Authorization='Bearer '+CLD.tok;
@@ -1768,12 +1785,12 @@ async function capi(method,path,body){
   const r=await fetch('/api/'+path,{method,headers:h,body:b,cache:'no-store'});let j=null;try{j=await r.json()}catch(e){}
   if(r.status===401&&CLD.tok&&path!=='auth/google'){cloudOut('Your cloud session expired. Sign in again to keep syncing.');throw new Error('expired')}
   return {status:r.status,j:j||{}}}
-function cloudOut(msg){DLY.st=null;DLY.ready=false;CLD.tok='';CLD.user=null;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
+function cloudOut(msg){DLY.st=null;DLY.ready=false;CLD.tok='';CLD.user=null;CLD.role='';CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
 function mergeG(c){if(!c)return false;let ch=false;for(const k in (c.a||{})){const t=+c.a[k];if(t>0&&(!G.a[k]||t<G.a[k])){G.a[k]=t;ch=true}}
   ['trades','ticks','best'].forEach(k=>{if((+c[k]||0)>(G[k]||0)){G[k]=+c[k];ch=true}});if(ch)wr(GK,JSON.stringify(G));return ch}
 async function pushSlot(n,base){const raw=rd(SK(n));if(!raw)return;const d=JSON.parse(raw);
-  const r=await capi('PUT','saves/'+n,{data:d,baseRev:base});
-  if(r.status===409)throw new Error('race');if(!r.j.ok)throw new Error('put');
+  const r=await capi('PUT','saves/'+n,{data:d,baseRev:base,wipe:CLD.wp[CLD.ref]||0});
+  if(r.status===409)throw new Error(r.j.error==='wiped'?'wiped':'race');if(!r.j.ok)throw new Error('put');
   CLD.revs[n]=r.j.rev;CLD.ll[n]=d.last;CLD.at=Date.now();clSave()}
 function cloudApply(n,cs){if(n===slot){clearTimeout(loop.t);showTitle()} // never swap a save under a running game
   wr(SK(n),JSON.stringify(cs.data));CLD.revs[n]=cs.rev;CLD.ll[n]=cs.data.last;clSave()}
@@ -1782,11 +1799,24 @@ function askConflict(c){return new Promise(res=>{CLD.ask=res;
   $('#cdt').textContent='Slot '+c.n+' is different on this device and in the cloud. Which one do you want to keep? The other one is replaced.';
   $('#cdc').innerHTML=sm(c.lo,'This device')+sm(c.cs.data,'Cloud');$('#cdlg').classList.remove('hide')})}
 $('#cdlg').addEventListener('click',e=>{const b=e.target.closest('button[data-cd]');if(!b||!CLD.ask)return;$('#cdlg').classList.add('hide');const r=CLD.ask;CLD.ask=null;r(b.dataset.cd)});
+// An admin deleted this account's saves: the server already removed the cloud copy, here we clear the local one (once per wipe).
+// A device that never synced with the account before keeps its local saves (they were never tied to it); it just notes the wipe.
+function cloudWiped(j){const ref=j.ref||CLD.ref||'',w=+j.wipe||0;if(!ref||!(w>(CLD.wp[ref]||0)))return false;
+  const had=CLD.at>0;CLD.ref=ref;CLD.wp[ref]=w;
+  if(!had){clSave();return false}
+  for(let n=1;n<=SLOTS;n++)rm(SK(n));CLD.revs={};CLD.ll={};CLD.hold={};clSave();
+  clearTimeout(loop.t);slot=1;S=fresh();build();draw();closeD();clearNotes();tab(true);showTitle();
+  toast('An admin deleted your saves.',1);return true}
+async function wipePoll(){if(!CLD.tok||CLD.busy||CLD.ask)return;
+  try{const r=await capi('GET','wipe');if(r.j.ok&&cloudWiped(r.j))cloudUi()}catch(e){}}
 async function cloudSync(manual){
   if(!CLD.tok||CLD.busy)return;CLD.busy=true;CLD.err='';cloudUi();let replaced=false;
   try{
     if(S&&live())save();
-    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');CLD.hide=!!j.hide;if(!j.name&&CLD.user&&CLD.user.name)capi('PUT','profile',{name:CLD.user.name}).catch(()=>{});
+    const {j}=await capi('GET','saves');if(!j.ok)throw new Error('load');CLD.hide=!!j.hide;CLD.role=j.role||'';
+    if(cloudWiped(j)){CLD.busy=false;cloudUi();return}
+    if(j.ref&&j.ref!==CLD.ref){CLD.ref=j.ref;clSave()}
+    if(!j.name&&CLD.user&&CLD.user.name)capi('PUT','profile',{name:CLD.user.name}).catch(()=>{});
     const conf=[];
     for(let n=1;n<=SLOTS;n++){
       const cs=j.slots&&j.slots[n],lo=peek(n),lrev=CLD.revs[n]||0;
@@ -1812,14 +1842,14 @@ async function cloudPushCur(){
   if(!CLD.tok||CLD.busy||!S||CLD.hold[slot])return;
   const raw=rd(SK(slot));if(!raw)return;let d;try{d=JSON.parse(raw)}catch(e){return}if(d.last===CLD.ll[slot])return;
   CLD.busy=true;let race=false;
-  try{await pushSlot(slot,CLD.revs[slot]||0);CLD.err=''}catch(e){if(e.message==='race')race=true;else if(e.message!=='expired')CLD.err='Offline · will retry'}
+  try{await pushSlot(slot,CLD.revs[slot]||0);CLD.err=''}catch(e){if(e.message==='race'||e.message==='wiped')race=true;else if(e.message!=='expired')CLD.err='Offline · will retry'}
   CLD.busy=false;cloudUi();if(race)cloudSync();else if(!$('#tlbs').classList.contains('hide'))loadLB(true)}
 const cloudSoon=()=>{if(CLD.auto)cloudPushCur()};
 function cloudDel(n){delete CLD.revs[n];delete CLD.ll[n];delete CLD.hold[n];clSave();if(CLD.tok)capi('DELETE','saves/'+n).catch(()=>{})}
 async function onCred(resp){
   try{const r=await capi('POST','auth/google',{credential:resp.credential});
     if(!r.j.ok){CLD.err='Google sign-in was rejected';cloudUi();return}
-    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true);if(live()&&isLive()){dlyRefresh();goalRefresh()}}
+    CLD.tok=r.j.token;CLD.user=r.j.user;CLD.role=r.j.role||'';CLD.ref=r.j.ref||CLD.ref;CLD.revs={};CLD.ll={};CLD.hold={};CLD.err='';clSave();cloudUi();toast('☁ Signed in as '+CLD.user.name,1);await cloudSync(true);if(live()&&isLive()){dlyRefresh();goalRefresh()}}
   catch(e){CLD.err='Could not reach the server';cloudUi()}}
 const gisLoad=()=>CLD.gis||(CLD.gis=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=res;s.onerror=()=>{CLD.gis=null;rej(new Error('gis'))};document.head.appendChild(s)}));
 async function renderGBtn(sel='#gbtn'){const el=$(sel);if(!el||!CLD.cfg)return;
@@ -1847,14 +1877,14 @@ function cloudUi(){renderCloud();renderPM();renderLB();const t=$('#tcl');
   if(!$('#tslots').classList.contains('hide'))renderSlots()}
 function closePM(){const m=$('#pmenu');if(m)m.classList.add('hide')}
 function renderPM(force){const m=$('#pmenu');if(!m||m.classList.contains('hide'))return;
-  const sig=[!!CLD.tok,CLD.user&&CLD.user.name,CLD.user&&CLD.user.picture,CLD.auto,CLD.hide,CFG.theme].join('|');
+  const sig=[!!CLD.tok,CLD.user&&CLD.user.name,CLD.user&&CLD.user.picture,CLD.auto,CLD.hide,CFG.theme,CLD.role].join('|');
   if(force||CLD.psig!==sig||!m.firstChild){CLD.psig=sig;
     const row=(a,ic,t,x)=>`<button class="btn pmi ${x||''}" role="menuitem" data-pm="${a}"><span><svg class="ico"><use href="#i-${ic}"/></svg>${t}</span></button>`;
     const tg=(a,t,on)=>`<button class="btn pmi" role="menuitem" data-pm="${a}"><span>${t}</span><span class="tv ${on?'on':''}">${on?'On':'Off'}</span></button>`;
     const nm=CLD.user&&CLD.user.name||'Signed in';
     if(CLD.tok){
       m.innerHTML=`<div class="pmh"><span class="who">${CLD.user&&CLD.user.picture?`<img class="av" src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`}<b>${esc(nm)}</b></span></div><div class="mu" id="pmst"></div><div class="pmsep"></div>`
-        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','sync','Sync now')
+        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','sync','Sync now')+(CLD.role?row('adm','gear','Admin panel'):'')
         +tg('auto','Auto-sync',CLD.auto)+tg('hide','Show me on leaderboard',!CLD.hide)
         +'<div class="pmsep"></div>'+row('set','gear','Settings')+row('out','back','Sign out','warn')}
     else{
@@ -1873,6 +1903,7 @@ $('#pmenu').addEventListener('click',async e=>{const b=e.target.closest('button[
   if(a==='lb'){renderLB();views('lb');loadLB(true)}
   else if(a==='saves'){renderSlots();views(true)}
   else if(a==='set')openSet();
+  else if(a==='adm')openAdm();
   else if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}});
 async function cloudHide(){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
 $('#cloudbox').addEventListener('click',async e=>{const b=e.target.closest('button[data-cl]');if(!b)return;const a=b.dataset.cl;
@@ -1899,9 +1930,44 @@ $('#tb2').onclick=()=>{showTitle()};
 $('#tb3').onclick=()=>{showTitle()};
 $('#tcrd').onclick=()=>{views('cr');const c=$('#cr');c.classList.remove('go');void c.offsetWidth;c.classList.add('go')};
 $('#lb').addEventListener('click',e=>{const b=e.target.closest('button[data-lb]');if(!b)return;LB.m=b.dataset.lb;sfx('click');renderLB()});
+// ---- Admin panel (owner + admins): pick ONE player, delete their saves. The owner can also make/remove admins. The server enforces all of it. ----
+const ADM={q:'',rows:[],total:0,sel:'',me:'',busy:false,msg:'',t:0};
+const admSum=x=>x.slots.length?x.slots.map(s=>s.n+': '+(s.mode==='live'?'Live ':'Classic ')+fmt(s.nw)).join(' · ')+' · saved '+ago(Math.max(...x.slots.map(s=>s.at))):'no cloud saves';
+function admDraw(){const me=CLD.role==='owner';
+  $('#admd').textContent=ADM.msg||(me?'You are the owner: you can delete one player\'s saves at a time and choose who is an admin.':'Pick one player, then delete their saves.');
+  $('#admlist').innerHTML=ADM.rows.length?ADM.rows.map(x=>`<button class="btn adr ${x.id===ADM.sel?'on':''}" data-p="${x.id}"><span>${esc(x.name)} <i>#${x.ref}</i>${x.id===ADM.me?' <i>(you)</i>':''}${x.role?`<span class="adc">${x.role}</span>`:''}</span><span class="mu">${admSum(x)}</span></button>`).join('')+(ADM.total>ADM.rows.length?`<div class="mu">Showing ${ADM.rows.length} of ${ADM.total}. Search to narrow it down.</div>`:''):`<div class="mu">${ADM.busy?'Loading…':'No players found.'}</div>`;
+  const x=ADM.rows.find(r=>r.id===ADM.sel),el=$('#admsel');
+  if(!x){el.innerHTML='';return}
+  const self=x.id===ADM.me,lock=x.role==='owner'||(x.role==='admin'&&!me)||self;
+  el.innerHTML=`<div class="srow"><b>${esc(x.name)} <i class="mu">#${x.ref}</i></b></div><div class="mu">${admSum(x)}</div>
+    <div class="srow"><button class="btn warn" data-aa="wipe" ${lock||ADM.busy?'disabled':''}>Delete their saves</button>${me&&!self&&x.role!=='owner'?`<button class="btn" data-aa="${x.role==='admin'?'unadmin':'admin'}" ${ADM.busy?'disabled':''}>${x.role==='admin'?'Remove admin':'Make admin'}</button>`:''}</div>
+    <div class="mu">${self?'Use Settings > Delete all saves for your own saves.':lock?'Only the owner can delete an admin\'s saves.':'Deletes their cloud slots now. Their devices clear their local saves the next time they are online (about 20 seconds). Achievements are kept.'}</div>`}
+async function admLoad(){if(!CLD.tok||ADM.busy)return;ADM.busy=true;
+  try{const r=await capi('GET','admin/users?q='+encodeURIComponent(ADM.q));
+    if(r.j.ok){ADM.rows=r.j.rows;ADM.total=r.j.total;ADM.me=r.j.me;if(r.j.role!==CLD.role){CLD.role=r.j.role;cloudUi()}if(!ADM.rows.some(x=>x.id===ADM.sel))ADM.sel=''}
+    else if(r.status===403){CLD.role='';ADM.msg='You are not an admin on this server.';ADM.rows=[];cloudUi()}
+    else ADM.msg='Could not load players'}
+  catch(e){if(e.message!=='expired')ADM.msg='Could not reach the server'}
+  ADM.busy=false;admDraw()}
+function openAdm(){ADM.msg='';ADM.sel='';ADM.q='';$('#admq').value='';$('#adm').classList.remove('hide');admDraw();admLoad()}
+const closeAdm=()=>$('#adm').classList.add('hide');
+$('#admq').oninput=()=>{clearTimeout(ADM.t);ADM.t=setTimeout(()=>{ADM.q=$('#admq').value;admLoad()},300)};
+$('#adm').addEventListener('click',async e=>{
+  if(e.target.id==='adm'||e.target.id==='admx'){closeAdm();return}
+  const pk=e.target.closest('button[data-p]');if(pk){ADM.sel=ADM.sel===pk.dataset.p?'':pk.dataset.p;sfx('click');admDraw();return}
+  const b=e.target.closest('button[data-aa]');if(!b||b.disabled)return;const x=ADM.rows.find(r=>r.id===ADM.sel);if(!x)return;const a=b.dataset.aa;
+  if(a==='wipe'&&!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to delete '+x.name+'\'s saves';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Delete their saves'}},3500);return}
+  clearTimeout(b.t);ADM.busy=true;admDraw();
+  try{
+    if(a==='wipe'){const r=await capi('POST','admin/wipe',{target:x.id});ADM.msg=r.j.ok?'Deleted '+x.name+'\'s saves. Pick another player to continue.':'Could not delete: '+(r.j.error||'server error');if(r.j.ok){sfx('delete');ADM.sel=''}}
+    else{const r=await capi('POST','admin/role',{target:x.id,admin:a==='admin'});ADM.msg=r.j.ok?(a==='admin'?x.name+' is now an admin.':x.name+' is no longer an admin.'):'Could not change that: '+(r.j.error||'server error')}}
+  catch(e){if(e.message!=='expired')ADM.msg='Could not reach the server'}
+  ADM.busy=false;await admLoad()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAdm()});
 async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
   cloudUi();if(CLD.cfg&&CLD.tok)cloudSync(false);
+  setInterval(wipePoll,20000);
   setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
