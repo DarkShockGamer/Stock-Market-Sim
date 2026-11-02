@@ -132,7 +132,7 @@ function shortName(n) {
 }
 const profFile = id => path.join(udir(id), 'profile.json');
 function reindex(id) {
-  const pr = rj(profFile(id), {}), e = { name: pr.name || 'Player', hide: !!pr.hide, classic: null, live: null };
+  const pr = rj(profFile(id), {}), e = { name: pr.name || 'Player', hide: !!pr.hide || !!pr.ban, classic: null, live: null };
   for (let n = 1; n <= SLOTS; n++) {
     const s = rj(slotFile(id, n), null); if (!s || !s.data) continue;
     const nw = saveNW(s.data), m = s.data.mode === 'live' ? 'live' : 'classic';
@@ -347,26 +347,35 @@ function slotSummary(id) {
   for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) out.push({ n, mode: s.data.mode === 'live' ? 'live' : 'classic', nw: saveNW(s.data), at: s.at || 0 }); }
   return out;
 }
-function adminUsers(q, owner, admins) {
+function adminUsers(q, sort, only, owner, admins) {
   let ids = []; try { ids = fs.readdirSync(path.join(DATA, 'users')).filter(x => IDRE.test(x)); } catch (e) {}
   q = String(q || '').trim().toLowerCase().slice(0, 40);
-  const rows = [];
+  const rows = [], st = { players: ids.length, withSaves: 0, admins: Object.keys(admins).length + (owner ? 1 : 0), hidden: 0 };
   for (const id of ids) {
-    const name = nameOf(id);
+    const pr = rj(profFile(id), {}), name = pr.name || 'Player', slots = slotSummary(id);
+    if (slots.length) st.withSaves++;
+    if (pr.ban) st.hidden++;
     if (q && !name.toLowerCase().includes(q) && !id.startsWith(q.replace(/^#/, ''))) continue;
-    rows.push({ id, name, ref: id.slice(0, 6), role: id === owner ? 'owner' : Object.prototype.hasOwnProperty.call(admins, id) ? 'admin' : '' });
+    const rl = id === owner ? 'owner' : Object.prototype.hasOwnProperty.call(admins, id) ? 'admin' : '';
+    if (only === 'staff' && !rl) continue;
+    rows.push({ id, name, ref: id.slice(0, 6), role: rl, ban: !!pr.ban, slots,
+      last: slots.reduce((a, x) => Math.max(a, x.at), 0), best: slots.reduce((a, x) => Math.max(a, x.nw), 0) });
   }
-  rows.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-  const page = rows.slice(0, 30); page.forEach(r => { r.slots = slotSummary(r.id); });
-  return { rows: page, total: rows.length };
+  const by = { recent: (a, b) => b.last - a.last, worth: (a, b) => b.best - a.best, name: (a, b) => 0 }[sort] || ((a, b) => b.last - a.last);
+  rows.sort((a, b) => by(a, b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return { rows: rows.slice(0, 30), total: rows.length, stats: st };
+}
+function adminLogTail(n) {
+  try { return fs.readFileSync(ADMIN_LOG, 'utf8').trim().split('\n').slice(-n).reverse().map(l => { const o = JSON.parse(l); return { at: o.at, by: o.byName || 'Admin', action: o.action, target: o.targetName || '' }; }); } catch (e) { return []; }
 }
 async function adminRoute(req, res, id, p, m) {
   const role = roleOf(id);
   if (!role) return send(req, res, 403, { ok: false, error: 'not an admin' });
   if (p === '/api/admin/users' && m === 'GET') {
-    const q = new URL(req.url, 'http://x').searchParams.get('q');
-    return send(req, res, 200, Object.assign({ ok: true, role, me: id }, adminUsers(q, ownerId(), adminMap())));
+    const sp = new URL(req.url, 'http://x').searchParams;
+    return send(req, res, 200, Object.assign({ ok: true, role, me: id }, adminUsers(sp.get('q'), sp.get('sort'), sp.get('only'), ownerId(), adminMap())));
   }
+  if (p === '/api/admin/log' && m === 'GET') return send(req, res, 200, { ok: true, log: adminLogTail(40) });
   if (m !== 'POST') return send(req, res, 405, { ok: false });
   if (limited('adm:' + id, 30, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
   const b = await readJson(req), t = typeof b.target === 'string' ? b.target : '';   // ONE target id (a string): lists are rejected, so there is no "everyone at once"
@@ -381,6 +390,13 @@ async function adminRoute(req, res, id, p, m) {
     reindex(t);
     adminLog({ by: id, byName: nameOf(id), action: 'wipe', target: t, targetName: tname });
     return send(req, res, 200, { ok: true, name: tname });
+  }
+  if (p === '/api/admin/lbhide') {
+    if (tr === 'owner' || (tr === 'admin' && role !== 'owner')) return send(req, res, 403, { ok: false, error: 'only the owner can change an admin' });
+    const pf = rj(profFile(t), {}), ban = b.hide === true;
+    wj(profFile(t), { name: pf.name || 'Player', hide: !!pf.hide, ban }); reindex(t);
+    adminLog({ by: id, byName: nameOf(id), action: ban ? 'hide-leaderboard' : 'show-leaderboard', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname, ban });
   }
   if (p === '/api/admin/role') {
     if (role !== 'owner') return send(req, res, 403, { ok: false, error: 'only the owner can assign admins' });
@@ -408,7 +424,7 @@ async function route(req, res, p) {
     let u;
     try { u = await verifyGoogle(b.credential); } catch (e) { return send(req, res, 401, { ok: false, error: 'invalid sign-in' }); }
     const id0 = uid(u.sub), pf = rj(profFile(id0), {});
-    try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide }); reindex(id0); } catch (e) {}
+    try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide, ban: !!pf.ban }); reindex(id0); } catch (e) {}
     if (OWNER_EMAIL && u.email === OWNER_EMAIL) { try { wj(OWNER_FILE, { id: id0 }); } catch (e) {} }   // only the hashed id is kept, never the email
     return send(req, res, 200, { ok: true, token: makeToken(u.sub), user: { name: u.name, picture: u.picture }, role: roleOf(id0), ref: id0.slice(0, 12) });
   }
@@ -468,7 +484,7 @@ async function route(req, res, p) {
   }
   if (p === '/api/profile' && m === 'PUT') {
     const b = await readJson(req), pf = rj(profFile(id), {});
-    wj(profFile(id), { name: pf.name || 'Player', hide: !!b.hide }); reindex(id);
+    wj(profFile(id), { name: pf.name || 'Player', hide: !!b.hide, ban: !!pf.ban }); reindex(id);
     return send(req, res, 200, { ok: true, hide: !!b.hide });
   }
   if (p === '/api/account' && m === 'DELETE') {
@@ -479,7 +495,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role|lbhide|log)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
