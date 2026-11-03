@@ -410,6 +410,126 @@ async function adminRoute(req, res, id, p, m) {
   return send(req, res, 404, { ok: false });
 }
 
+// ---------- social: friends + direct messages ----------
+// Friend code = first 10 hex chars of the account hash (shown as XXXXX-XXXXX). Nobody's email or Google id is ever exposed.
+//   social/<id>.json        { f: friends, in: incoming requests, out: outgoing requests, bl: blocked, rd: last-read time per chat }
+//   social/chat/<pair>.json [ { f: sender ref (16 chars), t: time, x: text } ] (last 200 kept)
+// Other players are only ever addressed by a 16-char "ref", which is resolved ONLY inside the caller's own lists, so a client cannot
+// message or inspect a stranger. Messages need an accepted friendship on both sides. Blocking removes the friendship and its chat.
+const SOC = path.join(DATA, 'social'), SOC_CHAT = path.join(SOC, 'chat');
+try { fs.mkdirSync(SOC_CHAT, { recursive: true }); } catch (e) {}
+const MAX_FRIENDS = 100, MAX_PENDING = 30, MAX_MSG = 500, KEEP_MSG = 200;
+const socFile = id => path.join(SOC, id + '.json');
+const socGet = id => { const d = rj(socFile(id), {}); return { f: d.f || {}, in: d.in || {}, out: d.out || {}, bl: d.bl || {}, rd: d.rd || {} }; };
+const socPut = (id, d) => wj(socFile(id), d);
+const pairFile = (a, b) => path.join(SOC_CHAT, crypto.createHash('sha256').update([a, b].sort().join('|')).digest('hex').slice(0, 40) + '.json');
+const refOf = id => id.slice(0, 16);
+const codeOf = id => (id.slice(0, 5) + '-' + id.slice(5, 10)).toUpperCase();
+const userExists = id => { try { return fs.statSync(udir(id)).isDirectory(); } catch (e) { return false; } };
+function findByCode(c) {
+  const h = String(c || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+  if (h.length !== 10) return '';
+  try { return fs.readdirSync(path.join(DATA, 'users')).find(x => x.startsWith(h)) || ''; } catch (e) { return ''; }
+}
+const inList = (list, ref) => { ref = String(ref || ''); return ref.length >= 12 ? Object.keys(list).find(k => k.startsWith(ref)) || '' : ''; };
+const cleanMsg = t => String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, MAX_MSG);
+function socUnlink(a, b) {   // remove every relation a<->b on both sides and delete their chat
+  const A = socGet(a), B = socGet(b);
+  for (const k of ['f', 'in', 'out']) { delete A[k][b]; delete B[k][a]; }
+  delete A.rd[b]; delete B.rd[a];
+  socPut(a, A); socPut(b, B);
+  try { fs.unlinkSync(pairFile(a, b)); } catch (e) {}
+}
+function socPurge(id) {   // account deleted: leave no dangling requests or chats behind
+  const me = socGet(id);
+  for (const o of new Set([...Object.keys(me.f), ...Object.keys(me.in), ...Object.keys(me.out)])) { try { socUnlink(id, o); } catch (e) {} }
+  try { fs.unlinkSync(socFile(id)); } catch (e) {}
+}
+function socialRoute(req, res, id, p, m) {
+  const act = p.replace('/api/social', '').replace(/^\//, '');
+  const bad = (code, error) => send(req, res, code, { ok: false, error });
+  const person = o => ({ ref: refOf(o), name: nameOf(o) });
+  const nwOf = o => { const e = board.get(o); return e && !e.hide ? Math.max(e.classic ? e.classic.nw : 0, e.live ? e.live.nw : 0) : 0; };
+  if (act === '' && m === 'GET') {
+    const me = socGet(id), friends = [];
+    for (const o of Object.keys(me.f)) {
+      if (!userExists(o)) continue;
+      const msgs = rj(pairFile(id, o), []), rd = +me.rd[o] || 0, last = msgs[msgs.length - 1];
+      friends.push({ ...person(o), nw: nwOf(o), unread: msgs.filter(x => x.f !== refOf(id) && x.t > rd).length, last: last ? { t: last.t, x: last.x.slice(0, 80), me: last.f === refOf(id) } : null });
+    }
+    friends.sort((a, b) => (b.last ? b.last.t : 0) - (a.last ? a.last.t : 0) || a.name.localeCompare(b.name));
+    return send(req, res, 200, { ok: true, code: codeOf(id), friends, incoming: Object.keys(me.in).filter(userExists).map(person), outgoing: Object.keys(me.out).filter(userExists).map(person), blocked: Object.keys(me.bl).map(person), max: { friends: MAX_FRIENDS, msg: MAX_MSG } });
+  }
+  if (act === 'msgs' && m === 'GET') {
+    const sp = new URL(req.url, 'http://x').searchParams, me = socGet(id), o = inList(me.f, sp.get('ref'));
+    if (!o) return bad(404, 'not friends');
+    const msgs = rj(pairFile(id, o), []), after = +sp.get('after') || 0, last = msgs[msgs.length - 1];
+    if (last && last.f !== refOf(id) && last.t > (+me.rd[o] || 0)) { me.rd[o] = last.t; socPut(id, me); }
+    return send(req, res, 200, { ok: true, msgs: msgs.filter(x => x.t > after).slice(-100).map(x => ({ t: x.t, x: x.x, me: x.f === refOf(id) })) });
+  }
+  if (m !== 'POST') return bad(405, 'method');
+  return readJson(req).then(b => {
+    const me = socGet(id);
+    if (act === 'add') {
+      if (limited('sa:' + id, 15, 60e3)) return bad(429, 'Slow down a little');
+      const o = findByCode(b.code);
+      if (!o || !userExists(o)) return bad(404, 'No player has that friend code');
+      if (o === id) return bad(400, 'That is your own code');
+      if (me.f[o]) return bad(400, 'You are already friends');
+      if (me.bl[o]) return bad(400, 'You blocked that player. Unblock them first');
+      const them = socGet(o);
+      if (them.bl[id]) return send(req, res, 200, { ok: true, state: 'sent', name: nameOf(o) });   // blocked players are not told
+      if (me.in[o]) {   // they already asked me: this is an accept
+        if (Object.keys(me.f).length >= MAX_FRIENDS || Object.keys(them.f).length >= MAX_FRIENDS) return bad(400, 'A friends list is full');
+        delete me.in[o]; delete them.out[id]; me.f[o] = them.f[id] = Date.now(); socPut(id, me); socPut(o, them);
+        return send(req, res, 200, { ok: true, state: 'friends', name: nameOf(o) });
+      }
+      if (me.out[o]) return bad(400, 'Request already sent');
+      if (Object.keys(me.out).length >= MAX_PENDING) return bad(400, 'Too many pending requests');
+      if (Object.keys(them.in).length >= MAX_PENDING) return bad(400, 'That player has too many requests waiting');
+      me.out[o] = them.in[id] = Date.now(); socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true, state: 'sent', name: nameOf(o) });
+    }
+    if (act === 'respond') {
+      const o = inList(me.in, b.ref); if (!o) return bad(404, 'No such request');
+      const them = socGet(o); delete me.in[o]; delete them.out[id];
+      if (b.accept === true) {
+        if (Object.keys(me.f).length >= MAX_FRIENDS || Object.keys(them.f).length >= MAX_FRIENDS) return bad(400, 'A friends list is full');
+        me.f[o] = them.f[id] = Date.now();
+      }
+      socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'cancel') {
+      const o = inList(me.out, b.ref); if (!o) return bad(404, 'No such request');
+      const them = socGet(o); delete me.out[o]; delete them.in[id]; socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'remove') {
+      const o = inList(me.f, b.ref); if (!o) return bad(404, 'Not friends');
+      socUnlink(id, o); return send(req, res, 200, { ok: true });
+    }
+    if (act === 'block') {
+      const o = inList(me.f, b.ref) || inList(me.in, b.ref) || inList(me.out, b.ref); if (!o) return bad(404, 'Player not found');
+      socUnlink(id, o); const m2 = socGet(id); m2.bl[o] = Date.now(); socPut(id, m2);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'unblock') {
+      const o = inList(me.bl, b.ref); if (!o) return bad(404, 'Player not found');
+      delete me.bl[o]; socPut(id, me); return send(req, res, 200, { ok: true });
+    }
+    if (act === 'send') {
+      if (limited('ss:' + id, 20, 30e3)) return bad(429, 'You are sending messages too fast');
+      const o = inList(me.f, b.ref); if (!o) return bad(404, 'You are not friends with that player');
+      const x = cleanMsg(b.text); if (!x) return bad(400, 'Empty message');
+      const msgs = rj(pairFile(id, o), []), last = msgs[msgs.length - 1], t = Math.max(Date.now(), last ? last.t + 1 : 0);
+      msgs.push({ f: refOf(id), t, x }); wj(pairFile(id, o), msgs.slice(-KEEP_MSG));
+      return send(req, res, 200, { ok: true, msg: { t, x, me: true } });
+    }
+    return bad(404, 'unknown');
+  });
+}
+
 // ---------- routes ----------
 async function route(req, res, p) {
   const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
@@ -440,6 +560,7 @@ async function route(req, res, p) {
   const id = uid(sub);
   if (limited('u:' + id, 120, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
   if (p.startsWith('/api/admin')) return adminRoute(req, res, id, p, m);
+  if (p.startsWith('/api/social')) return socialRoute(req, res, id, p, m);
   if (p === '/api/wipe' && m === 'GET') return send(req, res, 200, { ok: true, wipe: wipeAt(id), ref: id.slice(0, 12) });
   if (p.startsWith('/api/daily')) {
     if (m === 'POST' && p === '/api/daily/claim' && limited('dc:' + id, 10, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
@@ -488,6 +609,7 @@ async function route(req, res, p) {
     return send(req, res, 200, { ok: true, hide: !!b.hide });
   }
   if (p === '/api/account' && m === 'DELETE') {
+    try { socPurge(id); } catch (e) {}
     try { fs.rmSync(udir(id), { recursive: true, force: true }); } catch (e) {}
     board.delete(id); lbCache = { at: 0, v: null };
     return send(req, res, 200, { ok: true });
@@ -495,7 +617,7 @@ async function route(req, res, p) {
   return send(req, res, 404, { ok: false });
 }
 
-const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role|lbhide|log)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim))$/;
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role|lbhide|log)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim)|social(\/(add|respond|cancel|remove|block|unblock|send|msgs))?)$/;
 function handle(req, res, p) {
   if (!PATHS.test(p)) return false;
   route(req, res, p).catch(e => {
