@@ -105,6 +105,38 @@ html[data-ns] .sp{display:none}
 .ssec .ico{width:1.15em;height:1.15em}.ssec.dn{background:color-mix(in srgb,var(--dn) 14%,var(--card));color:var(--dn)}
 .srow>span{display:flex;align-items:center;gap:.5rem;min-width:0}
 .srow .si{width:1.35rem;height:1.35rem;flex:none;padding:.2rem;box-sizing:content-box;border-radius:.45rem;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
+
+#soc{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35;backdrop-filter:blur(3px)}
+#soc.hide{display:none}
+.socc{max-width:34rem;height:min(42rem,100%)}
+.socc .admbody{flex:1;min-height:0}
+.socbadge{display:inline-flex;align-items:center;justify-content:center;min-width:1.2em;height:1.2em;padding:0 .3em;border-radius:1em;background:var(--dn);color:#fff;font-size:.72em;font-weight:700;font-style:normal;line-height:1}
+.admtabs button .socbadge{margin-left:.25rem}
+.sochead{display:flex;align-items:center;gap:.5rem;font-weight:700;color:var(--mu);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;margin:.3rem 0 .1rem}
+.socl{display:flex;flex-direction:column;gap:.3rem}
+.socr{display:flex;align-items:center;gap:.6rem;width:100%;max-width:none;text-align:left;padding:.45rem .6rem;border-radius:.7rem}
+.socr .adm1{display:flex;flex-direction:column;min-width:0;flex:1}.socr .adm1 b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.socr .adm1 .mu{font-size:.8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.socr .adch{flex:0 0 auto}
+.socr.un .adm1 .mu{color:var(--tx);font-weight:600}
+.socempty{color:var(--mu);text-align:center;padding:1.5rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.socempty .ico{width:2.2rem;height:2.2rem;opacity:.6}
+.soccode{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.7rem .8rem;border-radius:.8rem;border:1px dashed var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--card))}
+.soccode b{font-size:1.5em;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.soccode .mu{font-size:.8em}
+.socadd{display:flex;gap:.5rem}
+.socadd input,.socin input{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:.7rem;height:2.4rem;padding:0 .7rem;font:inherit;box-sizing:border-box;flex:1;min-width:0}
+.socadd input{text-transform:uppercase;letter-spacing:.1em}
+.socadd input:focus,.socin input:focus{outline:none;border-color:var(--ac)}
+.socchat{display:flex;flex-direction:column;gap:.5rem;flex:1;min-height:0}
+.soctop{display:flex;align-items:center;gap:.5rem}
+.soctop .adm1{flex:1;min-width:0;display:flex;flex-direction:column}.soctop .adm1 b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.socmsgs{flex:1;min-height:8rem;overflow-y:auto;display:flex;flex-direction:column;gap:.25rem;padding:.5rem;border:1px solid var(--line);border-radius:.8rem;background:var(--bg)}
+.socb{max-width:80%;padding:.35rem .6rem;border-radius:.9rem;word-break:break-word;white-space:pre-wrap;background:var(--card);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:.25rem}
+.socb.me{align-self:flex-end;background:var(--ac);color:#fff;border-color:var(--ac);border-radius:.9rem;border-bottom-right-radius:.25rem}
+.socb small{display:block;font-size:.68em;opacity:.7;margin-top:.1rem}
+.socday{align-self:center;color:var(--mu);font-size:.72em;margin:.3rem 0}
+.socin{display:flex;gap:.5rem}
 .seg{display:flex;gap:.25rem}.seg .btn,.srow .tg{padding:.2rem .6rem}
 .srow input[type=range]{width:45%;accent-color:var(--ac)}
 .btn.warn{border-color:var(--dn);color:var(--dn)}
@@ -593,6 +625,12 @@ main:has(#market:not(.hide)){overflow:hidden}
 <symbol id="i-monitor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.500" width="18" height="12" rx="2"/><path d="M8.500 20h7M12 16.500V20"/></g></symbol>
 <symbol id="i-warning" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.500 21.500 20h-19Z" fill="currentColor" fill-opacity=".2"/><path d="M12 10v4.500M12 17.300v.2"/></g></symbol>
 <symbol id="i-reset" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.500 12a7.500 7.500 0 1 0 2.300-5.400"/><path d="M4.500 4.500v4.200h4.200"/></g></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.500 13.500M21 3l-6.500 18-4-7.500L3 9.500Z"/></g></symbol>
+<symbol id="i-userplus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.500" cy="8" r="3.500"/><path d="M3 20c.4-3.400 3-5.500 6.500-5.500s6.100 2.100 6.500 5.500M19 8v6M16 11h6"/></g></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.500" y="8.500" width="12" height="12" rx="2"/><path d="M15.500 8.500V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.500a2 2 0 0 0 2 2h2.500"/></g></symbol>
+<symbol id="i-block" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.500"/><path d="M6 6l12 12"/></g></symbol>
+<symbol id="i-userx" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.500" cy="8" r="3.500"/><path d="M3 20c.4-3.400 3-5.500 6.500-5.500s6.100 2.100 6.500 5.500M17 9l5 5M22 9l-5 5"/></g></symbol>
+<symbol id="i-inbox" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.500 13.500 6 5.500h12l2.500 8v5h-17Z"/><path d="M3.500 13.500H9a3 3 0 0 0 6 0h5.500"/></g></symbol>
 <symbol id="i-lock" viewBox="0 0 32 32">
 <circle cx="16" cy="20" r="10.2" fill="#3a4350"/><circle cx="16" cy="20" r="7.6" fill="#2a313c" stroke="#556070" stroke-width=".9"/>
 <rect x="11.6" y="19.2" width="8.8" height="6.4" rx="1.6" fill="#8b97a6"/>
@@ -636,7 +674,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.2.4</div>
+<div id="title"><div id="ver">v1.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -706,6 +744,10 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div id="alist"></div>
 </div></div>
 <div id="wb" class="hide" role="dialog" aria-modal="true" aria-label="Welcome back"><div class="card wbc"><div id="wbb"></div><button class="btn" id="wbok" style="background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700;min-width:10rem;align-self:center">Continue</button></div></div>
+<div id="soc" class="hide"><div class="admc socc">
+  <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-msg"/></svg></span><div><b>Social</b><span class="mu">Friends and messages</span></div></div><button class="btn" id="socx" aria-label="Close">✕</button></div>
+  <div class="admbody" id="socbody"></div>
+</div></div>
 <div id="adm" class="hide"><div class="admc">
   <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-shield"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
   <div class="admbody">
@@ -1589,7 +1631,7 @@ const TABKEYS=['m','f','c','s','k','u','p','l'];
 document.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||!S)return;
   const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
-  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#cdlg:not(.hide),#wb:not(.hide)'))return;
+  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#soc:not(.hide),#cdlg:not(.hide),#wb:not(.hide)'))return;
   const k=e.key;
   if(cur){
     if(k==='ArrowLeft'||k==='ArrowRight'){e.preventDefault();dNav(k==='ArrowRight'?1:-1);return}
@@ -1925,7 +1967,7 @@ async function capi(method,path,body){
   const r=await fetch('/api/'+path,{method,headers:h,body:b,cache:'no-store'});let j=null;try{j=await r.json()}catch(e){}
   if(r.status===401&&CLD.tok&&path!=='auth/google'){cloudOut('Your cloud session expired. Sign in again to keep syncing.');throw new Error('expired')}
   return {status:r.status,j:j||{}}}
-function cloudOut(msg){DLY.st=null;DLY.ready=false;CLD.tok='';CLD.user=null;CLD.role='';CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
+function cloudOut(msg){try{socReset()}catch(e){}DLY.st=null;DLY.ready=false;CLD.tok='';CLD.user=null;CLD.role='';CLD.revs={};CLD.ll={};CLD.hold={};CLD.err=msg||'';clSave();try{google.accounts.id.disableAutoSelect()}catch(e){}if(msg)toast(msg,1);cloudUi()}
 function mergeG(c){if(!c)return false;let ch=false;for(const k in (c.a||{})){const t=+c.a[k];if(t>0&&(!G.a[k]||t<G.a[k])){G.a[k]=t;ch=true}}
   ['trades','ticks','best'].forEach(k=>{if((+c[k]||0)>(G[k]||0)){G[k]=+c[k];ch=true}});if(ch)wr(GK,JSON.stringify(G));return ch}
 async function pushSlot(n,base){const raw=rd(SK(n));if(!raw)return;const d=JSON.parse(raw);
@@ -2017,14 +2059,14 @@ function cloudUi(){renderCloud();renderPM();renderLB();const t=$('#tcl');
   if(!$('#tslots').classList.contains('hide'))renderSlots()}
 function closePM(){const m=$('#pmenu');if(m)m.classList.add('hide')}
 function renderPM(force){const m=$('#pmenu');if(!m||m.classList.contains('hide'))return;
-  const sig=[!!CLD.tok,CLD.user&&CLD.user.name,CLD.user&&CLD.user.picture,CLD.auto,CLD.hide,CFG.theme,CLD.role].join('|');
+  const sig=[!!CLD.tok,CLD.user&&CLD.user.name,CLD.user&&CLD.user.picture,CLD.auto,CLD.hide,CFG.theme,CLD.role,SOC.badge].join('|');
   if(force||CLD.psig!==sig||!m.firstChild){CLD.psig=sig;
     const row=(a,ic,t,x)=>`<button class="btn pmi ${x||''}" role="menuitem" data-pm="${a}"><span><svg class="ico"><use href="#i-${ic}"/></svg>${t}</span></button>`;
     const tg=(a,t,on)=>`<button class="btn pmi" role="menuitem" data-pm="${a}"><span>${t}</span><span class="tv ${on?'on':''}">${on?'On':'Off'}</span></button>`;
     const nm=CLD.user&&CLD.user.name||'Signed in';
     if(CLD.tok){
       m.innerHTML=`<div class="pmh"><span class="who">${CLD.user&&CLD.user.picture?`<img class="av" src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`}<b>${esc(nm)}</b></span></div><div class="mu" id="pmst"></div><div class="pmsep"></div>`
-        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','sync','Sync now')+(CLD.role?row('adm','shield','Admin panel'):'')
+        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+`<button class="btn pmi" role="menuitem" data-pm="soc"><span><svg class="ico"><use href="#i-msg"/></svg>Social</span>${SOC.badge?`<i class="socbadge">${SOC.badge>99?'99+':SOC.badge}</i>`:''}</button>`+row('sync','sync','Sync now')+(CLD.role?row('adm','shield','Admin panel'):'')
         +tg('auto','Auto-sync',CLD.auto)+tg('hide','Show me on leaderboard',!CLD.hide)
         +'<div class="pmsep"></div>'+row('set','gear','Settings')+row('out','back','Sign out','warn')}
     else{
@@ -2044,7 +2086,89 @@ $('#pmenu').addEventListener('click',async e=>{const b=e.target.closest('button[
   else if(a==='saves'){renderSlots();views(true)}
   else if(a==='set')openSet();
   else if(a==='adm')openAdm();
+  else if(a==='soc')openSoc();
   else if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}});
+
+// ---- Social: friends + direct messages (needs cloud sign-in; the server enforces every rule, see cloud.js) ----
+const SOC={tab:'friends',d:null,chat:'',msgs:[],last:0,badge:0,msg:'',bad:false,busy:false,t:0,n:0,draft:''};
+function socReset(){SOC.d=null;SOC.chat='';SOC.msgs=[];SOC.last=0;SOC.badge=0;SOC.msg='';SOC.draft='';clearInterval(SOC.t);$('#soc').classList.add('hide')}
+const socAv=(x,c)=>`<span class="adav ${c||''}" style="background:hsl(${parseInt(x.ref,16)%360} 45% 32%)">${esc((x.name||'?').trim().charAt(0).toUpperCase()||'?')}</span>`;
+const socTime=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const socDay=t=>{const d=new Date(t),n=new Date(),y=new Date(Date.now()-864e5);return d.toDateString()===n.toDateString()?'Today':d.toDateString()===y.toDateString()?'Yesterday':d.toLocaleDateString([],{month:'short',day:'numeric'})};
+function socNote(t,bad){SOC.msg=t||'';SOC.bad=!!bad;const e=$('#socmsg');if(e){e.textContent=SOC.msg;e.className='admmsg '+(SOC.msg?(bad?'bad':'ok'):'hide')}}
+async function socLoad(){if(!CLD.tok)return;
+  try{const r=await capi('GET','social');if(r.j.ok){SOC.d=r.j;SOC.badge=r.j.incoming.length+r.j.friends.reduce((a,f)=>a+f.unread,0);
+      if($('#soc').classList.contains('hide'))renderPM(false);else socDraw()}}catch(e){}}
+function socDraw(){const b=$('#socbody');if(!b||$('#soc').classList.contains('hide'))return;
+  if(SOC.chat)return socDrawChat();
+  const d=SOC.d,keepIn=b.querySelector('#socf');const f=keepIn&&document.activeElement===keepIn?keepIn.value:null;
+  if(!d){b.innerHTML='<div class="socempty">Loading…</div>';return}
+  const nIn=d.incoming.length,tabs=[['friends','people','Friends',d.friends.reduce((a,x)=>a+x.unread,0)],['requests','inbox','Requests',nIn],['add','userplus','Add',0]];
+  const idx=tabs.findIndex(t=>t[0]===SOC.tab);
+  let h=`<div class="admtabs"><span class="admpill" style="transform:translateX(${idx*100}%)"></span>${tabs.map(t=>`<button data-st="${t[0]}" class="${t[0]===SOC.tab?'on':''}">${IC(t[1])}${t[2]}${t[3]?`<i class="socbadge">${t[3]}</i>`:''}</button>`).join('')}</div><div class="admmsg ${SOC.msg?(SOC.bad?'bad':'ok'):'hide'}" id="socmsg">${esc(SOC.msg)}</div>`;
+  if(SOC.tab==='friends'){
+    h+=d.friends.length?`<div class="socl">${d.friends.map(x=>`<button class="btn socr ${x.unread?'un':''}" data-chat="${x.ref}">${socAv(x)}<span class="adm1"><b>${esc(x.name)}</b><span class="mu">${x.last?(x.last.me?'You: ':'')+esc(x.last.x):(x.nw>0?'Net worth '+fmt(x.nw):'Say hello!')}</span></span>${x.unread?`<i class="socbadge">${x.unread}</i>`:''}</button>`).join('')}</div>`
+      :`<div class="socempty">${IC('people')}<div>No friends yet.</div><button class="btn" data-st="add">${IC('userplus')} Add a friend</button></div>`}
+  else if(SOC.tab==='requests'){
+    h+=`<div class="sochead">${IC('inbox')}Received</div>`+(d.incoming.length?`<div class="socl">${d.incoming.map(x=>`<div class="socr">${socAv(x)}<span class="adm1"><b>${esc(x.name)}</b><span class="mu">wants to be friends</span></span><span class="adch"><button class="btn" data-sa="yes" data-r="${x.ref}">${IC('check')}Accept</button><button class="btn warn" data-sa="no" data-r="${x.ref}">Decline</button></span></div>`).join('')}</div>`:'<div class="mu">No requests waiting.</div>');
+    if(d.outgoing.length)h+=`<div class="sochead">${IC('send')}Sent</div><div class="socl">${d.outgoing.map(x=>`<div class="socr">${socAv(x)}<span class="adm1"><b>${esc(x.name)}</b><span class="mu">waiting for them</span></span><span class="adch"><button class="btn" data-sa="cancel" data-r="${x.ref}">Cancel</button></span></div>`).join('')}</div>`;
+    if(d.blocked.length)h+=`<div class="sochead">${IC('block')}Blocked</div><div class="socl">${d.blocked.map(x=>`<div class="socr">${socAv(x)}<span class="adm1"><b>${esc(x.name)}</b></span><span class="adch"><button class="btn" data-sa="unblock" data-r="${x.ref}">Unblock</button></span></div>`).join('')}</div>`}
+  else{
+    h+=`<div class="soccode"><div><div class="mu">Your friend code</div><b>${esc(d.code)}</b></div><button class="btn" data-sa="copy">${IC('copy')}Copy</button></div>
+      <div class="mu">Share your code with a friend, or type theirs below. They get a request and can accept it.</div>
+      <div class="socadd"><input id="socf" placeholder="XXXXX-XXXXX" maxlength="11" autocomplete="off" spellcheck="false"><button class="btn" data-sa="add">${IC('userplus')}Send request</button></div>
+      <div class="mu">Friends can message each other. You can block anyone from their chat.</div>`}
+  b.innerHTML=h;if(f!==null){const i=b.querySelector('#socf');if(i){i.value=f;i.focus()}}}
+function socBubbles(){let h='',day='';SOC.msgs.forEach(m=>{const dd=socDay(m.t);if(dd!==day){day=dd;h+=`<div class="socday">${dd}</div>`}h+=`<div class="socb ${m.me?'me':''}">${esc(m.x)}<small>${socTime(m.t)}</small></div>`});return h||'<div class="socday">No messages yet. Say hi!</div>'}
+function socDrawChat(){const b=$('#socbody'),f=SOC.d.friends.find(x=>x.ref===SOC.chat);
+  if(!f){SOC.chat='';return socDraw()}
+  b.innerHTML=`<div class="socchat"><div class="soctop"><button class="btn" data-sa="back" aria-label="Back">${IC('back')}</button>${socAv(f)}<span class="adm1"><b>${esc(f.name)}</b>${f.nw>0?`<span class="mu">Net worth ${fmt(f.nw)}</span>`:''}</span><button class="btn" data-sa="remove" title="Remove friend">${IC('userx')}</button><button class="btn warn" data-sa="block" title="Block">${IC('block')}</button></div>
+    <div class="admmsg ${SOC.msg?(SOC.bad?'bad':'ok'):'hide'}" id="socmsg">${esc(SOC.msg)}</div>
+    <div class="socmsgs" id="socmsgs">${socBubbles()}</div>
+    <div class="socin"><input id="socm" maxlength="${SOC.d.max.msg}" placeholder="Message ${esc(f.name)}" autocomplete="off"><button class="btn" data-sa="send">${IC('send')}Send</button></div></div>`;
+  const i=$('#socm');i.value=SOC.draft;i.focus();const m=$('#socmsgs');m.scrollTop=m.scrollHeight}
+async function socFetchMsgs(full){if(!SOC.chat)return;const ref=SOC.chat;
+  try{const r=await capi('GET','social/msgs?ref='+ref+'&after='+(full?0:SOC.last));
+    if(!r.j.ok){if(r.status===404){SOC.chat='';socLoad()}return}
+    if(ref!==SOC.chat)return;
+    if(full)SOC.msgs=[];
+    if(r.j.msgs.length){const had=SOC.msgs.length;SOC.msgs.push(...r.j.msgs);SOC.last=SOC.msgs[SOC.msgs.length-1].t;
+      const m=$('#socmsgs');if(m){const atEnd=m.scrollHeight-m.scrollTop-m.clientHeight<60;m.innerHTML=socBubbles();if(atEnd||full||!had)m.scrollTop=m.scrollHeight}
+      if(had&&r.j.msgs.some(x=>!x.me))sfx('click')}
+    else if(full){const m=$('#socmsgs');if(m)m.innerHTML=socBubbles()}}catch(e){}}
+function socOpenChat(ref){SOC.chat=ref;SOC.msgs=[];SOC.last=0;SOC.draft='';socNote('');socDrawChat();socFetchMsgs(true).then(socLoad)}
+function openSoc(){if(!CLD.tok){toast('Sign in with Google to use Social',1);return}
+  SOC.chat='';SOC.tab='friends';SOC.n=0;socNote('');$('#soc').classList.remove('hide');socDraw();socLoad();
+  clearInterval(SOC.t);SOC.t=setInterval(()=>{if(document.hidden)return;if(SOC.chat)socFetchMsgs(false);if(!SOC.chat||++SOC.n%4===0)socLoad()},4000)}
+function closeSoc(){$('#soc').classList.add('hide');clearInterval(SOC.t);SOC.chat='';socLoad()}
+async function socPost(a,body){try{const r=await capi('POST','social/'+a,body);return r.j}catch(e){return {ok:false,error:e.message==='expired'?'Session expired':'Could not reach the server'}}}
+$('#soc').addEventListener('click',async e=>{
+  if(e.target.id==='soc'||e.target.id==='socx'){closeSoc();return}
+  const st=e.target.closest('button[data-st]');if(st){SOC.tab=st.dataset.st;socNote('');sfx('click');socDraw();return}
+  const ch=e.target.closest('button[data-chat]');if(ch){sfx('click');socOpenChat(ch.dataset.chat);return}
+  const b=e.target.closest('button[data-sa]');if(!b||b.disabled)return;const a=b.dataset.sa,ref=b.dataset.r||SOC.chat;
+  if(a==='back'){SOC.chat='';SOC.draft='';socNote('');socDraw();socLoad();return}
+  if(a==='copy'){try{await navigator.clipboard.writeText(SOC.d.code);socNote('Friend code copied.')}catch(er){socNote('Select the code and copy it by hand.',1)}return}
+  if(a==='send'){const i=$('#socm'),t=i.value.trim();if(!t)return;i.value='';SOC.draft='';b.disabled=true;
+    const j=await socPost('send',{ref,text:t});b.disabled=false;
+    if(j.ok){SOC.msgs.push(j.msg);SOC.last=j.msg.t;const m=$('#socmsgs');if(m){m.innerHTML=socBubbles();m.scrollTop=m.scrollHeight}socNote('');sfx('click')}else{socNote(j.error||'Could not send',1);const i2=$('#socm');if(i2)i2.value=t}
+    const i3=$('#socm');if(i3)i3.focus();return}
+  if(a==='add'){const i=$('#socf'),c=i.value.trim();if(!c)return;b.disabled=true;const j=await socPost('add',{code:c});b.disabled=false;
+    if(j.ok){socNote(j.state==='friends'?'You are now friends with '+j.name+'!':'Request sent'+(j.name?' to '+j.name:'')+'.');const i2=$('#socf');if(i2)i2.value='';sfx('buy')}else socNote(j.error||'Could not add that code',1);
+    await socLoad();return}
+  if((a==='remove'||a==='block')&&!b.dataset.arm){b.dataset.arm=1;const o=b.innerHTML;b.textContent='Tap again';clearTimeout(b.t);b.t=setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.innerHTML=o}},3000);return}
+  clearTimeout(b.t);
+  const map={yes:['respond',{ref,accept:true}],no:['respond',{ref,accept:false}],cancel:['cancel',{ref}],remove:['remove',{ref}],block:['block',{ref}],unblock:['unblock',{ref}]};
+  if(!map[a])return;const j=await socPost(map[a][0],map[a][1]);
+  if(j.ok){if(a==='remove'||a==='block'){SOC.chat='';SOC.draft=''}socNote(a==='yes'?'Friend added.':a==='block'?'Player blocked.':a==='remove'?'Friend removed.':'');if(a==='yes')sfx('buy')}else socNote(j.error||'Something went wrong',1);
+  await socLoad();if(!SOC.chat)socDraw()});
+$('#soc').addEventListener('input',e=>{if(e.target.id==='socm')SOC.draft=e.target.value});
+$('#soc').addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing)return;
+  if(e.target.id==='socm'){e.preventDefault();$('#soc [data-sa=send]').click()}
+  else if(e.target.id==='socf'){e.preventDefault();$('#soc [data-sa=add]').click()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#soc').classList.contains('hide'))closeSoc()});
+// light background check so the Social menu entry can show a badge for new messages and requests
+setInterval(()=>{if(CLD.tok&&!document.hidden&&$('#soc').classList.contains('hide'))socLoad()},45000);
 async function cloudHide(){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
 $('#cloudbox').addEventListener('click',async e=>{const b=e.target.closest('button[data-cl]');if(!b)return;const a=b.dataset.cl;
   if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}
