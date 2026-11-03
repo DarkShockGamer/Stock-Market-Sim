@@ -110,6 +110,12 @@ html[data-ns] .sp{display:none}
 .note div{font-size:.9em}.note small{display:block}
 #ach{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
 #ach.hide{display:none}
+#wb{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:36;backdrop-filter:blur(3px)}
+#wb.hide{display:none}
+.wbc{max-width:23rem;text-align:center;align-items:stretch;gap:.6rem;padding:1rem}
+.wbh{font-size:1.35em;font-weight:700}
+.wbamt{font-size:2.3em;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.wbc .rinfo{text-align:left}
 #adm{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35;backdrop-filter:blur(3px)}
 #adm.hide{display:none}
 .admc{background:var(--card);border:1px solid var(--line);border-radius:1rem;width:100%;max-width:54rem;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1rem 3rem #000a}
@@ -610,7 +616,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.2</div>
+<div id="title"><div id="ver">v1.2.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -674,6 +680,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="mu" id="adesc"></div>
   <div id="alist"></div>
 </div></div>
+<div id="wb" class="hide" role="dialog" aria-modal="true" aria-label="Welcome back"><div class="card wbc"><div id="wbb"></div><button class="btn" id="wbok" style="background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700;min-width:10rem;align-self:center">Continue</button></div></div>
 <div id="adm" class="hide"><div class="admc">
   <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-lock"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
   <div class="admbody">
@@ -1557,7 +1564,7 @@ const TABKEYS=['m','f','c','s','k','u','p','l'];
 document.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||!S)return;
   const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
-  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#cdlg:not(.hide)'))return;
+  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#cdlg:not(.hide),#wb:not(.hide)'))return;
   const k=e.key;
   if(cur){
     if(k==='ArrowLeft'||k==='ArrowRight'){e.preventDefault();dNav(k==='ArrowRight'?1:-1);return}
@@ -2164,21 +2171,47 @@ function loop(){tick();loop.t=setTimeout(loop,interval())}
 // the device clock is used as a fallback. If the server cannot be reached while signed in, nothing is paid now: the server keeps the away time,
 // so the next successful claim pays it (up to the 18h max).
 const OFFMAX=h=>(8+2*h)*3600;
+let OFFERR=false;
 async function offlineSec(){
-  const cap=OFFMAX(lv('off'));
+  const L=lv('off'),cap=OFFMAX(L);OFFERR=false;
+  if(L<1)return 0; // no Overnight Analysts = no offline earnings, and no claim is made on the server either
   if(!CLD.tok)return Math.min(Math.max(0,(Date.now()-S.last)/1000),cap);
   try{const r=await Promise.race([capi('POST','offline/claim',{since:S.last}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4000))]);
     if(r.j&&r.j.ok)return Math.min(Math.max(0,+r.j.sec||0),cap);
     throw new Error('claim')}
-  catch(e){if(e.message!=='expired')setTimeout(()=>toast('Offline earnings need a server connection. They will be paid next time you start the game online.',1),400);return 0}}
-async function offline(){if(isLive())return;const sec=await offlineSec();
+  catch(e){OFFERR=true;if(e.message!=='expired')setTimeout(()=>toast('Offline earnings need a server connection. They will be paid next time you start the game online.',1),400);return 0}}
+// Returns what the "Welcome back" screen shows (or null when you were barely away). Money is only ever added when Overnight Analysts is owned.
+async function offline(){if(isLive())return null;
+  const L=lv('off'),away=Math.max(0,(Date.now()-(S.last||Date.now()))/1000),res={away,L,sec:0,gain:0,k:0,err:false,cap:OFFMAX(L)};
+  if(L<1)return away>=30?res:null;
+  const sec=await offlineSec();res.sec=sec;res.err=OFFERR;
   if(sec>30){const ym=1+.15*lv('yld'),fy=Object.entries(S.hold).reduce((a,[k,h])=>a+h.n*S.p[k].p*(SM[k][8]||0),0)+pvI();
-    const k=Math.floor(sec*(.25+.1*lv('off'))/PAYT);S.paid+=k*PAYC;
-    let g=(hv()*lv('div')*DIVR+S.cash*lv('int')*INTR+fy)*ym*sec*(.25+.1*lv('off'))+k*PAYC;
+    const k=Math.floor(sec*(.25+.1*L)/PAYT);S.paid+=k*PAYC;
+    let g=(hv()*lv('div')*DIVR+S.cash*lv('int')*INTR+fy)*ym*sec*(.25+.1*L)+k*PAYC;
     // anti-exploit: offline income is capped as a share of net worth per hour away (1%/h base + 0.4%/h per Analysts level, e.g. lvl 5 = 3%/h, 54% over the 18h max),
     // so it cannot compound at the live rate. The paychecks are always paid in full.
-    const cap=nw()*(.01+.004*lv('off'))*(sec/3600)+k*PAYC;if(g>cap)g=cap;
-    if(g>=.01){S.cash+=g;S.last=Date.now();save();setTimeout(()=>{toast('While away you earned '+fmt(g));sfx('cash')},400)}}}
+    const cap=nw()*(.01+.004*L)*(sec/3600)+k*PAYC;if(g>cap)g=cap;
+    if(g>=.01){S.cash+=g;S.last=Date.now();save();res.gain=g;res.k=k}}
+  return (away>=30||sec>30||res.err)?res:null}
+// ---- "Welcome back" screen shown after loading a save ----
+const fmtAway=t=>{t=Math.round(t);const d=t/86400|0,h=(t%86400)/3600|0,m=(t%3600)/60|0;return d?d+'d '+h+'h':h?h+'h '+m+'m':m?m+'m':t+'s'};
+function wbShow(r){
+  const L=r.L,hrs=8+2*L,shown=Math.max(r.away,r.sec);
+  let h=`<div class="wbh">🌙 Welcome back</div><div class="mu">You were away for <b>${fmtAway(shown)}</b></div>`;
+  if(L<1)h+=`<div class="wbamt">$0.00</div><div class="mu">earned while away</div><div class="rinfo"><span class="ri">🌙</span><span>Your money only grows while you are away if you own the <b>Overnight Analysts</b> upgrade (Upgrades tab, Income).</span></div>`;
+  else if(r.err)h+=`<div class="wbamt">—</div><div class="rinfo"><span class="ri">📡</span><span>Offline earnings need a server connection. They will be paid next time you start the game online.</span></div>`;
+  else{h+=`<div class="wbamt ${r.gain>0?'up':''}">${r.gain>0?'+':''}${fmt(r.gain)}</div><div class="mu">earned while away</div>`;
+    h+=`<div class="rinfo"><span class="ri">🌙</span><span>Overnight Analysts level ${L}: ${25+10*L}% offline rate, counts up to ${hrs}h.</span></div>`;
+    if(r.k)h+=`<div class="rinfo"><span class="ri">💼</span><span>Includes ${r.k} paycheck${r.k>1?'s':''} (${fmt(r.k*PAYC)}).</span></div>`;
+    if(r.away>r.cap+60)h+=`<div class="rinfo"><span class="ri">⏳</span><span>Only the first ${hrs}h of your time away was counted.</span></div>`;
+    if(!(r.gain>0))h+=`<div class="rinfo"><span class="ri">💡</span><span>You had nothing earning income yet. Dividends, interest and paychecks are what pay offline.</span></div>`}
+  $('#wbb').innerHTML=h;$('#wb').classList.remove('hide');
+  if(r.gain>0)setTimeout(()=>sfx('cash'),250);
+  setTimeout(()=>{const b=$('#wbok');if(b)b.focus()},50)}
+function wbClose(){$('#wb').classList.add('hide')}
+$('#wbok').onclick=wbClose;
+$('#wb').addEventListener('click',e=>{if(e.target.id==='wb')wbClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wb').classList.contains('hide')){wbClose();e.stopPropagation()}},true);
 // heartbeat: tells the server this account is playing right now, so time spent playing is never counted as time away
 const offBeat=(keep)=>{if(!CLD.tok||!live()||isLive())return;
   try{fetch('/api/offline/seen',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+CLD.tok},body:'{}',keepalive:!!keep,cache:'no-store'}).catch(()=>{})}catch(e){}};
@@ -2189,7 +2222,7 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);try{await offline()}catch(e){}clearTimeout(loop.t);loop()}
+async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb)}
 function showTitle(){
   $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
