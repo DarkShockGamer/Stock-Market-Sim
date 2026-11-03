@@ -573,6 +573,7 @@ main:has(#market:not(.hide)){overflow:hidden}
 <path d="M18.2 16.9h2.9v2.9" fill="none" stroke="#6a4300" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M10.5 15.5a7.6 7.6 0 0 1 6-3" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/>
 </symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" d="M12 2.2 L20 5.2 V11.4 C20 16.2 16.7 19.9 12 21.8 C7.3 19.9 4 16.2 4 11.4 V5.2 Z"/><path fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8.4 11.8 L11 14.4 L15.8 9.2"/></symbol>
 <symbol id="i-lock" viewBox="0 0 32 32">
 <circle cx="16" cy="20" r="10.2" fill="#3a4350"/><circle cx="16" cy="20" r="7.6" fill="#2a313c" stroke="#556070" stroke-width=".9"/>
 <rect x="11.6" y="19.2" width="8.8" height="6.4" rx="1.6" fill="#8b97a6"/>
@@ -616,7 +617,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.2.2</div>
+<div id="title"><div id="ver">v1.2.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -682,7 +683,7 @@ main:has(#market:not(.hide)){overflow:hidden}
 </div></div>
 <div id="wb" class="hide" role="dialog" aria-modal="true" aria-label="Welcome back"><div class="card wbc"><div id="wbb"></div><button class="btn" id="wbok" style="background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700;min-width:10rem;align-self:center">Continue</button></div></div>
 <div id="adm" class="hide"><div class="admc">
-  <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-lock"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
+  <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-shield"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
   <div class="admbody">
     <div class="admstats" id="admstats"></div>
     <div class="admtabs" id="admtabs"><span class="admpill" id="admpill"></span><button class="on" data-t="players"><svg class="ico"><use href="#i-people"/></svg>Players</button><button data-t="admins"><svg class="ico"><use href="#i-unlock"/></svg>Admins</button><button data-t="log"><svg class="ico"><use href="#i-clock"/></svg>Activity</button></div>
@@ -1999,7 +2000,7 @@ function renderPM(force){const m=$('#pmenu');if(!m||m.classList.contains('hide')
     const nm=CLD.user&&CLD.user.name||'Signed in';
     if(CLD.tok){
       m.innerHTML=`<div class="pmh"><span class="who">${CLD.user&&CLD.user.picture?`<img class="av" src="${esc(CLD.user.picture)}" referrerpolicy="no-referrer" alt="">`:`<span class="av0">${esc(nm.trim().charAt(0).toUpperCase()||'?')}</span>`}<b>${esc(nm)}</b></span></div><div class="mu" id="pmst"></div><div class="pmsep"></div>`
-        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','sync','Sync now')+(CLD.role?row('adm','gear','Admin panel'):'')
+        +row('lb','chart','Leaderboard')+row('saves','folder','Saves')+row('sync','sync','Sync now')+(CLD.role?row('adm','shield','Admin panel'):'')
         +tg('auto','Auto-sync',CLD.auto)+tg('hide','Show me on leaderboard',!CLD.hide)
         +'<div class="pmsep"></div>'+row('set','gear','Settings')+row('out','back','Sign out','warn')}
     else{
