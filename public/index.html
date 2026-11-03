@@ -45,6 +45,19 @@ main{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.3571rem;min
 svg.sp{width:4rem;height:1.4286rem;vertical-align:middle;margin-left:0.4286rem}
 .hide{display:none}
 .up-row{display:flex;justify-content:space-between;gap:0.5714rem;align-items:center}
+.dnav{display:flex;align-items:center;gap:.3rem;flex:none}
+.dnav .btn{min-width:2.2rem}
+#dpos{font-size:.8em;min-width:3.4rem;text-align:center;font-variant-numeric:tabular-nums}
+.dnav .btn[disabled]{opacity:.35;pointer-events:none}
+@keyframes dsl{from{transform:translateX(18px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes dsr{from{transform:translateX(-18px);opacity:.4}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:no-preference){#dlg .card.sl{animation:dsl .18s ease-out}#dlg .card.sr{animation:dsr .18s ease-out}}
+.gmark{display:flex;align-items:center;gap:.4rem;opacity:.55;pointer-events:none;user-select:none;-webkit-user-select:none;flex:0 1 auto;min-width:0}
+.gmark svg{width:1.8rem;height:1.8rem;flex:none}
+.gmark .gm-t{display:flex;flex-direction:column;line-height:.9;font-family:'Barlow Condensed','Arial Narrow','Roboto Condensed',system-ui,sans-serif}
+.gmark small{font-size:.62rem;letter-spacing:.5em;color:var(--mu);font-weight:600;text-transform:uppercase}
+.gmark b{font-size:1.2rem;letter-spacing:.08em;font-weight:600;color:var(--tx)}
+@media(max-width:30rem){.gmark .gm-t{display:none}}
 #toast{position:fixed;left:50%;bottom:0.7143rem;transform:translateX(-50%);background:var(--card);box-shadow:0 .2rem .8rem #0006;border:1px solid var(--line);padding:0.4286rem 0.7143rem;border-radius:0.5714rem;max-width:92%;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;z-index:40}
 #toast.show{opacity:1}
 #dlg{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:0.5714rem;z-index:5}
@@ -587,6 +600,7 @@ main:has(#market:not(.hide)){overflow:hidden}
 <div id="app">
   <header>
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
+    <div class="gmark" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="15" fill="url(#gLogo)" stroke="#34404f" stroke-width="1.5"/><g stroke="#58f09a" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"><path d="M16 38v10M26 30v14M36 34v12M46 22v14"/></g><path d="M12 44 24 32l9 7 14-19" fill="none" stroke="url(#gUp)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M39 18h9v9" fill="none" stroke="#58f09a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="gm-t"><small>Idle</small><b>STOCKS</b></span></div>
     <div style="text-align:right"><div class="mu">Cash</div><div id="cash" style="font-weight:600">$0</div><div class="mu" id="rp"></div><div class="mu" id="pay"></div><div class="mu" id="mood"></div></div>
   </header>
   <nav><button id="t-m" class="on" title="Market"><svg class="ico"><use href="#i-tm"/></svg><span>Market</span></button><button id="t-f" title="Funds"><svg class="ico"><use href="#i-tf"/></svg><span>Funds</span></button><button id="t-c" title="Crypto"><svg class="ico"><use href="#i-tc"/></svg><span>Crypto</span></button><button id="t-s" title="Startups"><svg class="ico"><use href="#i-ts"/></svg><span>Startups</span></button><button id="t-k" title="Contracts"><svg class="ico"><use href="#i-tk"/></svg><span>Contracts</span></button><button id="t-u" title="Upgrades"><svg class="ico"><use href="#i-tu"/></svg><span>Upgrades</span></button><button id="t-p" title="Stats"><svg class="ico"><use href="#i-tp"/></svg><span>Stats</span></button><button id="t-l" title="Goals"><svg class="ico"><use href="#i-tl"/></svg><span>Goals</span></button></nav>
@@ -596,7 +610,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.1</div>
+<div id="title"><div id="ver">v1.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -629,7 +643,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div id="tslots" class="tcol hide"><div class="shead"><button class="btn" id="tb"><svg class="ico"><use href="#i-back"/></svg><span>Back</span></button><h2>Save slots</h2></div><div id="slist"></div><div class="mu" id="smsg"></div></div>
 </div>
 <div id="dlg" class="hide"><div class="card">
-  <div class="up-row"><div class="dhead"><div class="dname" id="dt"></div><div class="dpr"><span class="nw" id="dp"></span><span id="di"></span></div></div><button class="btn" id="dx">✕</button></div>
+  <div class="up-row"><div class="dhead"><div class="dname" id="dt"></div><div class="dpr"><span class="nw" id="dp"></span><span id="di"></span></div></div><div class="dnav"><button class="btn" id="dprev" title="Previous stock (←)" aria-label="Previous stock">‹</button><span class="mu" id="dpos"></span><button class="btn" id="dnext" title="Next stock (→)" aria-label="Next stock">›</button><button class="btn" id="dx" title="Close (Esc)" aria-label="Close">✕</button></div></div>
   <div class="rng" id="rng"><button class="btn" data-r="60">1m</button><button class="btn" data-r="300">5m</button><button class="btn" data-r="900">15m</button><button class="btn" data-r="3600">1h</button><button class="btn" data-r="0">All</button></div>
   <div class="dstats" id="dcap"></div>
   <div id="dprop"></div>
@@ -783,7 +797,7 @@ sigChips=x=>'',
 capChips=x=>{const o=ownShort(x),c=(l,v)=>`<span class="cc"><i>${l}</i>${v}</span>`;
   return c('Mkt cap',fmtMc(mcapOf(x)))+c('Shares',maxSh(x).toLocaleString())+sigChips(x)+(o?`<span class="cc own${o.maj?' maj':''}">${o.maj?'👑 Majority owner':'You own'} <b>${o.t}</b></span>`:'')},
 heldN=x=>(S.hold[x[0]]||{}).n||0,ownPct=x=>Math.min(100,heldN(x)/maxSh(x)*100),ownTxt=x=>{const n=heldN(x);return n*2>maxSh(x)?'👑 Majority owner ('+ownPct(x).toFixed(1)+'%) · you control this company':n>0?'You own '+(ownPct(x)<.1?'<0.1':ownPct(x).toFixed(1))+'% of the company':''};
-const fmtMc=v=>v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(0)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v).toLocaleString();
+const fmtMc=v=>v>=1e15?'$'+(v/1e15).toFixed(2)+'Qa':v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(0)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v).toLocaleString();
 const isF=x=>x[7]!==undefined,isOpen=x=>x[5]===0||!!S.unl[x[0]]||(S.mode==='live'&&!!(S.p[x[0]]||{}).live);
 const NST0=ST.length,NALL0=STOCKS.length,BASEK=new Set(Object.keys(SM));
 function regStock(d){const x=[d.s,d.n,START,d.vol,d.beta,0,d.cm];ST.push(x);STOCKS.push(x);SM[d.s]=x;MC[d.s]=d.mc;GR[d.s]=d.g;SEC[d.s]=d.sec} // a startup that went public becomes a normal stock
@@ -955,7 +969,15 @@ const UPM=Object.fromEntries(UPS.map(u=>[u.id,u.max]));
 // Research Point sources: net worth milestones, profit from sales (see sell), and one-time goals
 const NWM=[[2250,1],[2500,1],[3000,1],[3500,1],[4000,1],[5000,2],[6000,1],[7500,2],[1e4,2],[1.25e4,2],[1.5e4,3],[2e4,2],[2.5e4,3],[3.5e4,3],[5e4,4],[7.5e4,4],[1e5,5],[1.5e5,5],[2.5e5,6],[3.5e5,6],[5e5,8],[7.5e5,8],[1e6,10],[1.5e6,10],[2.5e6,12],[3.5e6,12],[5e6,15],[7.5e6,15],[1e7,20],[2.5e7,22],[5e7,25],[7.5e7,25],[1e8,30]].map(([t,r])=>[t,Math.max(2,r)]); // keep sorted ascending; every milestone pays at least 2 RP
 const $=s=>document.querySelector(s);
-const fmt=n=>n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e4?'$'+Math.round(n).toLocaleString():'$'+n.toFixed(2);
+// money formatter: $1,234 -> $1.23M -> $1.23B -> $1.23T -> Qa, Qi, Sx, Sp, Oc, No, Dc, then scientific
+const FMT_SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+const fmt=n=>{
+  if(!(n>=1e6))return n>=1e4?'$'+Math.round(n).toLocaleString():'$'+n.toFixed(2);
+  if(!isFinite(n))return '$∞';
+  let i=2,v=n/1e6;while(v>=1000&&i<11){v/=1000;i++}
+  if(v>=1000)return '$'+n.toExponential(2).replace('e+','e');
+  let t=v.toFixed(2);if(t==='1000.00'&&i<11){t='1.00';i++}
+  return '$'+t+FMT_SUF[i]};
 let S;
 const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60,music:true,mvol:35};
 let CFG={...CFG0},colUp='#2ecc71',colDn='#ff5c5c';
@@ -1415,7 +1437,7 @@ let QM='1';try{const m=localStorage.getItem('stockidle.qty');if(m&&/^(max|p\d{1,
 const qLabel=m=>{const o=QOPT.find(q=>q[0]===m);return o?o[1]:(+m).toLocaleString()},
   qSel=()=>`<button class="btn qty" data-qty="1" title="How many shares each Buy / Sell tap trades" aria-label="Trade size" aria-haspopup="true">${qLabel(QM)}<i>▾</i></button>`,
   actsHTML=()=>`<button class="btn" data-a="buy">Buy</button>${qSel()}<button class="btn" data-a="sell">Sell</button>`,
-  nk=n=>n<1e4?n.toLocaleString():n<1e6?+(n/1e3).toFixed(n<1e5?1:0)+'k':n<1e9?+(n/1e6).toFixed(n<1e7?2:1)+'M':+(n/1e9).toFixed(2)+'B',
+  nk=n=>n<1e4?n.toLocaleString():n<1e6?+(n/1e3).toFixed(n<1e5?1:0)+'k':n<1e9?+(n/1e6).toFixed(n<1e7?2:1)+'M':n<1e12?+(n/1e9).toFixed(2)+'B':n<1e15?+(n/1e12).toFixed(2)+'T':+(n/1e15).toFixed(2)+'Qa',
   qtyFor=(m,avail)=>{if(avail<1)return 0;if(m==='max')return avail;if(m[0]==='p')return Math.max(1,Math.floor(avail*(+m.slice(1))/100));return Math.min(+m,avail)},
   buyQ=s=>qtyFor(QM,maxBuy(s)),sellQ=s=>qtyFor(QM,(S.hold[s]||{}).n||0);
 function setQM(m){QM=m;try{localStorage.setItem('stockidle.qty',m)}catch(e){}document.querySelectorAll('.qty').forEach(e=>e.innerHTML=qLabel(QM)+'<i>▾</i>');draw()}
@@ -1473,7 +1495,7 @@ function sell(s,q,silent){const h=S.hold[s];if(!h)return;
 let cur=null,dpts=[],dts=[],rng=0,lrng=0;const LR=[7,30,90,365,0],LL=['1W','1M','3M','1Y','All'],CL=['1m','5m','15m','1h','All'],lhOn=s=>isLive()&&!!HD[s];
 const spanTxt=s=>{const d=Math.round(s/86400);return d<45?d+'d':d<330?Math.round(d/30.4)+'mo':(+(d/365.25).toFixed(1))+'y'},dayTxt=t=>new Date(t*1000).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
 const fmtT=t=>{t=Math.round(t);const h=t/3600|0,m=(t%3600)/60|0;return h?h+'h '+m+'m':m?m+'m '+(t%60)+'s':t+'s'};
-function openD(s){if(!cur)sfx('pop');cur=s;$('#dlg').classList.remove('hide');drawD()}
+function openD(s){if(!cur)sfx('pop');cur=s;$('#dlg').classList.remove('hide');drawD();dNavUi()}
 function closeD(){if(cur)sfx('close');cur=null;$('#dlg').classList.add('hide')}
 function series(o,s){
   let p,t;
@@ -1510,6 +1532,40 @@ function drawD(){
   g.addEventListener('pointerleave',()=>{drawD.hold=false;drawD()});})();
 $('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg'||e.target.id==='dx')closeD()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(qAnchor){closeQ();return}closeD()}});
+// ---- QoL: previous/next stock in the detail dialog, swipe, keyboard shortcuts ----
+// The list follows what the player sees: same tab, same filter and sort, locked rows skipped.
+function dNavList(){
+  const row=cur&&document.querySelector('.row[data-s="'+cur+'"]');if(!row)return [];
+  const box=row.closest('#market,#funds,#crypto');if(!box)return [];
+  const all=[...box.querySelectorAll('.row[data-s]')].filter(r=>!r.classList.contains('lock')&&!(S.priv&&S.priv[r.dataset.s]))
+    .map((r,i)=>({s:r.dataset.s,i,o:parseInt(r.style.order)||0,v:r.style.display!=='none'}));
+  let l=all.filter(x=>x.v);if(!l.some(x=>x.s===cur))l=all; // opened from Stats while hidden by a filter: use the whole tab
+  return l.sort((a,b)=>a.o-b.o||a.i-b.i)}
+function dNavUi(){const l=dNavList(),i=l.findIndex(x=>x.s===cur),ok=l.length>1&&i>=0;
+  $('#dprev').disabled=$('#dnext').disabled=!ok;$('#dpos').textContent=i>=0?(i+1)+' / '+l.length:''}
+function dNav(d){if(!cur)return;const l=dNavList(),i=l.findIndex(x=>x.s===cur);if(l.length<2||i<0)return;
+  if(qAnchor)closeQ();drawD.hold=false;openD(l[(i+d+l.length)%l.length].s);
+  const c=$('#dlg .card');c.scrollTop=0;c.classList.remove('sl','sr');void c.offsetWidth;c.classList.add(d>0?'sl':'sr')}
+$('#dprev').onclick=()=>dNav(-1);$('#dnext').onclick=()=>dNav(1);
+(()=>{const c=$('#dlg .card');let x0=0,y0=0,t0=0,ok=false; // swipe left = next, swipe right = previous (not on the chart, which inspects on touch)
+  c.addEventListener('touchstart',e=>{const t=e.touches[0];ok=e.touches.length===1&&!e.target.closest('#dgw,input,select,textarea,.dd,#qmenu');x0=t.clientX;y0=t.clientY;t0=Date.now()},{passive:true});
+  c.addEventListener('touchend',e=>{if(!ok)return;ok=false;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(Date.now()-t0<700&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.6)dNav(dx<0?1:-1)},{passive:true});
+  c.addEventListener('touchcancel',()=>{ok=false},{passive:true})})();
+// Keyboard: 1-8 tabs, / search, and in the stock dialog B buy, S sell, ←/→ previous/next stock
+const TABKEYS=['m','f','c','s','k','u','p','l'];
+document.addEventListener('keydown',e=>{
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||!S)return;
+  const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
+  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#cdlg:not(.hide)'))return;
+  const k=e.key;
+  if(cur){
+    if(k==='ArrowLeft'||k==='ArrowRight'){e.preventDefault();dNav(k==='ArrowRight'?1:-1);return}
+    const a=k==='b'||k==='B'?'buy':k==='s'||k==='S'?'sell':'';
+    if(a){const bt=document.querySelector('#dacts [data-a="'+a+'"]');if(bt&&!bt.disabled){e.preventDefault();bt.click()}}
+    return}
+  if(k==='/'){e.preventDefault();tab('m');const si=$('#msearch');if(si){si.focus();si.select()}return}
+  if(/^[1-8]$/.test(k)){const id=TABKEYS[+k-1],b=$('#t-'+id);if(b&&b.offsetParent!==null){e.preventDefault();tab(id)}}});
 function build(){
   $('#dacts').innerHTML=actsHTML();
   const srow=x=>`<div class="row" data-s="${x[0]}" data-sec="${SEC[x[0]]||''}">
