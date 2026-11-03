@@ -101,6 +101,10 @@ html[data-ns] .sp{display:none}
 #set{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
 #set.hide{display:none}
 .srow{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--line)}
+.ssec{display:flex;align-items:center;gap:.45rem;margin:.55rem 0 .1rem;padding:.3rem .5rem;border-radius:.5rem;background:color-mix(in srgb,var(--ac) 14%,var(--card));color:var(--ac);font-weight:700;font-size:.85em;letter-spacing:.04em;text-transform:uppercase}
+.ssec .ico{width:1.15em;height:1.15em}.ssec.dn{background:color-mix(in srgb,var(--dn) 14%,var(--card));color:var(--dn)}
+.srow>span{display:flex;align-items:center;gap:.5rem;min-width:0}
+.srow .si{width:1.35rem;height:1.35rem;flex:none;padding:.2rem;box-sizing:content-box;border-radius:.45rem;background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
 .seg{display:flex;gap:.25rem}.seg .btn,.srow .tg{padding:.2rem .6rem}
 .srow input[type=range]{width:45%;accent-color:var(--ac)}
 .btn.warn{border-color:var(--dn);color:var(--dn)}
@@ -574,6 +578,21 @@ main:has(#market:not(.hide)){overflow:hidden}
 <path d="M10.5 15.5a7.6 7.6 0 0 1 6-3" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round"/>
 </symbol>
 <symbol id="i-shield" viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" d="M12 2.2 L20 5.2 V11.4 C20 16.2 16.7 19.9 12 21.8 C7.3 19.9 4 16.2 4 11.4 V5.2 Z"/><path fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8.4 11.8 L11 14.4 L15.8 9.2"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 2-1.8 0-1.2-1-1.5-1-2.7 0-1 .8-1.8 1.9-1.8H17a3.5 3.5 0 0 0 3.5-3.5C20.5 6.7 16.700 3.500 12 3.500Z"/><circle cx="7.500" cy="11" r="1" fill="currentColor"/><circle cx="10" cy="7.500" r="1" fill="currentColor"/><circle cx="14.500" cy="7.500" r="1" fill="currentColor"/></g></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.500v2.200M12 19.300v2.200M2.500 12h2.200M19.300 12h2.200M5.300 5.300l1.500 1.500M17.200 17.200l1.500 1.500M5.300 18.700l1.500-1.500M17.200 6.800l1.500-1.500"/></g></symbol>
+<symbol id="i-textsize" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.500 18 8 6l4.500 12M5 14h6"/><path d="M14.500 18l3-8 3 8M15.600 15.500h3.800"/></g></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12Z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.500V11a6 6 0 0 1 12 0v5.500l1.500 1.500h-15L6 16.500Z"/><path d="M10 20.500a2 2 0 0 0 4 0"/></g></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.500h16v10H11l-4.500 3.500v-3.500H4Z"/><path d="M8 9.500h8M8 12.500h5"/></g></symbol>
+<symbol id="i-trend" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 3.500L21 6.500"/><path d="M15.500 6.500H21V12"/></g></symbol>
+<symbol id="i-speaker" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.500h3.500L12 5.500v13L7.500 14.500H4Z" fill="currentColor" fill-opacity=".25"/><path d="M15.500 9a4 4 0 0 1 0 6M18 6.500a7.500 7.500 0 0 1 0 11"/></g></symbol>
+<symbol id="i-mute" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.500h3.500L12 5.500v13L7.500 14.500H4Z" fill="currentColor" fill-opacity=".25"/><path d="M16 9.500l5 5M21 9.500l-5 5"/></g></symbol>
+<symbol id="i-volume" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.500h3.500L12 5.500v13L7.500 14.500H4Z"/><path d="M15.500 10a3 3 0 0 1 0 4"/></g></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.500V6l10-2v11.500"/><circle cx="6.500" cy="17.500" r="2.500" fill="currentColor" fill-opacity=".25"/><circle cx="16.500" cy="15.500" r="2.500" fill="currentColor" fill-opacity=".25"/></g></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.500a4.500 4.500 0 0 1-.6-8.960A6 6 0 0 1 17.800 10.200 4.200 4.200 0 0 1 17 18.500Z" fill="currentColor" fill-opacity=".2"/></g></symbol>
+<symbol id="i-monitor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.500" width="18" height="12" rx="2"/><path d="M8.500 20h7M12 16.500V20"/></g></symbol>
+<symbol id="i-warning" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.500 21.500 20h-19Z" fill="currentColor" fill-opacity=".2"/><path d="M12 10v4.500M12 17.300v.2"/></g></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.500 12a7.500 7.500 0 1 0 2.300-5.400"/><path d="M4.500 4.500v4.200h4.200"/></g></symbol>
 <symbol id="i-lock" viewBox="0 0 32 32">
 <circle cx="16" cy="20" r="10.2" fill="#3a4350"/><circle cx="16" cy="20" r="7.6" fill="#2a313c" stroke="#556070" stroke-width=".9"/>
 <rect x="11.6" y="19.2" width="8.8" height="6.4" rx="1.6" fill="#8b97a6"/>
@@ -617,7 +636,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.2.3</div>
+<div id="title"><div id="ver">v1.2.4</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -662,18 +681,23 @@ main:has(#market:not(.hide)){overflow:hidden}
 </div></div>
 <div id="set" class="hide"><div class="card">
   <div class="up-row"><b class="ahead"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></b><button class="btn" id="sx">✕</button></div>
+  <div class="ssec "><svg class="ico"><use href="#i-people"/></svg>Account</div>
   <div id="cloudbox"></div>
-  <div class="srow"><span>Theme</span><div class="seg"><button class="btn" data-k="theme" data-v="dark">Dark</button><button class="btn" data-k="theme" data-v="light">Light</button></div></div>
-  <div class="srow"><span>UI size <b id="scv"></b></span><input type="range" id="sc" min="70" max="130" step="5"></div>
-  <div class="srow"><span>Colorblind-friendly colors</span><button class="btn tg" data-k="cb"></button></div>
-  <div class="srow"><span>Big event alerts and achievement pop-ups</span><button class="btn tg" data-k="alerts"></button></div>
-  <div class="srow"><span>Other notifications (RP, news, crashes)</span><button class="btn tg" data-k="toasts"></button></div>
-  <div class="srow"><span>Mini charts in stock list</span><button class="btn tg" data-k="spark"></button></div>
-  <div class="srow"><span>Sound effects</span><button class="btn tg" data-k="sound"></button></div>
-  <div class="srow"><span>Volume <b id="volv"></b></span><input type="range" id="vol" min="0" max="100" step="5"></div>
-  <div class="srow"><span>Background music</span><button class="btn tg" data-k="music"></button></div>
-  <div class="srow"><span>Music volume <b id="mvolv"></b></span><input type="range" id="mvol" min="0" max="100" step="5"></div>
-  <div class="srow"><button class="btn" id="sreset">Reset settings</button><button class="btn warn" id="sdel">Delete all saves</button></div>
+  <div class="ssec "><svg class="ico"><use href="#i-monitor"/></svg>Display</div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-palette"/></svg><span>Theme</span></span><div class="seg"><button class="btn" data-k="theme" data-v="dark">Dark</button><button class="btn" data-k="theme" data-v="light">Light</button></div></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-textsize"/></svg><span>UI size <b id="scv"></b></span></span><input type="range" id="sc" min="70" max="130" step="5"></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-eye"/></svg><span>Colorblind-friendly colors</span></span><button class="btn tg" data-k="cb"></button></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-trend"/></svg><span>Mini charts in stock list</span></span><button class="btn tg" data-k="spark"></button></div>
+  <div class="ssec "><svg class="ico"><use href="#i-bell"/></svg>Notifications</div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-bell"/></svg><span>Big event alerts and achievement pop-ups</span></span><button class="btn tg" data-k="alerts"></button></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-msg"/></svg><span>Other notifications (RP, news, crashes)</span></span><button class="btn tg" data-k="toasts"></button></div>
+  <div class="ssec "><svg class="ico"><use href="#i-speaker"/></svg>Sound &amp; Music</div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-speaker"/></svg><span>Sound effects</span></span><button class="btn tg" data-k="sound"></button></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-volume"/></svg><span>Volume <b id="volv"></b></span></span><input type="range" id="vol" min="0" max="100" step="5"></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-music"/></svg><span>Background music</span></span><button class="btn tg" data-k="music"></button></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-volume"/></svg><span>Music volume <b id="mvolv"></b></span></span><input type="range" id="mvol" min="0" max="100" step="5"></div>
+  <div class="ssec dn"><svg class="ico"><use href="#i-warning"/></svg>Data &amp; Reset</div>
+  <div class="srow"><button class="btn" id="sreset"><svg class="ico"><use href="#i-reset"/></svg> Reset settings</button><button class="btn warn" id="sdel"><svg class="ico"><use href="#i-trash"/></svg> Delete all saves</button></div>
   <div class="mu">Settings are saved on this device and apply to every save slot.</div>
 </div></div>
 <div id="ach" class="hide"><div class="card">
@@ -2112,8 +2136,10 @@ function renderSet(){renderCloud();
   document.querySelectorAll('#set [data-k]').forEach(b=>{const k=b.dataset.k;
     if(b.dataset.v!==undefined)b.classList.toggle('on',CFG[k]===b.dataset.v);
     else{b.textContent=CFG[k]?'On':'Off';b.classList.toggle('on',!!CFG[k])}});
+  {const u=document.querySelector('#set .srow [data-k=sound]');if(u)u.closest('.srow').querySelector('.si use').setAttribute('href',CFG.sound?'#i-speaker':'#i-mute');const th=document.querySelector('#set [data-k=theme]');if(th)th.closest('.srow').querySelector('.si use').setAttribute('href',CFG.theme==='light'?'#i-sun':'#i-palette')}
   $('#sc').value=CFG.scale;$('#scv').textContent=CFG.scale+'%';$('#vol').value=CFG.vol;$('#volv').textContent=CFG.vol+'%';$('#mvol').value=CFG.mvol;$('#mvolv').textContent=CFG.mvol+'%'}
 function cfgChanged(){wr(CFGK,JSON.stringify(CFG));try{MUSIC.update()}catch(e){}applyCfg();renderSet();if(S)draw()}
+const SDELH='<svg class="ico"><use href="#i-trash"/></svg> Delete all saves';
 function openSet(){renderSet();$('#set').classList.remove('hide')}
 function closeSet(){$('#set').classList.add('hide')}
 $('#gear').onclick=$('#tset').onclick=openSet;
@@ -2130,8 +2156,8 @@ $('#set').addEventListener('click',e=>{
   if(b.dataset.k){CFG[b.dataset.k]=b.dataset.v!==undefined?b.dataset.v:!CFG[b.dataset.k];cfgChanged();if(b.dataset.k==='sound'&&CFG.sound)sfx('click')}
   else if(b.id==='sreset'){CFG={...CFG0};cfgChanged()}
   else if(b.id==='sdel'){
-    if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to erase ALL saves';clearTimeout(b.t);b.t=setTimeout(()=>{delete b.dataset.arm;b.textContent='Delete all saves'},3000);return}
-    clearTimeout(b.t);delete b.dataset.arm;b.textContent='Delete all saves';
+    if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to erase ALL saves';clearTimeout(b.t);b.t=setTimeout(()=>{delete b.dataset.arm;b.innerHTML=SDELH},3000);return}
+    clearTimeout(b.t);delete b.dataset.arm;b.innerHTML=SDELH;
     for(let n=1;n<=SLOTS;n++){rm(SK(n));cloudDel(n)}sfx('delete');
     clearTimeout(loop.t);slot=1;S=fresh();build();draw();closeSet();closeD();tab(true);showTitle()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
