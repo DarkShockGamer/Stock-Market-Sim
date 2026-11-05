@@ -148,6 +148,13 @@ html[data-ns] .sp{display:none}
 #ach.hide{display:none}
 #wb{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:36;backdrop-filter:blur(3px)}
 #wb.hide{display:none}
+#idle{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:90;backdrop-filter:blur(5px)}
+#idle.hide{display:none}
+.idlec{max-width:24rem;text-align:center;align-items:stretch;gap:.7rem;padding:1.2rem}
+.idleic{width:3.4rem;height:3.4rem;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac) 18%,transparent);border:1px solid var(--ac);color:var(--ac)}
+.idleic svg{width:1.6rem;height:1.6rem;fill:currentColor}
+.idleh{font-size:1.35em;font-weight:700}
+.idlep{opacity:.8;line-height:1.45}
 .wbc{max-width:23rem;text-align:center;align-items:stretch;gap:.6rem;padding:1rem}
 .wbh{font-size:1.35em;font-weight:700}
 .wbamt{font-size:2.3em;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
@@ -744,6 +751,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div id="alist"></div>
 </div></div>
 <div id="wb" class="hide" role="dialog" aria-modal="true" aria-label="Welcome back"><div class="card wbc"><div id="wbb"></div><button class="btn" id="wbok" style="background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700;min-width:10rem;align-self:center">Continue</button></div></div>
+<div id="idle" class="hide" role="alertdialog" aria-modal="true" aria-labelledby="idleh" aria-describedby="idlep"><div class="card idlec"><div class="idleic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1.2"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.2"/></svg></div><div class="idleh" id="idleh">Game paused</div><div class="idlep" id="idlep">You haven't touched the game for an hour, so it was paused to keep it from running in the background. Your progress is saved and nothing happens while it's paused.</div><button class="btn" id="idleok" style="background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700;min-width:10rem;align-self:center">Continue</button></div></div>
 <div id="soc" class="hide"><div class="admc socc">
   <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-msg"/></svg></span><div><b>Social</b><span class="mu">Friends and messages</span></div></div><button class="btn" id="socx" aria-label="Close">✕</button></div>
   <div class="admbody" id="socbody"></div>
@@ -1093,6 +1101,7 @@ const SFX=(()=>{let ac=null,mg=null;const last={};
     if(delay>0)setTimeout(()=>{try{D[n]()}catch(e){}},delay*1000);else{try{D[n]()}catch(e){}}};f.unlock=ctx;return f})();
 // ---- Music: a quiet, generative lo-fi loop (soft pads, a slow bass and sparse electric-piano notes through an echo). Synthesized, no audio files. ----
 // Progressions are shuffled so it never loops the same way twice. It leans warm and major while you are up, and a little more mellow and minor while you are down.
+var IDLE={last:Date.now(),on:false};
 const MUSIC=(()=>{let ac=null,mast=null,fx=null,timer=null,on=false,nextT=0,bar=0,prog=null,pi=0,lastKind='';
   const M7=[0,4,7,11],m7=[0,3,7,10],D7=[0,4,7,10];
   const UP=[[[0,M7],[9,m7],[5,M7],[7,D7]],[[2,m7],[7,D7],[0,M7],[9,m7]],[[5,M7],[4,m7],[2,m7],[0,M7]]];
@@ -1132,7 +1141,7 @@ const MUSIC=(()=>{let ac=null,mast=null,fx=null,timer=null,on=false,nextT=0,bar=
     hide(h){if(!ac||!on)return;if(h)ac.suspend().catch(()=>{});else ac.resume().catch(()=>{})}};
   let started=false;api.arm=()=>{started=true;api.start()};return api})();
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{try{MUSIC.arm()}catch(e){}},{once:true,capture:true}));
-document.addEventListener('visibilitychange',()=>{try{MUSIC.hide(document.hidden)}catch(e){}});
+document.addEventListener('visibilitychange',()=>{try{MUSIC.hide(document.hidden||IDLE.on)}catch(e){}});
 const sfx=SFX;
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{try{SFX.unlock()}catch(e){}},{once:true,capture:true}));
 // generic click for menus, tabs, chips, settings (trades, upgrades and slots have their own sounds)
@@ -1167,12 +1176,12 @@ function bgDraw(t){const{cx,w,h,dpr,L}=BG;if(!cx)return;cx.setTransform(dpr,0,0,
     cx.save();cx.lineJoin='round';cx.lineCap='round';cx.strokeStyle=rgb(l.sa*.8);cx.lineWidth=l.lw+.5;cx.stroke();cx.restore();
     cx.lineTo(lp[0],h);cx.lineTo(pts[0][0],h);cx.closePath();
     const g=cx.createLinearGradient(0,y0-A,0,h);g.addColorStop(0,rgb(l.fa));g.addColorStop(1,rgb(0));cx.fillStyle=g;cx.fill()})}
-function bgFrame(now){if(!BG.on)return;if(document.hidden||!live()){BG.on=false;return}
+function bgFrame(now){if(!BG.on)return;if(document.hidden||!live()||IDLE.on){BG.on=false;return}
   requestAnimationFrame(bgFrame);const dt=Math.min(.05,(now-BG.last)/1000||0);BG.last=now;BG.t0+=dt;
   let tg=0;try{tg=Math.max(0,Math.min(1,(S.start-nw())/(S.start*.15)))}catch(e){}BG.tint+=(tg-BG.tint)*Math.min(1,dt*.8);bgDraw(BG.t0)}
 function bgStart(){if(BG.on)return;if(BG.mo.matches){bgDraw(BG.t0);return}BG.on=true;BG.last=performance.now();requestAnimationFrame(bgFrame)}
 let bgRz;addEventListener('resize',()=>{clearTimeout(bgRz);bgRz=setTimeout(()=>{buildBg();if(!BG.on)bgDraw(BG.t0)},150)});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&live())bgStart()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&live()&&!IDLE.on)bgStart()});
 let NOTES={};
 function note(kind,title,body,o={}){if(kind!=='inf')sfx(kind==='dn'?'down':kind==='ach'?'ach':'up'); /* no sound for passive heads-up/news notices */
   if(!CFG.alerts)return null;const el=document.createElement('div');el.className='note '+kind;
@@ -1249,7 +1258,7 @@ async function lvFetch(){if(!isLive())return;
   const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]),held=Object.keys(S.hold).filter(k=>!NOLIVE.has(k));
   try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}
   lvHist()}
-function lvStart(){clearInterval(lvT);if(!isLive())return;LH.pending=-1;lvFetch();lvT=setInterval(()=>{if(live()&&isLive())lvFetch()},8000)}
+function lvStart(){clearInterval(lvT);if(!isLive())return;LH.pending=-1;lvFetch();lvT=setInterval(()=>{if(live()&&isLive()&&!IDLE.on)lvFetch()},8000)}
 function lvStatus(){
   if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
   if(LV.err==='badkey')return '⚠ Finnhub rejected the API key (check FINNHUB_API_KEY)';
@@ -1631,7 +1640,7 @@ const TABKEYS=['m','f','c','s','k','u','p','l'];
 document.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||!S)return;
   const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
-  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#soc:not(.hide),#cdlg:not(.hide),#wb:not(.hide)'))return;
+  if(qAnchor||document.querySelector('#title:not(.hide),#set:not(.hide),#ach:not(.hide),#adm:not(.hide),#soc:not(.hide),#cdlg:not(.hide),#wb:not(.hide),#idle:not(.hide)'))return;
   const k=e.key;
   if(cur){
     if(k==='ArrowLeft'||k==='ArrowRight'){e.preventDefault();dNav(k==='ArrowRight'?1:-1);return}
@@ -1891,7 +1900,7 @@ function dlyCard(){const st=DLY.st,amt=st?st.amount:200,dm=Math.max(0,Math.ceil(
 function dlyDraw(el){if(!DLY.el){DLY.el=document.createElement('div');DLY.el.id='dlybox'}
   const h=dlyCard();if(h!==DLY.sig){DLY.sig=h;DLY.el.innerHTML=h}el.prepend(DLY.el)} // same node every time, so a click is never lost to a redraw
 $('#live').addEventListener('click',e=>{if(e.target.closest('[data-dly]'))dlyClaim()});
-setInterval(()=>{if(!live()||!isLive()||!CLD.tok)return;
+setInterval(()=>{if(!live()||!isLive()||!CLD.tok||IDLE.on)return;
   if(DLY.st&&!DLY.busy&&DLY.st.next<=dlyNow()&&!DLY.ready){DLY.ready=true;note('up','🎁 Daily bonus ready','Open the Live tab to claim $'+DLY.st.amount,{ttl:12000})}
   goalFlush();if(Date.now()-DLY.chk>300e3){dlyRefresh();goalRefresh()}},15000);
 // ---- Goal rewards (Live mode): winning a challenge, a daily win streak and net worth milestones pay cash. ----
@@ -2168,7 +2177,7 @@ $('#soc').addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing)retur
   else if(e.target.id==='socf'){e.preventDefault();$('#soc [data-sa=add]').click()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#soc').classList.contains('hide'))closeSoc()});
 // light background check so the Social menu entry can show a badge for new messages and requests
-setInterval(()=>{if(CLD.tok&&!document.hidden&&$('#soc').classList.contains('hide'))socLoad()},45000);
+setInterval(()=>{if(CLD.tok&&!IDLE.on&&!document.hidden&&$('#soc').classList.contains('hide'))socLoad()},45000);
 async function cloudHide(){const v=!CLD.hide;try{const r=await capi('PUT','profile',{hide:v});if(r.j.ok){CLD.hide=v;CLD.sig='';renderCloud();loadLB(true)}else toast('Could not update that setting',1)}catch(e){}}
 $('#cloudbox').addEventListener('click',async e=>{const b=e.target.closest('button[data-cl]');if(!b)return;const a=b.dataset.cl;
   if(a==='out'){cloudOut();toast('Signed out. Your saves are still on this device.',1)}
@@ -2250,7 +2259,7 @@ async function cloudInit(){
   try{const r=await fetch('/api/config',{cache:'no-store'}),j=await r.json();CLD.cfg=j&&j.cloud&&j.clientId?j:null}catch(e){CLD.cfg=null}
   cloudUi();if(CLD.cfg&&CLD.tok)cloudSync(false);
   setInterval(wipePoll,20000);
-  setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
+  setInterval(()=>{if(CLD.tok&&CLD.auto&&live()&&!IDLE.on&&Date.now()-CLD.lastPush>=60e3){CLD.lastPush=Date.now();save();cloudPushCur()}},15000)}
 function tab(v){v=v===true?'m':v;const ids={m:'#market',f:'#funds',c:'#crypto',k:'#contracts',s:'#startups',u:'#ups',p:'#stats',l:'#live'};
   for(const k in ids){$(ids[k]).classList.toggle('hide',k!==v);$('#t-'+k).classList.toggle('on',k===v)}
   if(v==='m'){RESORT=true;applyFilter()}
@@ -2363,7 +2372,7 @@ $('#wbok').onclick=wbClose;
 $('#wb').addEventListener('click',e=>{if(e.target.id==='wb')wbClose()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#wb').classList.contains('hide')){wbClose();e.stopPropagation()}},true);
 // heartbeat: tells the server this account is playing right now, so time spent playing is never counted as time away
-const offBeat=(keep)=>{if(!CLD.tok||!live()||isLive())return;
+const offBeat=(keep)=>{if(!CLD.tok||!live()||isLive()||IDLE.on)return;
   try{fetch('/api/offline/seen',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+CLD.tok},body:'{}',keepalive:!!keep,cache:'no-store'}).catch(()=>{})}catch(e){}};
 setInterval(()=>offBeat(false),60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')offBeat(true)});
@@ -2373,6 +2382,27 @@ function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
 async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb)}
+// Idle timeout: after 1 hour with no interaction the game pauses behind a screen, so nobody leaves it running all day.
+const IDLE_MS=60*60*1000;
+function idleTouch(){if(!IDLE.on)IDLE.last=Date.now()}
+['pointerdown','pointermove','keydown','wheel','touchstart','scroll'].forEach(ev=>addEventListener(ev,idleTouch,{capture:true,passive:true}));
+addEventListener('keydown',e=>{if(IDLE.on)e.stopPropagation()},true); // no shortcuts while paused (Enter/Space still press the focused Continue button)
+function idlePause(){
+  if(IDLE.on||!live())return;
+  IDLE.on=true;clearTimeout(loop.t);
+  try{save();cloudSoon()}catch(e){}
+  try{MUSIC.hide(true)}catch(e){}
+  $('#idle').classList.remove('hide');
+  setTimeout(()=>{const b=$('#idleok');if(b)b.focus()},50)}
+function idleResume(){
+  if(!IDLE.on)return;
+  IDLE.on=false;IDLE.last=Date.now();
+  $('#idle').classList.add('hide');
+  clearTimeout(loop.t);loop();bgStart();
+  try{MUSIC.hide(document.hidden)}catch(e){}
+  if(isLive())lvFetch()}
+$('#idleok').onclick=idleResume;
+setInterval(()=>{if(!IDLE.on&&live()&&Date.now()-IDLE.last>=IDLE_MS)idlePause()},15000);
 function showTitle(){
   $('#ts').textContent='';
   views(false);$('#title').classList.remove('hide');cloudUi()}
@@ -2380,9 +2410,9 @@ function showTitle(){
 let best=1,bl=-1;for(let n=1;n<=SLOTS;n++){const o=peek(n);if(o&&(o.last||0)>bl){bl=o.last||0;best=n}}
 load(best)}
 applyCfg();buildBg();build();draw();showTitle();cloudInit();
-setInterval(()=>{if(live())save()},5000);
+setInterval(()=>{if(live()&&!IDLE.on)save()},5000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&live()){save();cloudSoon()}});
 window.addEventListener('beforeunload',()=>{if(live())save()});
 </script>
 </body>
-</html>
+ </html>
