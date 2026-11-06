@@ -681,7 +681,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.3</div>
+<div id="title"><div id="ver">v1.3.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1865,7 +1865,7 @@ function lvChTick(){const I=S.p.IDX;if(!I||!I.live||!(I.p>0)||!LV.at)return;
     if(!r)r=C.cur[per]={k,t0:Date.now(),a0:n,b0:ix,a1:n,b1:ix,es:0,en:0};
     r.a1=n;r.b1=ix;r.es+=ex;r.en++})}
 const leftTxt=ms=>{const m=Math.max(0,Math.round(ms/60000)),d=m/1440|0,h=(m%1440)/60|0;return d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':(m%60)+'m'};
-// ---- Daily bonus (Live mode): $200 per real day. The server owns the timer and the amount (see cloud.js); this only displays it and credits grants. ----
+// ---- Daily bonus (Live mode): $500 per real day. The server owns the timer and the amount (see cloud.js); this only displays it and credits grants. ----
 const DLY={st:null,off:0,busy:false,err:'',ready:false,el:null,sig:'',chk:0};
 const dlyNow=()=>Date.now()+DLY.off; // server time, so changing this device's clock changes nothing
 function dlyDeposit(amt){const n0=nw();S.cash+=amt;S.start+=amt;S.max+=amt; // a deposit is not a trading gain: keep all-time gain and S&P challenge returns fair
@@ -1888,7 +1888,7 @@ async function dlyClaim(){if(!CLD.tok||DLY.busy||!isLive())return;DLY.busy=true;
     else toast('Could not claim right now, try again',1)}
   catch(e){if(e.message!=='expired')toast('Could not reach the server',1)}
   DLY.busy=false;if(isLive())drawLive()}
-function dlyCard(){const st=DLY.st,amt=st?st.amount:200,dm=Math.max(0,Math.ceil(((st?st.next:0)-dlyNow())/60000)),lt=(dm/60|0)+'h '+pad2(dm%60)+'m',date=new Date(dlyNow()).toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});let b;
+function dlyCard(){const st=DLY.st,amt=st?st.amount:500,dm=Math.max(0,Math.ceil(((st?st.next:0)-dlyNow())/60000)),lt=(dm/60|0)+'h '+pad2(dm%60)+'m',date=new Date(dlyNow()).toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});let b;
   if(!CLD.cfg)b='<div class="g-sub">The daily bonus needs cloud saves, which are not set up on this server.</div>';
   else if(!CLD.tok)b='<div class="g-sub">Sign in with Google (Settings) to claim $'+amt+' every 24 hours. Your account is what keeps the bonus cheat-proof.</div>';
   else if(!st)b='<div class="g-sub">'+esc(DLY.err||'Checking your daily bonus…')+'</div>';
