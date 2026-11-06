@@ -194,11 +194,11 @@ async function achRoute(req, res, p, m, ip) {
   return send(req, res, 200, { ok: true });
 }
 
-// ---------- daily bonus (Live mode): $200 every 24 real hours, per Google account ----------
+// ---------- daily bonus (Live mode): $500 every 24 real hours, per Google account ----------
 // Cheat resistance: the timer lives ONLY on the server, using the server's clock. The browser can neither choose the amount nor
 // the time. Claim state is stored outside users/<hash>/ so "Delete cloud data" cannot be used to reset the timer. A claim creates a
 // grant that stays "pending" until the browser acknowledges it, so a lost response never loses the money and never double-pays.
-const DAILY_AMT = 200, DAILY_MS = 24 * 3600e3, DAILY_DIR = path.join(DATA, 'daily');
+const DAILY_AMT = 500, DAILY_MS = 24 * 3600e3, DAILY_DIR = path.join(DATA, 'daily');
 const dailyFile = id => path.join(DAILY_DIR, id + '.json');
 function dailyGet(id) {
   const d = rj(dailyFile(id), null);
