@@ -97,6 +97,49 @@ svg.sp{width:4rem;height:1.4286rem;vertical-align:middle;margin-left:0.4286rem}
 html[data-theme=light]{--bg:#f2f4f8;--card:#fff;--line:#d8dde6;--tx:#1b2330;--mu:#5d6979;--up:#12a150;--dn:#d93636;--ac:#2f6fed}
 html[data-cb]{--up:#3aa0ff;--dn:#ff9f1c}
 html[data-theme=light][data-cb]{--up:#0b72d9;--dn:#d97706}
+/* ---- Seasonal themes: October = Halloween, December = Christmas (applySeason() sets html[data-season]). Only the surface colors change, so up/down colors and the colorblind mode keep working. ---- */
+html[data-season=halloween]{--bg:#130b17;--card:#1e1325;--line:#3b2548;--tx:#f1e6f5;--mu:#a592b0;--ac:#ff7a1a}
+html[data-season=halloween][data-theme=light]{--bg:#f7ecdd;--card:#fffaf1;--line:#e6d2b8;--tx:#2b1a12;--mu:#7b6250;--ac:#d95f08}
+html[data-season=christmas]{--bg:#0a1511;--card:#10211a;--line:#244a38;--tx:#eef6f0;--mu:#8fae9b;--ac:#e9bb4f}
+html[data-season=christmas][data-theme=light]{--bg:#eef5f0;--card:#fff;--line:#cadfd0;--tx:#13281c;--mu:#52705d;--ac:#c23b32}
+html[data-season=halloween] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(255,122,26,.26),transparent 70%),radial-gradient(ellipse 100% 42% at 50% 108%,rgba(140,60,205,.24),transparent 70%),var(--bg)}
+html[data-season=christmas] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(214,48,49,.22),transparent 70%),radial-gradient(ellipse 100% 42% at 50% 108%,rgba(46,160,90,.2),transparent 70%),var(--bg)}
+html[data-season][data-theme=light] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,color-mix(in srgb,var(--ac) 16%,transparent),transparent 70%),var(--bg)}
+html[data-season] header{position:relative}
+html[data-season=halloween] header{box-shadow:0 0 .9rem rgba(255,122,26,.2);border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
+html[data-season=halloween] header::before{content:"\1F578\FE0F";position:absolute;left:-.25rem;top:-.55rem;font-size:1.15rem;line-height:1;pointer-events:none}
+html[data-season=halloween] header::after{content:"\1F383";position:absolute;right:.35rem;top:-.7rem;font-size:1.15rem;line-height:1;pointer-events:none;filter:drop-shadow(0 0 .3rem rgba(255,122,26,.7))}
+html[data-season=christmas] header{border-color:color-mix(in srgb,var(--ac) 40%,var(--line))}
+html[data-season=christmas] header::before{content:"";position:absolute;left:.7rem;right:.7rem;top:-.3rem;height:.5rem;background:#fff;border-radius:.6rem .6rem 0 0;opacity:.92;pointer-events:none;box-shadow:0 0 .4rem rgba(255,255,255,.35)}
+html[data-season=christmas] header::after{content:"";position:absolute;left:.9rem;right:.9rem;bottom:-.32rem;height:.5rem;pointer-events:none;
+ background:radial-gradient(circle at 50% 50%,#ff4d4d 0 .2rem,transparent .26rem) 0 0/4.4rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#ffd24d 0 .2rem,transparent .26rem) 1.1rem 0/4.4rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#3ddc84 0 .2rem,transparent .26rem) 2.2rem 0/4.4rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#4cb0ff 0 .2rem,transparent .26rem) 3.3rem 0/4.4rem .5rem repeat-x;
+ filter:drop-shadow(0 0 .2rem rgba(255,255,255,.55));animation:xmasTw 2.6s ease-in-out infinite alternate}
+@keyframes xmasTw{from{opacity:.6}to{opacity:1}}
+/* more seasonal decoration: snow caps and lights (Christmas), pumpkins and jack-o'-lanterns (Halloween) on some of the UI boxes */
+html[data-season] #app .row,html[data-season] .card,html[data-season] .foot{position:relative}
+html[data-season=christmas] .card::before,html[data-season=christmas] .admc::before{content:"";position:absolute;left:.9rem;right:.9rem;top:-1px;height:.5rem;pointer-events:none;z-index:1;
+ background:linear-gradient(#fff,#fff) 0 0/100% .14rem no-repeat,radial-gradient(circle at 50% .1rem,#fff 0 .27rem,transparent .29rem) 0 0/1.3rem .55rem repeat-x,radial-gradient(circle at 50% .05rem,#fff 0 .2rem,transparent .22rem) .5rem 0/.9rem .5rem repeat-x;filter:drop-shadow(0 .05rem .05rem rgba(70,110,140,.45))}
+html[data-season=christmas] #app .row:nth-child(4n+1)::before{content:"";position:absolute;left:1rem;right:1rem;top:-.62rem;height:.85rem;pointer-events:none;z-index:1;
+ background:linear-gradient(#fff,#fff) 0 100%/100% .3rem no-repeat,radial-gradient(circle at 50% 100%,#fff 0 .55rem,transparent .57rem) 0 0/2.4rem .85rem repeat-x,radial-gradient(circle at 50% 100%,#fff 0 .38rem,transparent .4rem) 1.1rem 0/1.6rem .85rem repeat-x;filter:drop-shadow(0 -.03rem .05rem rgba(70,110,140,.4))}
+html[data-season=christmas] #app .row:nth-child(8n+5)::before{left:2rem;right:3rem}
+html[data-season=christmas] #app .row:nth-child(5n+3)::after,html[data-season=christmas] .foot::after{content:"";position:absolute;left:.9rem;right:.9rem;bottom:-.3rem;height:.5rem;pointer-events:none;z-index:1;
+ background:radial-gradient(circle at 50% 50%,#ff4d4d 0 .17rem,transparent .23rem) 0 0/3.6rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#ffd24d 0 .17rem,transparent .23rem) .9rem 0/3.6rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#3ddc84 0 .17rem,transparent .23rem) 1.8rem 0/3.6rem .5rem repeat-x,
+ radial-gradient(circle at 50% 50%,#4cb0ff 0 .17rem,transparent .23rem) 2.7rem 0/3.6rem .5rem repeat-x;
+ filter:drop-shadow(0 0 .18rem rgba(255,255,255,.55));animation:xmasTw 2.2s ease-in-out infinite alternate}
+html[data-season=christmas] .foot::after{bottom:auto;top:-.3rem;animation-delay:-1.1s}
+html[data-season=halloween] #app .row:nth-child(5n+2)::before,html[data-season=halloween] .card::before,html[data-season=halloween] .admc::before{content:"\1F383";position:absolute;right:.6rem;top:-.62rem;font-size:1.05rem;line-height:1;pointer-events:none;z-index:1;animation:jackGlow 2.8s ease-in-out infinite alternate}
+html[data-season=halloween] #app .row:nth-child(7n+4)::after{content:"\1F383";position:absolute;left:.7rem;bottom:-.55rem;font-size:.85rem;line-height:1;pointer-events:none;z-index:1;animation:jackGlow 3.4s ease-in-out infinite alternate-reverse}
+html[data-season=halloween] .foot::before{content:"\1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383";position:absolute;left:.4rem;right:.4rem;bottom:calc(100% - .5rem);height:1.25rem;overflow:hidden;white-space:nowrap;font-size:.95rem;line-height:1.25rem;letter-spacing:.35rem;pointer-events:none;z-index:1;animation:jackGlow 3s ease-in-out infinite alternate}
+@keyframes jackGlow{from{filter:drop-shadow(0 0 .12rem rgba(255,110,10,.35)) brightness(.88)}to{filter:drop-shadow(0 0 .45rem rgba(255,150,30,.95)) brightness(1.12)}}
+@media(prefers-reduced-motion:reduce){html[data-season] *::before,html[data-season] *::after{animation:none!important}}
+#sfx{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none}
+html[data-season] #sfx{display:block}
+@media(prefers-reduced-motion:reduce){html[data-season=christmas] header::after{animation:none}}
 html[data-ns] .sp{display:none}
 #set{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:.5714rem;z-index:35}
 #set.hide{display:none}
@@ -668,6 +711,7 @@ main:has(#market:not(.hide)){overflow:hidden}
 </svg>
 
 <div id="gbg" aria-hidden="true"></div>
+<canvas id="sfx" aria-hidden="true"></canvas>
 <div id="app">
   <header>
     <div><div class="mu">Net worth</div><div class="nw" id="nw">$0</div><div class="mu" id="chg"></div></div>
@@ -681,7 +725,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.3.1</div>
+<div id="title"><div id="ver">v1.3.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -730,6 +774,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div id="cloudbox"></div>
   <div class="ssec "><svg class="ico"><use href="#i-monitor"/></svg>Display</div>
   <div class="srow"><span><svg class="ico si"><use href="#i-palette"/></svg><span>Theme</span></span><div class="seg"><button class="btn" data-k="theme" data-v="dark">Dark</button><button class="btn" data-k="theme" data-v="light">Light</button></div></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-palette"/></svg><span>Seasonal themes (Halloween in Oct, Christmas in Dec)</span></span><button class="btn tg" data-k="season"></button></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-textsize"/></svg><span>UI size <b id="scv"></b></span></span><input type="range" id="sc" min="70" max="130" step="5"></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-eye"/></svg><span>Colorblind-friendly colors</span></span><button class="btn tg" data-k="cb"></button></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-trend"/></svg><span>Mini charts in stock list</span></span><button class="btn tg" data-k="spark"></button></div>
@@ -760,6 +805,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="admh"><div class="admt"><span class="admlogo"><svg class="ico"><use href="#i-shield"/></svg></span><div><b>Admin console</b><span class="mu" id="admrole"></span></div></div><button class="btn" id="admx" aria-label="Close">✕</button></div>
   <div class="admbody">
     <div class="admstats" id="admstats"></div>
+    <div class="admbox" id="admseason" style="position:static"><div><b>Theme preview</b><div class="adnote">Force a seasonal theme to test it. Only changes this browser. Auto follows the calendar month.</div></div><div class="seg" style="flex-wrap:wrap"><button class="btn" data-sf="">Auto</button><button class="btn" data-sf="halloween">🎃 Halloween</button><button class="btn" data-sf="christmas">🎄 Christmas</button><button class="btn" data-sf="none">None</button></div></div>
     <div class="admtabs" id="admtabs"><span class="admpill" id="admpill"></span><button class="on" data-t="players"><svg class="ico"><use href="#i-people"/></svg>Players</button><button data-t="admins"><svg class="ico"><use href="#i-unlock"/></svg>Admins</button><button data-t="log"><svg class="ico"><use href="#i-clock"/></svg>Activity</button></div>
     <div class="admmsg hide" id="admd"></div>
     <div class="admpanes">
@@ -1061,7 +1107,7 @@ const fmt=n=>{
   let t=v.toFixed(2);if(t==='1000.00'&&i<11){t='1.00';i++}
   return '$'+t+FMT_SUF[i]};
 let S;
-const CFGK='stockidle.settings',CFG0={theme:'dark',scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60,music:true,mvol:35};
+const CFGK='stockidle.settings',CFG0={theme:'dark',season:true,scale:100,cb:false,toasts:true,alerts:true,spark:true,sound:true,vol:60,music:true,mvol:35};
 let CFG={...CFG0},colUp='#2ecc71',colDn='#ff5c5c';
 try{Object.assign(CFG,JSON.parse(rd(CFGK)))}catch(e){}
 // ---- Sound: everything is synthesized with Web Audio, so there are no audio files to host ----
@@ -1190,7 +1236,54 @@ function note(kind,title,body,o={}){if(kind!=='inf')sfx(kind==='dn'?'down':kind=
   const box=$('#notes');box.appendChild(el);while(box.children.length>4)box.firstChild.remove();
   if(o.ttl)setTimeout(()=>el.remove(),o.ttl);return el}
 function clearNotes(){NOTES={};$('#notes').innerHTML=''}
-function applyCfg(){const h=document.documentElement;h.dataset.theme=CFG.theme;
+// ---- Seasonal themes: October = Halloween, December = Christmas. Retints the UI (CSS above), swaps the tab icon and floats a light particle layer over the page.
+// Add ?season=halloween, ?season=christmas or ?season=none to the page address to preview one, or use Admin console > Theme preview (saved in this browser only).
+const SEAS={name:'',cv:null,cx:null,P:[],on:false,last:0,t:0,w:0,h:0,dpr:1,ico:null,mo:matchMedia('(prefers-reduced-motion:reduce)')};
+function seasonOverride(){try{const q=new URLSearchParams(location.search).get('season');if(q==='halloween'||q==='christmas'||q==='none')return q}catch(e){}const f=rd('stockidle.seasonforce');return f==='halloween'||f==='christmas'||f==='none'?f:''}
+function seasonNow(){const o=seasonOverride();if(o)return o==='none'?'':o;if(!CFG.season)return '';const m=new Date().getMonth();return m===9?'halloween':m===11?'christmas':''}
+function seasonBuild(){const cv=SEAS.cv,w=innerWidth,h=innerHeight,d=Math.min(2,devicePixelRatio||1);SEAS.w=w;SEAS.h=h;SEAS.dpr=d;cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  const R=Math.random,P=[];
+  if(SEAS.name==='christmas'){const n=Math.max(28,Math.min(80,Math.round(w/16)));
+    for(let i=0;i<n;i++)P.push({k:'dot',x:R()*w,y:R()*h,r:1+R()*2.4,vy:16+R()*34,ph:R()*6.28,sw:6+R()*18,a:.35+R()*.5});
+    for(let i=0;i<6;i++)P.push({k:'g',g:'\u2744\uFE0F',x:R()*w,y:R()*h,sz:13+R()*10,vy:12+R()*16,ph:R()*6.28,sw:10+R()*16,a:.5})}
+  else if(SEAS.name==='halloween'){const n=Math.max(16,Math.min(40,Math.round(w/28)));
+    for(let i=0;i<n;i++)P.push({k:'ember',x:R()*w,y:R()*h,r:.9+R()*1.8,vy:-(14+R()*28),ph:R()*6.28,sw:6+R()*14,a:.3+R()*.5});
+    const gl=['\uD83E\uDD87','\uD83E\uDD87','\uD83E\uDD87','\uD83E\uDD87','\uD83D\uDC7B','\uD83C\uDF83','\uD83D\uDD77\uFE0F','\uD83C\uDF83','\uD83C\uDF83'];
+    for(let i=0;i<9;i++){const bat=i<4;P.push({k:'g',g:gl[i],x:R()*w,y:h*(.08+R()*.8),sz:bat?16+R()*12:20+R()*10,vx:(R()<.5?-1:1)*(bat?26+R()*34:8+R()*10),vy:0,ph:R()*6.28,bob:bat?10+R()*16:6+R()*8,a:bat?.55:.4,bat})}}
+  SEAS.P=P;seasonDraw()}
+function seasonDraw(){const{cx,w,h,dpr,P,t}=SEAS;if(!cx)return;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
+  const light=document.documentElement.dataset.theme==='light',snow=light?'110,150,185':'255,255,255';
+  cx.textAlign='center';cx.textBaseline='middle';
+  for(const p of P){
+    if(p.k==='dot'){cx.fillStyle=`rgba(${snow},${p.a})`;cx.beginPath();cx.arc(p.x+Math.sin(t*.6+p.ph)*p.sw,p.y,p.r,0,6.283);cx.fill()}
+    else if(p.k==='ember'){const x=p.x+Math.sin(t*.8+p.ph)*p.sw,f=.6+.4*Math.sin(t*3+p.ph);cx.fillStyle=`rgba(255,${130+Math.round(70*f)},40,${p.a*f})`;cx.shadowColor='rgba(255,120,20,.9)';cx.shadowBlur=6;cx.beginPath();cx.arc(x,p.y,p.r,0,6.283);cx.fill();cx.shadowBlur=0}
+    else{cx.globalAlpha=p.a;cx.font=p.sz+'px sans-serif';
+      if(p.bat){const fl=Math.sin(t*9+p.ph)>0?1:.72;cx.save();cx.translate(p.x,p.y+Math.sin(t*1.3+p.ph)*p.bob);cx.scale(fl,1);cx.fillText(p.g,0,0);cx.restore()}
+      else cx.fillText(p.g,p.x+(p.sw?Math.sin(t*.5+p.ph)*p.sw:0),p.y+(p.bob?Math.sin(t*.9+p.ph)*p.bob:0));
+      cx.globalAlpha=1}}}
+function seasonStep(dt){const{w,h,P}=SEAS;SEAS.t+=dt;
+  for(const p of P){
+    if(p.k==='dot'||(p.k==='g'&&p.vy>0)){p.y+=p.vy*dt;if(p.y>h+20){p.y=-20;p.x=Math.random()*w}}
+    else if(p.k==='ember'){p.y+=p.vy*dt;if(p.y<-10){p.y=h+10;p.x=Math.random()*w}}
+    else{p.x+=p.vx*dt;if(p.x>w+30)p.x=-30;else if(p.x<-30)p.x=w+30}}}
+function seasonFrame(now){if(!SEAS.on)return;if(document.hidden||!SEAS.name){SEAS.on=false;return}
+  requestAnimationFrame(seasonFrame);const dt=Math.min(.05,(now-SEAS.last)/1000||0);SEAS.last=now;seasonStep(dt);seasonDraw()}
+function seasonStart(){if(SEAS.on||!SEAS.name)return;if(SEAS.mo.matches){seasonDraw();return}SEAS.on=true;SEAS.last=performance.now();requestAnimationFrame(seasonFrame)}
+function seasonIcon(n){const l=document.querySelector('link[rel=icon]');if(!l)return;if(SEAS.ico===null)SEAS.ico=l.getAttribute('href');
+  const e=n==='halloween'?'\uD83C\uDF83':n==='christmas'?'\uD83C\uDF84':'';
+  l.setAttribute('href',e?'data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-size='84' text-anchor='middle' dominant-baseline='central'>"+e+"</text></svg>"):SEAS.ico)}
+function applySeason(){const h=document.documentElement,n=seasonNow();
+  if(n)h.dataset.season=n;else delete h.dataset.season;
+  if(n!==SEAS.name){SEAS.name=n;seasonIcon(n);
+    if(n){if(!SEAS.cv){SEAS.cv=$('#sfx');SEAS.cx=SEAS.cv.getContext('2d')}seasonBuild();seasonStart();
+      if(!seasonOverride()){const key='stockidle.seasonseen',tag=n+new Date().getFullYear();if(rd(key)!==tag){wr(key,tag);
+        setTimeout(()=>{try{note('inf',n==='halloween'?'Happy Halloween! \uD83C\uDF83':'Merry Christmas! \uD83C\uDF84','The '+(n==='halloween'?'spooky':'festive')+' theme is on for the month. You can turn it off in Settings.',{ttl:9000})}catch(e){}},1800)}}}
+    else if(SEAS.cx)SEAS.cx.clearRect(0,0,SEAS.w,SEAS.h)}
+  else if(n&&SEAS.mo.matches)seasonDraw()}
+let seaRz;addEventListener('resize',()=>{clearTimeout(seaRz);seaRz=setTimeout(()=>{if(SEAS.name)seasonBuild()},150)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){applySeason();seasonStart()}});
+setInterval(applySeason,60000); // pick up the month changing while the page is open
+function applyCfg(){const h=document.documentElement;h.dataset.theme=CFG.theme;applySeason();
   CFG.cb?h.dataset.cb=1:delete h.dataset.cb;CFG.spark?delete h.dataset.ns:h.dataset.ns=1;
   h.style.setProperty('--sc',CFG.scale/100);
   const cs=getComputedStyle(h);colUp=cs.getPropertyValue('--up').trim()||'#2ecc71';colDn=cs.getPropertyValue('--dn').trim()||'#ff5c5c'}
@@ -2210,7 +2303,8 @@ const admChips=x=>(x.role?`<span class="adc ${x.role}">${x.role}</span>`:'')+(x.
 const admSum=x=>x.slots.length?x.slots.length+' save'+(x.slots.length>1?'s':'')+' · best '+fmt(x.best)+' · '+ago(x.last):'no cloud saves';
 const admMsg=(m,bad)=>{ADM.msg=m;ADM.bad=!!bad;const e=$('#admd');e.textContent=m;e.className='admmsg'+(m?(bad?' bad':' ok'):' hide')};
 const ADLOG={wipe:['trash','deleted the saves of',1],'make-admin':['unlock','made an admin:'],'remove-admin':['lock','removed admin from',1],'hide-leaderboard':['chart','hid from the leaderboard:',1],'show-leaderboard':['chart','restored to the leaderboard:']};
-function admDraw(){const own=CLD.role==='owner',st=ADM.stats;
+function admSeasonDraw(){const f=rd('stockidle.seasonforce')||'';document.querySelectorAll('#admseason [data-sf]').forEach(b=>b.classList.toggle('on',b.dataset.sf===f))}
+function admDraw(){admSeasonDraw();const own=CLD.role==='owner',st=ADM.stats;
   $('#admrole').textContent=own?'Signed in as owner':'Signed in as admin';
   $('#admstats').innerHTML=st?[['Players',st.players],['With saves',st.withSaves],['Admins',st.admins],['Hidden',st.hidden]].map(([k,v])=>`<div class="admstat"><span>${k}</span><b>${v}</b></div>`).join(''):'';
   document.querySelectorAll('#admtabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===ADM.tab));
@@ -2243,6 +2337,7 @@ const closeAdm=()=>$('#adm').classList.add('hide');
 $('#admq').oninput=()=>{clearTimeout(ADM.t);ADM.t=setTimeout(()=>{ADM.q=$('#admq').value;admLoad()},300)};
 $('#adm').addEventListener('click',async e=>{
   if(e.target.id==='adm'||e.target.id==='admx'){closeAdm();return}
+  const sf=e.target.closest('button[data-sf]');if(sf){const v=sf.dataset.sf;v?wr('stockidle.seasonforce',v):rm('stockidle.seasonforce');sfx('click');applySeason();admSeasonDraw();return}
   const tb=e.target.closest('button[data-t]');if(tb){ADM.tab=tb.dataset.t;sfx('click');admDraw();admRefresh();return}
   const pk=e.target.closest('button[data-p]');if(pk){ADM.sel=ADM.sel===pk.dataset.p?'':pk.dataset.p;sfx('click');admDraw();if(ADM.sel)$('#admsel').scrollIntoView({block:'nearest',behavior:'smooth'});return}
   const b=e.target.closest('button[data-aa]');if(!b||b.disabled)return;const a=b.dataset.aa,tid=b.dataset.id||ADM.sel,x=[...ADM.rows,...ADM.staff].find(r=>r.id===tid);if(!x)return;
