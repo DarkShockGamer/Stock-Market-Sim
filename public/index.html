@@ -100,10 +100,10 @@ html[data-theme=light][data-cb]{--up:#0b72d9;--dn:#d97706}
 /* ---- Seasonal themes: October = Halloween, December = Christmas (applySeason() sets html[data-season]). Only the surface colors change, so up/down colors and the colorblind mode keep working. ---- */
 html[data-season=halloween]{--bg:#130b17;--card:#1e1325;--line:#3b2548;--tx:#f1e6f5;--mu:#a592b0;--ac:#ff7a1a}
 html[data-season=halloween][data-theme=light]{--bg:#f7ecdd;--card:#fffaf1;--line:#e6d2b8;--tx:#2b1a12;--mu:#7b6250;--ac:#d95f08}
-html[data-season=christmas]{--bg:#0a1511;--card:#10211a;--line:#244a38;--tx:#eef6f0;--mu:#8fae9b;--ac:#e9bb4f}
-html[data-season=christmas][data-theme=light]{--bg:#eef5f0;--card:#fff;--line:#cadfd0;--tx:#13281c;--mu:#52705d;--ac:#c23b32}
+html[data-season=christmas]{--bg:#0b1018;--card:#131a26;--line:#2a3a52;--tx:#eef4f8;--mu:#93a6ba;--ac:#e9bb4f}
+html[data-season=christmas][data-theme=light]{--bg:#f1f5f9;--card:#fff;--line:#d3dfe8;--tx:#15222d;--mu:#587080;--ac:#c23b32}
 html[data-season=halloween] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(255,122,26,.26),transparent 70%),radial-gradient(ellipse 100% 42% at 50% 108%,rgba(140,60,205,.24),transparent 70%),var(--bg)}
-html[data-season=christmas] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(214,48,49,.22),transparent 70%),radial-gradient(ellipse 100% 42% at 50% 108%,rgba(46,160,90,.2),transparent 70%),var(--bg)}
+html[data-season=christmas] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(214,48,49,.22),transparent 70%),radial-gradient(ellipse 100% 42% at 50% 108%,rgba(46,160,90,.09),transparent 70%),var(--bg)}
 html[data-season][data-theme=light] #gbg{background:radial-gradient(ellipse 90% 40% at 50% -6%,color-mix(in srgb,var(--ac) 16%,transparent),transparent 70%),var(--bg)}
 html[data-season] header{position:relative}
 html[data-season=halloween] header{box-shadow:0 0 .9rem rgba(255,122,26,.2);border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
@@ -123,7 +123,7 @@ html[data-season=christmas] header::after{background-size:4.84rem 1.32rem;height
 @keyframes xmasTw{from{filter:brightness(.78) drop-shadow(0 0 .1rem rgba(255,255,255,.15))}to{filter:brightness(1.25) drop-shadow(0 0 .3rem rgba(255,255,255,.55))}}
 html[data-season=halloween] #app .row:nth-child(5n+2)::before,html[data-season=halloween] .card::before,html[data-season=halloween] .admc::before{content:"\1F383";position:absolute;right:.6rem;top:-.62rem;font-size:1.05rem;line-height:1;pointer-events:none;z-index:1;animation:jackGlow 2.8s ease-in-out infinite alternate}
 html[data-season=halloween] #app .row:nth-child(7n+4)::after{content:"\1F383";position:absolute;left:.7rem;bottom:-.55rem;font-size:.85rem;line-height:1;pointer-events:none;z-index:1;animation:jackGlow 3.4s ease-in-out infinite alternate-reverse}
-html[data-season=halloween] .foot::before{content:"\1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383  \1F383";position:absolute;left:.4rem;right:.4rem;bottom:calc(100% - .5rem);height:1.25rem;overflow:hidden;white-space:nowrap;font-size:.95rem;line-height:1.25rem;letter-spacing:.35rem;pointer-events:none;z-index:1;animation:jackGlow 3s ease-in-out infinite alternate}
+html[data-season=halloween] .foot::before{content:"\1F383 \1F383 \1F383 \1F383 \1F383";position:absolute;left:1.6rem;right:1.6rem;bottom:calc(100% - .5rem);height:1.25rem;overflow:hidden;white-space:normal;text-align:justify;text-align-last:justify;font-size:.95rem;line-height:1.25rem;pointer-events:none;z-index:1;animation:jackGlow 3s ease-in-out infinite alternate}
 @keyframes jackGlow{from{filter:drop-shadow(0 0 .12rem rgba(255,110,10,.35)) brightness(.88)}to{filter:drop-shadow(0 0 .45rem rgba(255,150,30,.95)) brightness(1.12)}}
 @media(prefers-reduced-motion:reduce){html[data-season] *::before,html[data-season] *::after{animation:none!important}}
 #sfx{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none}
