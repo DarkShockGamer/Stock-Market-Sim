@@ -27,7 +27,7 @@ const CERTS = process.env.GOOGLE_CERTS_URL || 'https://www.googleapis.com/oauth2
 const SLOTS = 3, MAX_IN = 4 * 1024 * 1024, MAX_OUT = 24 * 1024 * 1024, SESSION_MS = 30 * 86400e3;
 const enabled = !!CLIENT_ID;
 
-try { fs.mkdirSync(path.join(DATA, 'daily'), { recursive: true }); fs.mkdirSync(path.join(DATA, 'users'), { recursive: true }); } catch (e) { console.log('Cannot create DATA_DIR ' + DATA + ': ' + e.message); }
+try { fs.mkdirSync(path.join(DATA, 'daily'), { recursive: true }); fs.mkdirSync(path.join(DATA, 'daily-slots'), { recursive: true }); fs.mkdirSync(path.join(DATA, 'users'), { recursive: true }); } catch (e) { console.log('Cannot create DATA_DIR ' + DATA + ': ' + e.message); }
 
 let SECRET = (process.env.SESSION_SECRET || '').trim();
 if (!SECRET) {
@@ -194,35 +194,39 @@ async function achRoute(req, res, p, m, ip) {
   return send(req, res, 200, { ok: true });
 }
 
-// ---------- daily bonus (Live mode): $500 every 24 real hours, per Google account ----------
+// ---------- daily bonus (Live mode): $500 every 24 real hours, per Google account AND per save slot ----------
 // Cheat resistance: the timer lives ONLY on the server, using the server's clock. The browser can neither choose the amount nor
 // the time. Claim state is stored outside users/<hash>/ so "Delete cloud data" cannot be used to reset the timer. A claim creates a
 // grant that stays "pending" until the browser acknowledges it, so a lost response never loses the money and never double-pays.
-const DAILY_AMT = 500, DAILY_MS = 24 * 3600e3, DAILY_DIR = path.join(DATA, 'daily');
-const dailyFile = id => path.join(DAILY_DIR, id + '.json');
-function dailyGet(id) {
-  const d = rj(dailyFile(id), null);
+// Each save slot has its own timer, so a second Live save can claim its own bonus. Older versions kept one timer per account in DATA/daily;
+// the new folder (daily-slots) starts empty on purpose, which resets every timer once when this update goes live.
+const DAILY_AMT = 500, DAILY_MS = 24 * 3600e3, DAILY_DIR = path.join(DATA, 'daily-slots');
+const dailyFile = (id, n) => path.join(DAILY_DIR, id + '.' + n + '.json');
+const dailySlot = req => { const n = +new URL(req.url, 'http://x').searchParams.get('s'); return Number.isInteger(n) && n >= 1 && n <= SLOTS ? n : 0; };
+function dailyGet(id, n) {
+  const d = rj(dailyFile(id, n), null);
   return d && typeof d === 'object' ? { last: +d.last || 0, n: +d.n || 0, pending: Array.isArray(d.pending) ? d.pending : [] } : { last: 0, n: 0, pending: [] };
 }
 function dailyView(d, now) {
   return { ok: true, now, amount: DAILY_AMT, periodMs: DAILY_MS, last: d.last, next: d.last ? d.last + DAILY_MS : 0, can: !d.last || now >= d.last + DAILY_MS, pending: d.pending.map(g => ({ id: g.id, amt: g.amt })) };
 }
 function dailyRoute(req, res, id, p, m) {
+  const n = dailySlot(req); if (!n) return send(req, res, 400, { ok: false, error: 'bad slot' });
   // NOTE: no await between reading and writing the record: Node runs this block to completion, so two simultaneous claims can never both pass.
-  if (p === '/api/daily' && m === 'GET') return send(req, res, 200, dailyView(dailyGet(id), Date.now()));
+  if (p === '/api/daily' && m === 'GET') return send(req, res, 200, dailyView(dailyGet(id, n), Date.now()));
   if (p === '/api/daily/claim' && m === 'POST') {
-    const now = Date.now(), d = dailyGet(id);
+    const now = Date.now(), d = dailyGet(id, n);
     if (d.last && now < d.last + DAILY_MS) return send(req, res, 200, Object.assign(dailyView(d, now), { ok: false, error: 'early' }));
     d.last = now; d.n++;
     d.pending.push({ id: crypto.randomBytes(12).toString('hex'), amt: DAILY_AMT, at: now });
     if (d.pending.length > 5) d.pending = d.pending.slice(-5);
-    wj(dailyFile(id), d);
+    wj(dailyFile(id, n), d);
     return send(req, res, 200, dailyView(d, now));
   }
   if (p === '/api/daily/ack' && m === 'POST') {
     return readJson(req).then(b => {
-      const ids = new Set(Array.isArray(b.ids) ? b.ids.filter(x => typeof x === 'string').slice(0, 10) : []), d = dailyGet(id);
-      d.pending = d.pending.filter(g => !ids.has(g.id)); wj(dailyFile(id), d);
+      const ids = new Set(Array.isArray(b.ids) ? b.ids.filter(x => typeof x === 'string').slice(0, 10) : []), d = dailyGet(id, n);
+      d.pending = d.pending.filter(g => !ids.has(g.id)); wj(dailyFile(id, n), d);
       send(req, res, 200, dailyView(d, Date.now()));
     });
   }
