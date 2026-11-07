@@ -138,6 +138,19 @@ html[data-season=halloween] .foot::before{content:"";position:absolute;left:.9re
  background:var(--pk) 3% 100%/1.45rem 1.3rem no-repeat,var(--pk) 22% 96%/1rem .9rem no-repeat,var(--pk) 29% 100%/1.2rem 1.08rem no-repeat,var(--pk) 69% 92%/.95rem .86rem no-repeat,var(--pk) 96% 100%/1.35rem 1.22rem no-repeat}
 @keyframes jackGlow{from{filter:drop-shadow(0 0 .12rem rgba(255,110,10,.35)) brightness(.88)}to{filter:drop-shadow(0 0 .45rem rgba(255,150,30,.95)) brightness(1.12)}}
 @media(prefers-reduced-motion:reduce){html[data-season] *::before,html[data-season] *::after{animation:none!important}}
+/* ---- First-time tutorial: spotlight tour (see tutStart) ---- */
+#tut{position:fixed;inset:0;z-index:70}
+#tut.hide{display:none}
+#tut.nohole{background:rgba(0,0,0,.76)}
+#tutm{position:fixed;border-radius:.7rem;box-shadow:0 0 0 200vmax rgba(0,0,0,.76),0 0 0 2px var(--ac),0 0 1rem 2px color-mix(in srgb,var(--ac) 55%,transparent);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
+#tut.nohole #tutm{display:none}
+#tutc{position:fixed;width:min(21rem,calc(100vw - 1rem));background:var(--card);border:1px solid var(--line);border-radius:.9rem;padding:.8rem .9rem;box-shadow:0 .6rem 2rem #0009;display:flex;flex-direction:column;gap:.4rem}
+#tutn{font-size:.72em;letter-spacing:.08em;text-transform:uppercase;color:var(--ac);font-weight:700}
+#tutt{font-size:1.1em;margin:0}
+#tutx{color:var(--mu);line-height:1.42;font-size:.92em}#tutx b{color:var(--tx)}
+.tutb{display:flex;align-items:center;gap:.4rem;margin-top:.25rem}.tutsp{flex:1}
+.tutskip{background:none;border-color:transparent;color:var(--mu)}
+@media(prefers-reduced-motion:reduce){#tutm{transition:none}}
 #sfx{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none}
 html[data-season] #sfx{display:block}
 html[data-ns] .sp{display:none}
@@ -725,7 +738,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.3.2</div>
+<div id="title"><div id="ver">v1.3</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -768,6 +781,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div id="down"></div>
   <div id="dnews"></div>
 </div></div>
+<div id="tut" class="hide" role="dialog" aria-modal="true" aria-labelledby="tutt"><div id="tutm"></div><div id="tutc"><div id="tutn"></div><h3 id="tutt"></h3><div id="tutx"></div><div class="tutb"><button class="btn tutskip" id="tutsk">Skip tour</button><span class="tutsp"></span><button class="btn" id="tutbk">Back</button><button class="btn main" id="tutnx">Next</button></div></div></div>
 <div id="set" class="hide"><div class="card">
   <div class="up-row"><b class="ahead"><svg class="ico"><use href="#i-gear"/></svg><span>Settings</span></b><button class="btn" id="sx">✕</button></div>
   <div class="ssec "><svg class="ico"><use href="#i-people"/></svg>Account</div>
@@ -778,6 +792,7 @@ main:has(#market:not(.hide)){overflow:hidden}
   <div class="srow"><span><svg class="ico si"><use href="#i-textsize"/></svg><span>UI size <b id="scv"></b></span></span><input type="range" id="sc" min="70" max="130" step="5"></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-eye"/></svg><span>Colorblind-friendly colors</span></span><button class="btn tg" data-k="cb"></button></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-trend"/></svg><span>Mini charts in stock list</span></span><button class="btn tg" data-k="spark"></button></div>
+  <div class="srow"><span><svg class="ico si"><use href="#i-eye"/></svg><span>Tutorial</span></span><button class="btn" id="tutre">Replay</button></div>
   <div class="ssec "><svg class="ico"><use href="#i-bell"/></svg>Notifications</div>
   <div class="srow"><span><svg class="ico si"><use href="#i-bell"/></svg><span>Big event alerts and achievement pop-ups</span></span><button class="btn tg" data-k="alerts"></button></div>
   <div class="srow"><span><svg class="ico si"><use href="#i-msg"/></svg><span>Other notifications (RP, news, crashes)</span></span><button class="btn tg" data-k="toasts"></button></div>
@@ -2476,7 +2491,68 @@ const live=()=>$('#title').classList.contains('hide');
 function refundOld(){const REM={res:[3,1.7],fund:[3,1.8],ins2:[3,2],hedge:[3,1.7],news:[4,2],spd:[4,1.7]};let rf=0;
   for(const k in REM){if(S.up&&S.up[k]!==undefined){for(let i=0;i<S.up[k];i++)rf+=Math.round(REM[k][0]*Math.pow(REM[k][1],i));delete S.up[k]}}
   if(rf){S.rp=(S.rp||0)+rf;setTimeout(()=>toast('🔬 Retired upgrades refunded: +'+rf+' RP',1),600)}}
-async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb)}
+
+// ---- First-time tutorial: a short spotlight tour of the real UI. Plays once per mode for brand-new games; replay it from Settings. ----
+const TUT={on:false,i:0,steps:[],mode:'classic',el:null};
+const tutKey=m=>'stockidle.tutorial.'+m;
+function tutSteps(lv){
+  const q=x=>document.querySelector(x);
+  const hdr=()=>q('#app header'),open=()=>q('#mlist .row[data-s]:not(.lock)'),lock=()=>q('#mlist .row.lock');
+  const L=[];
+  L.push({t:'Welcome to Idle Stocks \u{1F44B}',x:lv?'Live mode runs on <b>real market prices</b>. You start with <b>$10,000</b> of paper money, there are no trading fees, and you can\u2019t lose real money. This quick tour covers the basics.':'Buy low, sell high and grow your <b>net worth</b>. You start with <b>$2,000</b>. This quick tour covers the basics and takes about 30 seconds.'});
+  L.push({t:'Your net worth',x:'This is your cash <b>plus</b> everything you own, added up. Growing this number is the goal of the game.',sel:()=>hdr().children[0]});
+  L.push(lv?{t:'Market status',x:'This shows whether the market is open (prices are moving live) or closed (you are seeing the last close).',sel:()=>q('#pay')}
+          :{t:'Cash and paychecks',x:'<b>Cash</b> is what you can spend. A <b>paycheck</b> also arrives every 3 minutes, so you keep earning while you plan your next move.',sel:()=>hdr().children[hdr().children.length-1]});
+  L.push({t:'Find a stock',x:'Search by ticker, company or sector, and use the filters and sorting to browse the list.',sel:()=>q('#msearch')});
+  L.push({t:'Buy and sell',x:'<b>Buy</b> purchases shares at the current price. Tap the quantity button next to it to change how many. <b>Sell</b> when the price is above what you paid. Tap the stock itself for a chart and more details.',sel:open});
+  if(!lv)L.push({t:'Locked stocks',x:'Bigger companies start locked. Spend <b>research points</b> (RP) to unlock them.',sel:lock});
+  if(!lv)L.push({t:'More ways to invest',x:'<b>Funds</b> grow slowly but steadily. <b>Crypto</b> swings wildly. <b>Startups</b> are risky penny stocks that can go public or go bust. <b>Contracts</b> pay cash for completing goals, and <b>Stats</b> shows how your portfolio is doing.',sel:()=>q('nav')});
+  if(!lv)L.push({t:'Earn and spend RP',x:'You earn <b>RP</b> from profitable sales, net worth milestones and achievements. Spend them in <b>Upgrades</b> on perks like lower trading fees.',sel:()=>q('#t-u'),tab:'u'});
+  if(lv)L.push({t:'Goals and daily bonus',x:'Take on <b>daily and weekly challenges</b> scored against the real S&amp;P 500, and claim a <b>$'+((DLY.st&&DLY.st.amount)||500)+' bonus every 24 hours</b> (needs cloud saves).',sel:()=>q('#t-l'),tab:'l'});
+  L.push({t:'Everything else',x:'The bottom bar has your <b>Achievements</b>, <b>Settings</b> and the <b>Menu</b> (saves, leaderboard and friends). <b>Mini window</b> parks the game in a small corner window.',sel:()=>q('.foot')});
+  L.push({t:'You are ready! \u{1F389}',x:'Handy keys: <b>/</b> searches, <b>1\u20138</b> switch tabs, and <b>B</b> / <b>S</b> buy and sell in a stock\u2019s details. You can replay this tour any time from <b>Settings</b>.',last:1});
+  return L}
+function tutShow(dir){
+  let st;
+  for(;;){
+    if(TUT.i<0)TUT.i=0;if(TUT.i>=TUT.steps.length){tutEnd();return}
+    st=TUT.steps[TUT.i];try{tab(st.tab||'m')}catch(e){}
+    TUT.el=null;
+    if(st.sel){let el=null;try{el=st.sel()}catch(e){}
+      if(!el||(!el.offsetParent&&getComputedStyle(el).position!=='fixed')){if(dir<0&&TUT.i===0)dir=1;TUT.i+=dir;continue}
+      TUT.el=el}
+    break}
+  const n=TUT.steps.length,last=TUT.i===n-1;
+  $('#tutn').textContent='Step '+(TUT.i+1)+' of '+n;$('#tutt').textContent=st.t;$('#tutx').innerHTML=st.x;
+  $('#tutbk').style.visibility=TUT.i===0?'hidden':'visible';$('#tutsk').classList.toggle('hide',last);
+  $('#tutnx').textContent=last?'Start trading':TUT.i===0?'Show me':'Next';
+  $('#tut').classList.toggle('nohole',!TUT.el);tutPlace();$('#tutnx').focus({preventScroll:true})}
+function tutPlace(){if(!TUT.on)return;const m=$('#tutm'),c=$('#tutc'),el=TUT.el,W=innerWidth,H=innerHeight;let r=null;
+  if(el){try{el.scrollIntoView({block:'center',inline:'nearest'})}catch(e){}r=el.getBoundingClientRect();const p=6;
+    m.style.left=r.left-p+'px';m.style.top=r.top-p+'px';m.style.width=r.width+2*p+'px';m.style.height=r.height+2*p+'px'}
+  const cw=c.offsetWidth,ch=c.offsetHeight;let left,top;
+  if(!r){left=(W-cw)/2;top=(H-ch)/2}
+  else{const below=H-r.bottom-6,above=r.top-6;left=Math.max(8,Math.min(W-cw-8,r.left+r.width/2-cw/2));
+    top=below>=ch+16?r.bottom+16:above>=ch+16?r.top-6-ch-10:Math.max(8,H-ch-8)}
+  c.style.left=left+'px';c.style.top=top+'px'}
+function tutStart(force){if(TUT.on||!S||!live()||(typeof IDLE!=='undefined'&&IDLE.on))return;
+  TUT.mode=isLive()?'live':'classic';TUT.steps=tutSteps(isLive());TUT.i=0;TUT.on=true;
+  ['#set','#dlg','#ach','#soc','#wb'].forEach(x=>{const e=$(x);if(e)e.classList.add('hide')});
+  $('#tut').classList.remove('hide');tutShow(1)}
+function tutEnd(){if(!TUT.on)return;TUT.on=false;wr(tutKey(TUT.mode),'1');$('#tut').classList.add('hide');try{tab('m')}catch(e){}}
+function tutAuto(){if(TUT.on||!S)return;const m=isLive()?'live':'classic';if(rd(tutKey(m)))return;
+  if((S.tick||0)>60||Object.keys(S.hold||{}).length){wr(tutKey(m),'1');return} // players who already have progress do not need it
+  setTimeout(()=>tutStart(),800)}
+$('#tutnx').onclick=()=>{TUT.i++;tutShow(1)};
+$('#tutbk').onclick=()=>{TUT.i--;tutShow(-1)};
+$('#tutsk').onclick=tutEnd;
+$('#tutre').onclick=()=>{if(live()){tutStart(true)}else{rm(tutKey('classic'));rm(tutKey('live'));$('#set').classList.add('hide');toast('The tutorial will play when you start a game',1)}};
+addEventListener('resize',()=>tutPlace());
+document.addEventListener('keydown',e=>{if(!TUT.on)return;e.stopPropagation();
+  if(e.key==='Escape'){e.preventDefault();tutEnd()}
+  else if(e.key==='ArrowRight'||e.key==='Enter'&&e.target.id!=='tutsk'&&e.target.id!=='tutbk'){e.preventDefault();TUT.i++;tutShow(1)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();TUT.i--;tutShow(-1)}},true);
+async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb);else tutAuto()}
 // Idle timeout: after 1 hour with no interaction the game pauses behind a screen, so nobody leaves it running all day.
 const IDLE_MS=60*60*1000;
 function idleTouch(){if(!IDLE.on)IDLE.last=Date.now()}
