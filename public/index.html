@@ -738,7 +738,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.4</div>
+<div id="title"><div id="ver">v1.4.1</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1973,7 +1973,7 @@ function lvChTick(){const I=S.p.IDX;if(!I||!I.live||!(I.p>0)||!LV.at)return;
     if(!r)r=C.cur[per]={k,t0:Date.now(),a0:n,b0:ix,a1:n,b1:ix,es:0,en:0};
     r.a1=n;r.b1=ix;r.es+=ex;r.en++})}
 const leftTxt=ms=>{const m=Math.max(0,Math.round(ms/60000)),d=m/1440|0,h=(m%1440)/60|0;return d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':(m%60)+'m'};
-// ---- Daily bonus (Live mode): $500 per real day. The server owns the timer and the amount (see cloud.js); this only displays it and credits grants. ----
+// ---- Daily bonus (Live mode): $500 per real day, with a separate timer for each save slot. The server owns the timer and the amount (see cloud.js); this only displays it and credits grants. ----
 const DLY={st:null,off:0,busy:false,err:'',ready:false,el:null,sig:'',chk:0};
 const dlyNow=()=>Date.now()+DLY.off; // server time, so changing this device's clock changes nothing
 function dlyDeposit(amt){const n0=nw();S.cash+=amt;S.start+=amt;S.max+=amt; // a deposit is not a trading gain: keep all-time gain and S&P challenge returns fair
@@ -1984,14 +1984,14 @@ async function dlyApply(list){if(!isLive()||!Array.isArray(list)||!list.length)r
     if(!done.includes(g.id)){dlyDeposit(g.amt);done.push(g.id);got+=g.amt}ack.push(g.id)}
   if(done.length>60)done.splice(0,done.length-60);
   if(got){save();note('up','🎁 Daily bonus claimed','+'+fmt(got)+' added to your cash',{ttl:9000});sfx('cash');draw()}
-  if(ack.length){try{await capi('POST','daily/ack',{ids:ack})}catch(e){}}}
+  if(ack.length){try{await capi('POST','daily/ack?s='+slot,{ids:ack})}catch(e){}}}
 function dlyStore(j){DLY.st=j;DLY.off=j.now-Date.now();DLY.err='';if(!j.can)DLY.ready=false}
 async function dlyRefresh(){if(!CLD.tok||DLY.busy)return;DLY.busy=true;DLY.chk=Date.now();
-  try{const r=await capi('GET','daily');if(r.j.ok){dlyStore(r.j);await dlyApply(r.j.pending)}else DLY.err='Could not check the daily bonus'}
+  try{const r=await capi('GET','daily?s='+slot);if(r.j.ok){dlyStore(r.j);await dlyApply(r.j.pending)}else DLY.err='Could not check the daily bonus'}
   catch(e){if(e.message!=='expired')DLY.err='Offline · will retry'}
   DLY.busy=false;if(isLive())drawLive()}
 async function dlyClaim(){if(!CLD.tok||DLY.busy||!isLive())return;DLY.busy=true;drawLive();
-  try{const r=await capi('POST','daily/claim');
+  try{const r=await capi('POST','daily/claim?s='+slot);
     if(r.j.ok||r.j.error==='early'){dlyStore(r.j);if(r.j.ok){DLY.ready=false;await dlyApply(r.j.pending)}else toast('Not ready yet',1)}
     else toast('Could not claim right now, try again',1)}
   catch(e){if(e.message!=='expired')toast('Could not reach the server',1)}
@@ -2552,7 +2552,7 @@ document.addEventListener('keydown',e=>{if(!TUT.on)return;e.stopPropagation();
   if(e.key==='Escape'){e.preventDefault();tutEnd()}
   else if(e.key==='ArrowRight'||e.key==='Enter'&&e.target.id!=='tutsk'&&e.target.id!=='tutbk'){e.preventDefault();TUT.i++;tutShow(1)}
   else if(e.key==='ArrowLeft'){e.preventDefault();TUT.i--;tutShow(-1)}},true);
-async function play(){lvStart();if(isLive()){DLY.ready=false;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb);else tutAuto()}
+async function play(){lvStart();if(isLive()){DLY.ready=false;DLY.st=null;dlyRefresh();goalRefresh()}sfx('start');bgStart();$('#title').classList.add('hide');clearTimeout(loop.t);let wb=null;try{wb=await offline()}catch(e){}clearTimeout(loop.t);loop();if(wb)wbShow(wb);else tutAuto()}
 // Idle timeout: after 1 hour with no interaction the game pauses behind a screen, so nobody leaves it running all day.
 const IDLE_MS=60*60*1000;
 function idleTouch(){if(!IDLE.on)IDLE.last=Date.now()}
