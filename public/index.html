@@ -738,7 +738,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.4.1</div>
+<div id="title"><div id="ver">v1.4.2</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1350,7 +1350,7 @@ function lvSeedH(k){const o=S.p[k],d=HD[k];if(!o||!d)return;const c=d.c.slice(-3
 async function lvHist(){if(!isLive()||LH.busy||LH.pending===0)return;LH.busy=true;
   try{const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]);
     const r=await fetch('/api/history?s='+syms.join(',')+'&have='+Object.keys(HD).join(','),{cache:'no-store'}),j=await r.json();
-    if(isLive()&&j&&j.ok){LH.pending=j.pending;for(const k in j.hist){const d=j.hist[k];if(d&&d.c&&d.c.length>1){HD[k]={t:d.t.map(x=>x*86400),c:d.c};lvSeedH(k)}}if(isLive())draw()}}
+    if(isLive()&&j&&j.ok){LH.pending=j.pending;for(const k in j.hist){const d=j.hist[k];if(d&&d.c&&d.c.length>1){HD[k]={t:d.t.map(x=>x*86400),c:d.c};lvSeedH(k)}}if(isLive()){draw();if(cur)drawD()}}}
   catch(e){}finally{LH.busy=false}}
 function lvApply(j){
   if(!isLive())return;
@@ -1691,6 +1691,7 @@ function closeD(){if(cur)sfx('close');cur=null;$('#dlg').classList.add('hide')}
 function series(o,s){
   let p,t;
   if(lhOn(s)){const d=HD[s],cut=lrng>0?Date.now()/1000-lrng*86400:0;let a=d.t.findIndex(x=>x>=cut);if(a<0)a=d.t.length-2;a=Math.max(0,Math.min(a,d.t.length-2));p=d.c.slice(a);t=d.t.slice(a);if(o.live){p.push(o.p);t.push(Date.now()/1000)}return [p,t]}
+  if(isLive()){p=o.g.slice();t=p.map((_,j)=>j*o.gs);if(t[t.length-1]<o.n){p.push(o.p);t.push(o.n)}if(p.length<2){p=[o.p,o.p];t=[0,1]}return [p,t]} // live, history still loading: flat/session line, same 1W-All buttons
   if(rng>0&&rng<=900){const k=Math.min(rng+1,o.r.length);p=o.r.slice(-k);t=p.map((_,i)=>o.n-(k-1-i))}
   else{const k=rng>0?Math.ceil(rng/o.gs)+1:o.g.length,a=Math.max(0,o.g.length-k);p=o.g.slice(a);t=p.map((_,j)=>(a+j)*o.gs);
     if(t[t.length-1]<o.n){p.push(o.p);t.push(o.n)}}
@@ -1703,7 +1704,7 @@ function drawD(){
   const X=i=>(i*W/((n-1)||1)).toFixed(1),Y=v=>(H-6-(v-mn)/rg*(H-12)).toFixed(1);
   const line=pts.map((v,i)=>X(i)+','+Y(v)).join(' '),ch=o.p/pts[0]-1,col=ch>=0?colUp:colDn;
   $('#dg').innerHTML=`<polygon points="0,${H} ${line} ${W},${H}" fill="${col}" opacity=".15"/><line x1="0" x2="${W}" y1="${Y(pts[0])}" y2="${Y(pts[0])}" stroke="#8b97a6" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".5"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/>`;
-  const LHd=lhOn(cur);document.querySelectorAll('#rng .btn').forEach((b,i)=>{b.textContent=LHd?LL[i]:CL[i];b.classList.toggle('on',LHd?LR[i]===lrng:+b.dataset.r===rng)});
+  const LHd=lhOn(cur),LVm=isLive();document.querySelectorAll('#rng .btn').forEach((b,i)=>{b.textContent=LVm?LL[i]:CL[i];b.classList.toggle('on',LVm?LR[i]===lrng:+b.dataset.r===rng)});
   $('#dt').innerHTML=`<span class="tk">${cur}</span><span class="nm">${x[1]}</span>`;$('#dp').textContent='$'+o.p.toFixed(2);
   $('#di').innerHTML=`<span class="pill ${ch>=0?'up':'dn'}">${ch>=0?'▲ +':'▼ '}${(ch*100).toFixed(1)}%<small>over ${n>1?(LHd?spanTxt(ts[n-1]-ts[0]):fmtT(ts[n-1]-ts[0])):'0s'}</small></span>`;
   $('#dhi').textContent='High $'+mx.toFixed(2);$('#dlo').textContent='Low $'+mn.toFixed(2);
@@ -1830,7 +1831,7 @@ document.addEventListener('click',e=>{
   if(b.dataset.srt){srtU=!srtU;try{localStorage.setItem('stockidle.sortunl',srtU?'1':'0')}catch(e){}applyFilter();return}
   if(b.dataset.uc!==undefined){fup=b.dataset.uc;applyUp();draw();return}
   const r=b.closest('.row'),inD=b.closest('#dlg');
-  if(b.dataset.r!==undefined){if(lhOn(cur))lrng=LR[[...b.parentNode.children].indexOf(b)];else rng=+b.dataset.r;drawD()}
+  if(b.dataset.r!==undefined){if(isLive())lrng=LR[[...b.parentNode.children].indexOf(b)];else rng=+b.dataset.r;drawD()}
   else if(inD&&!b.dataset.a){}
   else if((r&&r.dataset.s)||(inD&&cur)){const s=inD?cur:r.dataset.s,a=b.dataset.a,p=S.p[s].p*(1+feeRate());
     if(a==='buy'){const q=buyQ(s);if(q>0)buy(s,q);else toast('Not enough cash',1)}
