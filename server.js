@@ -23,7 +23,7 @@ const CACHE_FILE = path.join(os.tmpdir(), 'idle-stocks-quotes.json');
 let cache = {};                       // game ticker -> { c, pc, t, at, none? }
 try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) || {}; } catch (e) {}
 const want = new Map();               // game ticker -> last time a player asked for it
-let hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false, authErr = 0;
+let prio = [], hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false, authErr = 0;
 
 // ---- Company news (Finnhub /company-news). Cached per symbol; fetched through the same 1-call-per-tick loop as quotes,
 // so it never pushes the shared free-tier budget (60 calls/min) over the limit. Only fetched when a player opens a stock. ----
@@ -60,7 +60,8 @@ async function pollOne() {
   const syms = [...want.keys()].filter(s => now - want.get(s) < 5 * 60e3);
   if (!syms.length) return;
   const age = s => { const q = cache[s]; return !q ? 0 : q.none ? q.at + 3600e3 : q.at; }; // never fetched first; unpriceable ones retried hourly
-  const pool = (n++ % 3 === 0 && [...hot].some(s => syms.includes(s))) ? syms.filter(s => hot.has(s)) : syms;
+  const pf = prio.filter(s => want.has(s) && !cache[s]).slice(0, 1);   // on-screen / held stocks that have never loaded come first
+  const pool = pf.length ? pf : ((n++ % 3 === 0 && [...hot].some(s => syms.includes(s))) ? syms.filter(s => hot.has(s)) : syms);
   const sym = pool.reduce((a, b) => age(b) < age(a) ? b : a);
   try {
     const r = await fetch(BASE + '/quote?symbol=' + encodeURIComponent(MAP[sym] || sym) + '&token=' + KEY, { signal: AbortSignal.timeout(8000) });
@@ -123,7 +124,9 @@ async function histOne() {
   const age = s => { const q = hist[s]; return !q ? 0 : q.at + (q.none ? 3600e3 : 12 * 3600e3); };   // missing first; stale ones refreshed; unpriceable retried hourly
   const due = [...hwant.keys()].filter(s => now - hwant.get(s) < 5 * 60e3 && age(s) <= now);
   if (!due.length) return;
-  const sym = due.reduce((a, b) => age(b) < age(a) ? b : a);
+  const pd = prio.filter(s => due.includes(s) && !hist[s]).slice(0, 1);
+  const src = pd.length ? pd : due;
+  const sym = src.reduce((a, b) => age(b) < age(a) ? b : a);
   hbusy = true;
   try {
     let d = null, failed = false;
@@ -141,6 +144,7 @@ function history(req, res) {
   const u = new URL(req.url, 'http://x');
   const ok = s => /^[A-Z0-9]{1,6}$/.test(s) && !NOQUOTE.has(s);
   const s = (u.searchParams.get('s') || '').split(',').filter(ok).slice(0, 150);
+  prio = (u.searchParams.get('p') || '').split(',').filter(ok).slice(0, 60);
   const have = new Set((u.searchParams.get('have') || '').split(','));   // the browser already has these: do not resend
   const now = Date.now(); lastHReq = now;
   const out = {}; let pending = 0;
@@ -167,19 +171,24 @@ function quotes(req, res) {
   const ok = s => /^[A-Z0-9]{1,6}$/.test(s) && !NOQUOTE.has(s);
   const s = (u.searchParams.get('s') || '').split(',').filter(ok).slice(0, 150);
   const h = (u.searchParams.get('h') || '').split(',').filter(ok).slice(0, 50);
+  prio = (u.searchParams.get('p') || '').split(',').filter(ok).slice(0, 60);
   const now = Date.now(); lastReq = now; hot = new Set(h);
   s.forEach(x => want.set(x, now));
   const out = {}; let ready = 0;
   s.forEach(x => { const q = cache[x]; if (q && q.c > 0) { out[x] = { c: q.c, pc: q.pc, t: q.t }; ready++; } });
+  const dead = s.filter(x => cache[x] && cache[x].none);
   const body = !KEY ? { ok: false, error: 'nokey', now, quotes: {} }
     : (authErr && !ready) ? { ok: false, error: 'badkey', now, quotes: {} }
-    : { ok: true, now, total: s.length, ready, quotes: out };
+    : { ok: true, now, total: s.length, ready, dead, quotes: out };
   res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
 
-http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]);
+process.on('uncaughtException', e => console.error('uncaughtException:', e && e.stack || e));
+process.on('unhandledRejection', e => console.error('unhandledRejection:', e && e.stack || e));
+
+http.createServer((req, res) => { try {
+  let p; try { p = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); return res.end('Bad request'); }
   if (cloud.handle(req, res, p)) return;
   if (p === '/api/quotes') return quotes(req, res);
   if (p === '/api/history') return history(req, res);
@@ -192,5 +201,6 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
     res.end(d);
   });
+} catch (e) { console.error('request error:', e && e.stack || e); try { res.writeHead(500); res.end('Server error'); } catch (e2) {} }
 }).listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Running on ' + (process.env.PORT || 3000) + (KEY ? '' : ' (no FINNHUB_API_KEY set: Live Market mode is disabled)')
   + (cloud.enabled ? ' | cloud saves ON, data in ' + cloud.DATA + (process.env.DATA_DIR ? '' : ' (set DATA_DIR to a Railway Volume or saves vanish on redeploy)') : ' | cloud saves off (set GOOGLE_CLIENT_ID)')));
