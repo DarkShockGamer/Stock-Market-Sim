@@ -1357,11 +1357,11 @@ const LMC={SPCX:2000}; // real market caps in $B where the classic-mode number i
 const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
 const HD={},LH={pending:-1,busy:false}; // HD: ticker -> {t:[epoch s],c:[daily closes]} (about 1 year); loaded from the server each session, not saved with the game
 function lvSeedH(k){const o=S.p[k],d=HD[k];if(!o||!d)return;const c=d.c.slice(-39);c.push(o.live?o.p:c[c.length-1]);while(c.length<40)c.unshift(c[0]);o.h=c} // list sparkline = last ~40 trading days
-function lvPrio(){const first=Object.keys(S.hold);if(cur)first.push(cur);
+function lvPrio(){try{const first=Object.keys(S.hold);try{if(cur)first.push(cur)}catch(e){}
   const H=window.innerHeight||800,vis=[];document.querySelectorAll('#market .row[data-s]').forEach(r=>{if(r.offsetParent===null)return;const b=r.getBoundingClientRect();if(b.bottom>-H*.5&&b.top<H*1.5)vis.push([Math.abs((b.top+b.bottom)/2-H/2),r.dataset.s])});
   vis.sort((a,b)=>a[0]-b[0]);
-  return [...new Set([...first,...vis.map(v=>v[1])])].filter(k=>!NOLIVE.has(k)).slice(0,40).join(',')}
-let lvSc=0,lvQ=0;document.addEventListener('scroll',()=>{clearTimeout(lvSc);lvSc=setTimeout(()=>{if(isLive())lvFetch()},600)},true);
+  return [...new Set([...first,...vis.map(v=>v[1])])].filter(k=>!NOLIVE.has(k)).slice(0,40).join(',')}catch(e){return ''}}
+let lvSc=0,lvQ=0,lvQn=0;document.addEventListener('scroll',()=>{clearTimeout(lvSc);lvSc=setTimeout(()=>{if(isLive()){lvQn=0;lvFetch()}},600)},true);
 async function lvHist(){if(!isLive()||LH.busy||LH.pending===0)return;LH.busy=true;
   try{const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]);
     const r=await fetch('/api/history?s='+syms.join(',')+'&p='+lvPrio()+'&have='+Object.keys(HD).join(','),{cache:'no-store'}),j=await r.json();
@@ -1370,7 +1370,7 @@ async function lvHist(){if(!isLive()||LH.busy||LH.pending===0)return;LH.busy=tru
 function lvApply(j){
   if(!isLive())return;
   if(!j||!j.ok){LV.err=j&&(j.error==='nokey'||j.error==='badkey')?j.error:'bad';return}
-  LV.err='';LV.at=Date.now();LV.total=j.total;LV.ready=j.ready;
+  LV.err='';LV.at=Date.now();LV.total=j.total;LV.ready=j.ready;LV.dead=new Set(j.dead||[]);
   for(const k in j.quotes){const q=j.quotes[k],o=S.p[k];if(!o||!(q.c>0))continue;
     if(q.t)LV.maxT=Math.max(LV.maxT,q.t);
     if(!o.live){o.live=1;o.p=o.tgt=o.fair=o.fp=q.c;o.h=Array(40).fill(q.c);o.g=[q.c];o.gs=1;o.n=0;o.r=[q.c];if(HD[k])lvSeedH(k)}
@@ -1380,7 +1380,7 @@ function lvApply(j){
 async function lvFetch(){if(!isLive())return;
   const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]),held=Object.keys(S.hold).filter(k=>!NOLIVE.has(k));
   try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&p='+lvPrio()+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}
-  lvHist();clearTimeout(lvQ);if(isLive()&&[...document.querySelectorAll('#market .row.ldg')].some(r=>r.offsetParent!==null))lvQ=setTimeout(lvFetch,1500)}
+  lvHist();clearTimeout(lvQ);if(isLive()&&!LV.err&&lvQn++<40&&[...document.querySelectorAll('#market .row.ldg')].some(r=>r.offsetParent!==null))lvQ=setTimeout(lvFetch,1500)}
 function lvStart(){clearInterval(lvT);if(!isLive())return;LH.pending=-1;lvFetch();lvT=setInterval(()=>{if(live()&&isLive()&&!IDLE.on)lvFetch()},8000)}
 function lvStatus(){
   if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
@@ -1811,7 +1811,7 @@ function draw(){
    $('#mood').textContent=t}
   document.querySelectorAll('.row[data-s]').forEach(r=>{
     const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=isOpen(x),h=S.hold[x[0]];
-    r.classList.toggle('lock',!open);const ldg=isLive()&&!o.live&&!NOLIVE.has(x[0]);r.classList.toggle('nolive',isLive()&&!o.live&&NOLIVE.has(x[0]));r.classList.toggle('ldg',ldg);r.querySelector('.acts').classList.toggle('hide',!open);
+    r.classList.toggle('lock',!open);const dd=NOLIVE.has(x[0])||(LV.dead&&LV.dead.has(x[0]));const ldg=isLive()&&!o.live&&!dd;r.classList.toggle('nolive',isLive()&&!o.live&&dd);r.classList.toggle('ldg',ldg);r.querySelector('.acts').classList.toggle('hide',!open);
     const ul=r.querySelector('.ulk');ul.classList.toggle('hide',open||ldg);const ub=ul.querySelector('button');ub.innerHTML='Unlock · '+IC('rp')+' '+x[5]+' RP';ub.disabled=S.rp<x[5];
     const ch=isLive()&&o.pc>0?o.p/o.pc-1:o.p/o.h[0]-1,arrow=isLive()?(ch>=0?'▲':'▼'):lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
     {const h=capChips(x);const e=r.querySelector('.cap');if(e.dataset.h!==h){e.dataset.h=h;e.innerHTML=h}}
