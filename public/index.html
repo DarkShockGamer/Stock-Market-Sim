@@ -345,6 +345,7 @@ nav button{padding:.4286rem .05rem;font-size:.74em;white-space:nowrap}
 .sm .t1{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
 .sm .big{font-size:1.25em;font-weight:700;font-variant-numeric:tabular-nums}
 .row.nolive{display:none!important}
+.row.ldg>div:not(.ulk){opacity:.45}
 body.live-mode #t-c,body.live-mode #t-s,body.live-mode #t-k,body.live-mode #t-u,body.live-mode #rp{display:none}
 .pill2.lv{background:var(--up,#2ecc71);color:#06210f}
 .pill2{font-size:.68em;letter-spacing:.06em;text-transform:uppercase;padding:.05rem .45rem;border-radius:1rem;background:var(--ac);color:#fff;font-weight:700}
@@ -746,7 +747,7 @@ main:has(#market:not(.hide)){overflow:hidden}
     <button class="btn" id="gear" title="Settings"><span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span><span>Settings</span></button>
     <button class="btn" id="menu" title="Save and return to the title screen"><span class="ic">☰</span><span>Menu</span></button></div>
 </div>
-<div id="title"><div id="ver">v1.4.3</div>
+<div id="title"><div id="ver">v1.4.4</div>
   <svg id="tbg" class="dec" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g class="a"><polyline fill="none" stroke="#2ecc71" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round" points="-10,470 40,430 80,445 130,380 175,400 225,330 270,350 320,270 365,290 410,220"/></g>
     <g class="b"><polyline fill="none" stroke="#4c9aff" stroke-opacity=".3" stroke-width="2" stroke-linejoin="round" points="-10,520 50,500 100,515 150,470 210,490 260,440 310,455 360,400 410,420"/></g>
@@ -1356,9 +1357,14 @@ const LMC={SPCX:2000}; // real market caps in $B where the classic-mode number i
 const LV={ready:0,total:0,err:'',at:0,maxT:0};let lvT=0;
 const HD={},LH={pending:-1,busy:false}; // HD: ticker -> {t:[epoch s],c:[daily closes]} (about 1 year); loaded from the server each session, not saved with the game
 function lvSeedH(k){const o=S.p[k],d=HD[k];if(!o||!d)return;const c=d.c.slice(-39);c.push(o.live?o.p:c[c.length-1]);while(c.length<40)c.unshift(c[0]);o.h=c} // list sparkline = last ~40 trading days
+function lvPrio(){const first=Object.keys(S.hold);if(cur)first.push(cur);
+  const H=window.innerHeight||800,vis=[];document.querySelectorAll('#market .row[data-s]').forEach(r=>{if(r.offsetParent===null)return;const b=r.getBoundingClientRect();if(b.bottom>-H*.5&&b.top<H*1.5)vis.push([Math.abs((b.top+b.bottom)/2-H/2),r.dataset.s])});
+  vis.sort((a,b)=>a[0]-b[0]);
+  return [...new Set([...first,...vis.map(v=>v[1])])].filter(k=>!NOLIVE.has(k)).slice(0,40).join(',')}
+let lvSc=0,lvQ=0;document.addEventListener('scroll',()=>{clearTimeout(lvSc);lvSc=setTimeout(()=>{if(isLive())lvFetch()},600)},true);
 async function lvHist(){if(!isLive()||LH.busy||LH.pending===0)return;LH.busy=true;
   try{const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]);
-    const r=await fetch('/api/history?s='+syms.join(',')+'&have='+Object.keys(HD).join(','),{cache:'no-store'}),j=await r.json();
+    const r=await fetch('/api/history?s='+syms.join(',')+'&p='+lvPrio()+'&have='+Object.keys(HD).join(','),{cache:'no-store'}),j=await r.json();
     if(isLive()&&j&&j.ok){LH.pending=j.pending;for(const k in j.hist){const d=j.hist[k];if(d&&d.c&&d.c.length>1){HD[k]={t:d.t.map(x=>x*86400),c:d.c};lvSeedH(k)}}if(isLive()){draw();if(cur)drawD()}}}
   catch(e){}finally{LH.busy=false}}
 function lvApply(j){
@@ -1373,8 +1379,8 @@ function lvApply(j){
     o.pc=q.pc}}
 async function lvFetch(){if(!isLive())return;
   const syms=STOCKS.filter(x=>!NOLIVE.has(x[0])).map(x=>x[0]),held=Object.keys(S.hold).filter(k=>!NOLIVE.has(k));
-  try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}
-  lvHist()}
+  try{const r=await fetch('/api/quotes?s='+syms.join(',')+'&p='+lvPrio()+'&h='+held.join(','),{cache:'no-store'});lvApply(await r.json())}catch(e){LV.err='net'}
+  lvHist();clearTimeout(lvQ);if(isLive()&&[...document.querySelectorAll('#market .row.ldg')].some(r=>r.offsetParent!==null))lvQ=setTimeout(lvFetch,1500)}
 function lvStart(){clearInterval(lvT);if(!isLive())return;LH.pending=-1;lvFetch();lvT=setInterval(()=>{if(live()&&isLive()&&!IDLE.on)lvFetch()},8000)}
 function lvStatus(){
   if(LV.err==='nokey')return '⚠ Live mode needs FINNHUB_API_KEY set on the server';
@@ -1805,15 +1811,15 @@ function draw(){
    $('#mood').textContent=t}
   document.querySelectorAll('.row[data-s]').forEach(r=>{
     const x=STOCKS.find(q=>q[0]===r.dataset.s),o=S.p[x[0]],open=isOpen(x),h=S.hold[x[0]];
-    r.classList.toggle('lock',!open);r.classList.toggle('nolive',isLive()&&!o.live);r.querySelector('.acts').classList.toggle('hide',!open);
-    const ul=r.querySelector('.ulk');ul.classList.toggle('hide',open);const ub=ul.querySelector('button');ub.innerHTML='Unlock · '+IC('rp')+' '+x[5]+' RP';ub.disabled=S.rp<x[5];
+    r.classList.toggle('lock',!open);const ldg=isLive()&&!o.live&&!NOLIVE.has(x[0]);r.classList.toggle('nolive',isLive()&&!o.live&&NOLIVE.has(x[0]));r.classList.toggle('ldg',ldg);r.querySelector('.acts').classList.toggle('hide',!open);
+    const ul=r.querySelector('.ulk');ul.classList.toggle('hide',open||ldg);const ub=ul.querySelector('button');ub.innerHTML='Unlock · '+IC('rp')+' '+x[5]+' RP';ub.disabled=S.rp<x[5];
     const ch=isLive()&&o.pc>0?o.p/o.pc-1:o.p/o.h[0]-1,arrow=isLive()?(ch>=0?'▲':'▼'):lv('ins')>=1?(o.p>o.h[o.h.length-2]?'▲':'▼'):'';
     {const h=capChips(x);const e=r.querySelector('.cap');if(e.dataset.h!==h){e.dataset.h=h;e.innerHTML=h}}
     if(open)actUpd(r,x[0]);
-    r.querySelector('.v').textContent=open?'$'+o.p.toFixed(2):'🔒 '+x[5]+' RP';
+    r.querySelector('.v').textContent=open?'$'+o.p.toFixed(2):ldg?'Loading…':'🔒 '+x[5]+' RP';
     const c=r.querySelector('.c');c.textContent=open?arrow+' '+(ch>=0?'+':'')+(ch*100).toFixed(1)+'%':'';c.className='c '+(ch>=0?'up':'dn');
     const mn=Math.min(...o.h),mx=Math.max(...o.h)||1,pts=o.h.map((v,i)=>(i*56/39).toFixed(1)+','+(18-(v-mn)/((mx-mn)||1)*16).toFixed(1)).join(' ');
-    const pl=r.querySelector('polyline');pl.setAttribute('points',pts);pl.setAttribute('stroke',ch>=0?colUp:colDn);
+    const pl=r.querySelector('polyline');pl.setAttribute('points',isLive()&&(ldg||!HD[x[0]])?'':pts);pl.setAttribute('stroke',ch>=0?colUp:colDn);
     r.querySelector('.own').textContent=h?`${h.n} sh · ${(o.p/h.c-1>=0?'+':'')+((o.p/h.c-1)*100).toFixed(1)}%`:'';
   });
   drawD();drawRP();drawCt();drawSu();drawPriv();applyFilter();drawStats();drawLive();
