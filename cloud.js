@@ -1,202 +1,634 @@
-// Zero-dependency server (works on Railway, which provides PORT).
-// Serves the game and, for the "Live Market" mode, a small cached proxy for real stock quotes, price history and company news.
+'use strict';
+// Cloud saves for Stock Idle. Zero dependencies (Node built-ins only).
 //
-// Live quotes come from Finnhub (https://finnhub.io, free API key). Set it as an environment variable:
-//   FINNHUB_API_KEY=your_key node server.js
-// The key stays on the server and is never sent to the browser. All players share one cache, so the
-// free tier (60 calls/min) is enough: the server refreshes about 1 symbol per 1.1 seconds, and only
-// while somebody is actually playing a Live game.
-const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
-const cloud = require('./cloud');
-const PUB = path.join(__dirname, 'public');
-const TYPES = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css',
-  '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' };
+//  - Sign-in: the browser gets a Google ID token (Google Identity Services). We verify its RS256 signature against
+//    Google's public keys, check issuer / audience / expiry, then hand back our own signed session token (30 days).
+//  - Storage: one folder per user under DATA_DIR (named by a SHA-256 of the Google account id; no email is stored):
+//      users/<hash>/slot1.json .. slot3.json   { rev, at, data }
+//      users/<hash>/ach.json                    all-time achievements merged across devices
+//    On Railway attach a Volume and set DATA_DIR to its mount path (e.g. /data), otherwise saves vanish on redeploy.
+//  - Leaderboard: public top lists for Classic and Live. Each signed-in player's entry is their highest net worth among their
+//    current cloud slots of that mode. Net worth is recomputed on the server from the saved data (never sent by the client).
+//    Display name is "First L." from Google; players can hide themselves (users/<hash>/profile.json).
+//  - Conflicts: every slot has a revision number. A write must name the revision it was based on (baseRev);
+//    if the cloud moved on in the meantime the server answers 409 and the game asks the player which copy to keep.
+//
+//  - Admins: the OWNER is whoever signs in with the Google account in OWNER_EMAIL. The owner assigns admins from the in-game Admin panel.
+//    Owner and admins can delete ONE player's saves at a time (cloud slots now; the player's own devices clear their local saves the next
+//    time they sync, see /api/wipe). Roles and wipe markers live under DATA_DIR (admins.json, owner.json, wipes/), outside users/<hash>/.
+//
+// Environment: GOOGLE_CLIENT_ID (required to enable), DATA_DIR, SESSION_SECRET (optional; generated and stored otherwise),
+//              OWNER_EMAIL (optional; the Google account that is the owner/super admin).
+const fs = require('fs'), path = require('path'), crypto = require('crypto'), zlib = require('zlib');
 
-const KEY = (process.env.FINNHUB_API_KEY || '').trim(); // never hardcode this: set it in Railway -> Variables
-const BASE = process.env.FINNHUB_BASE || 'https://finnhub.io/api/v1';
-// Game ticker -> real ticker, where they differ (GLD and BND are the same in both).
-const MAP = { IDX:'SPY', TECH:'QQQ', DIV:'SCHD', BRKB:'BRK.B', SQ:'XYZ' };
-// Fictional or unpriceable in this mode: Starlink is a SpaceX subsidiary (not listed), crypto is not supported yet.
-const NOQUOTE = new Set(['STRL','BTC','ETH','SOL','DOGE','CSCO','PANW','CRWD','SMCI','ASML','NET','DDOG','HLT','LUV','DKNG','LOW','HSY','MDLZ','FDX','NOC','MMM','WFC','MS','AXP','SCHW','SONY','EA','TTWO','GILD','CVS','SLB','OXY','FSLR','HMC','LCID','SPX','DOW','RUT','INTL','REIT','TIPS','SLV','OIL','ESG','LEV','LTC','BNB','XRP','ADA','LINK','AVAX','SHIB','PEPE']);
+const CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim();
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
+const CERTS = process.env.GOOGLE_CERTS_URL || 'https://www.googleapis.com/oauth2/v3/certs';
+const SLOTS = 3, MAX_IN = 4 * 1024 * 1024, MAX_OUT = 24 * 1024 * 1024, SESSION_MS = 30 * 86400e3;
+const enabled = !!CLIENT_ID;
 
-const CACHE_FILE = path.join(os.tmpdir(), 'idle-stocks-quotes.json');
-let cache = {};                       // game ticker -> { c, pc, t, at, none? }
-try { cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')) || {}; } catch (e) {}
-const want = new Map();               // game ticker -> last time a player asked for it
-let prio = [], hot = new Set(), lastReq = 0, backoff = 0, n = 0, dirty = false, authErr = 0;
+try { fs.mkdirSync(path.join(DATA, 'daily'), { recursive: true }); fs.mkdirSync(path.join(DATA, 'daily-slots'), { recursive: true }); fs.mkdirSync(path.join(DATA, 'users'), { recursive: true }); } catch (e) { console.log('Cannot create DATA_DIR ' + DATA + ': ' + e.message); }
 
-// ---- Company news (Finnhub /company-news). Cached per symbol; fetched through the same 1-call-per-tick loop as quotes,
-// so it never pushes the shared free-tier budget (60 calls/min) over the limit. Only fetched when a player opens a stock. ----
-const NEWS_TTL = 10 * 60e3;
-let news = {};                         // game ticker -> { items:[{h,s,t,u}], at }
-const newsQ = new Set();               // game tickers waiting for a fetch
-const dstr = d => d.toISOString().slice(0, 10);
-async function newsOne() {
-  const sym = newsQ.values().next().value;
-  if (!sym) return false;
-  newsQ.delete(sym);
-  try {
-    const to = new Date(), from = new Date(Date.now() - 10 * 86400e3);
-    const r = await fetch(BASE + '/company-news?symbol=' + encodeURIComponent(MAP[sym] || sym) + '&from=' + dstr(from) + '&to=' + dstr(to) + '&token=' + KEY, { signal: AbortSignal.timeout(8000) });
-    if (r.status === 429) { backoff = Date.now() + 20000; newsQ.add(sym); return true; }
-    if (r.status === 401 || r.status === 403) { authErr = r.status; backoff = Date.now() + 15000; return true; }
-    if (!r.ok) { news[sym] = { items: [], at: Date.now() }; return true; }
-    authErr = 0;
-    const j = await r.json(), seen = new Set(), items = [];
-    (Array.isArray(j) ? j : []).sort((a, b) => (b.datetime || 0) - (a.datetime || 0)).forEach(a => {
-      const h = String(a.headline || '').trim().slice(0, 220), u = String(a.url || '');
-      if (!h || !/^https?:\/\//i.test(u) || seen.has(h) || items.length >= 8) return;
-      seen.add(h); items.push({ h, s: String(a.source || '').slice(0, 40), t: a.datetime || 0, u });
+let SECRET = (process.env.SESSION_SECRET || '').trim();
+if (!SECRET) {
+  const f = path.join(DATA, 'secret.key');
+  try { SECRET = fs.readFileSync(f, 'utf8').trim(); } catch (e) {}
+  if (!SECRET) { SECRET = crypto.randomBytes(32).toString('hex'); try { fs.writeFileSync(f, SECRET, { mode: 0o600 }); } catch (e) {} }
+}
+
+// ---------- small helpers ----------
+const b64u = b => Buffer.from(b).toString('base64url');
+const hmac = s => crypto.createHmac('sha256', SECRET).update(s).digest('base64url');
+function makeToken(sub) { const p = b64u(JSON.stringify({ s: sub, exp: Date.now() + SESSION_MS })); return p + '.' + hmac(p); }
+function readToken(t) {
+  const [p, sig] = String(t || '').split('.');
+  if (!p || !sig) return null;
+  const want = Buffer.from(hmac(p)), got = Buffer.from(sig);
+  if (want.length !== got.length || !crypto.timingSafeEqual(want, got)) return null;
+  try { const o = JSON.parse(Buffer.from(p, 'base64url').toString()); return o.exp > Date.now() && typeof o.s === 'string' ? o.s : null; } catch (e) { return null; }
+}
+const uid = sub => crypto.createHash('sha256').update(sub).digest('hex');
+const udir = id => path.join(DATA, 'users', id);
+const slotFile = (id, n) => path.join(udir(id), 'slot' + n + '.json');
+function rj(f, d) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } }
+function wj(f, o) { fs.mkdirSync(path.dirname(f), { recursive: true }); const t = f + '.' + process.pid + '.tmp'; fs.writeFileSync(t, JSON.stringify(o)); fs.renameSync(t, f); }
+
+// very small in-memory rate limiter
+const hits = new Map();
+function limited(key, max, ms) {
+  const now = Date.now(); let h = hits.get(key);
+  if (!h || now > h.r) { h = { n: 0, r: now + ms }; hits.set(key, h); }
+  if (hits.size > 5000) for (const [k, v] of hits) if (now > v.r) hits.delete(k);
+  return ++h.n > max;
+}
+
+function send(req, res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj)), h = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+  if (body.length > 2048 && /\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+    h['Content-Encoding'] = 'gzip'; res.writeHead(status, h); return res.end(zlib.gzipSync(body));
+  }
+  res.writeHead(status, h); res.end(body);
+}
+
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []; let n = 0;
+    req.on('data', c => { n += c.length; if (n > MAX_IN) { reject(Object.assign(new Error('too large'), { code: 413 })); req.destroy(); } else chunks.push(c); });
+    req.on('error', reject);
+    req.on('end', () => {
+      try {
+        let buf = Buffer.concat(chunks);
+        if ((req.headers['content-encoding'] || '') === 'gzip') buf = zlib.gunzipSync(buf, { maxOutputLength: MAX_OUT });
+        resolve(buf.length ? JSON.parse(buf.toString('utf8')) : {});
+      } catch (e) { reject(Object.assign(new Error('bad body'), { code: 400 })); }
     });
-    news[sym] = { items, at: Date.now() };
-  } catch (e) { backoff = Date.now() + 5000; }
+  });
+}
+
+// ---------- Google ID token verification ----------
+let jwks = { keys: [], at: 0 };
+async function googleKey(kid) {
+  if (!jwks.keys.find(k => k.kid === kid) && Date.now() - jwks.at > 60e3) {
+    const r = await fetch(CERTS, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error('certs ' + r.status);
+    const j = await r.json(); jwks = { keys: j.keys || [], at: Date.now() };
+  }
+  return jwks.keys.find(k => k.kid === kid);
+}
+async function verifyGoogle(cred) {
+  const parts = String(cred || '').split('.');
+  if (parts.length !== 3) throw new Error('malformed');
+  const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString()), payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+  if (header.alg !== 'RS256') throw new Error('alg');
+  const jwk = await googleKey(header.kid);
+  if (!jwk) throw new Error('unknown key');
+  const ok = crypto.verify('RSA-SHA256', Buffer.from(parts[0] + '.' + parts[1]), crypto.createPublicKey({ key: jwk, format: 'jwk' }), Buffer.from(parts[2], 'base64url'));
+  if (!ok) throw new Error('signature');
+  if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') throw new Error('issuer');
+  if (payload.aud !== CLIENT_ID) throw new Error('audience');
+  if (!(payload.exp * 1000 > Date.now())) throw new Error('expired');
+  if (typeof payload.sub !== 'string' || !payload.sub) throw new Error('subject');
+  return { sub: payload.sub, email: (payload.email_verified === true || payload.email_verified === 'true') ? String(payload.email || '').trim().toLowerCase() : '', name: String(payload.name || payload.given_name || 'Player').slice(0, 80), picture: /^https:\/\//.test(payload.picture || '') ? String(payload.picture).slice(0, 400) : '' };
+}
+
+// ---------- leaderboard ----------
+// In-memory index rebuilt from disk at startup, then updated whenever a slot is saved or deleted.
+// board: id -> { name, hide, classic: {nw, at} | null, live: {nw, at} | null }
+const board = new Map(), MODES = ['classic', 'live'];
+let lbCache = { at: 0, v: null };
+const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+function saveNW(o) { // same formula as the game's slotNW(), computed from the stored save
+  if (!o || typeof o !== 'object' || !o.p || typeof o.p !== 'object') return 0;
+  let t = num(o.cash);
+  if (o.su && Array.isArray(o.su.list)) for (const l of o.su.list) t += num(l && l.n) * num(l && l.p);
+  for (const k in (o.hold || {})) { const h = o.hold[k]; t += num(h && h.n) * num(o.p[k] && o.p[k].p); }
+  for (const k in (o.priv || {})) t += num(o.priv[k] && o.priv[k].v);
+  return t > 0 && t < 1e18 ? Math.round(t * 100) / 100 : 0;
+}
+function shortName(n) {
+  const w = String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return 'Player';
+  const f = w[0].slice(0, 20); return w.length > 1 ? f + ' ' + Array.from(w[w.length - 1])[0].toUpperCase() + '.' : f;
+}
+const profFile = id => path.join(udir(id), 'profile.json');
+function reindex(id) {
+  const pr = rj(profFile(id), {}), e = { name: pr.name || 'Player', hide: !!pr.hide || !!pr.ban, classic: null, live: null };
+  for (let n = 1; n <= SLOTS; n++) {
+    const s = rj(slotFile(id, n), null); if (!s || !s.data) continue;
+    const nw = saveNW(s.data), m = s.data.mode === 'live' ? 'live' : 'classic';
+    if (nw > 0 && (!e[m] || nw > e[m].nw)) e[m] = { nw, at: s.at || 0 };
+  }
+  if (e.classic || e.live) board.set(id, e); else board.delete(id);
+  lbCache = { at: 0, v: null };
+}
+function buildBoard() {
+  try { for (const id of fs.readdirSync(path.join(DATA, 'users'))) reindex(id); } catch (e) {}
+}
+function leaderboard(myId) {
+  if (!lbCache.v || Date.now() - lbCache.at > 10e3) {
+    const v = {};
+    for (const m of MODES) v[m] = [...board].filter(([, e]) => e[m] && !e.hide).sort((a, b) => b[1][m].nw - a[1][m].nw || a[1][m].at - b[1][m].at);
+    lbCache = { at: Date.now(), v };
+  }
+  const out = { ok: true };
+  for (const m of MODES) {
+    const l = lbCache.v[m];
+    out[m] = l.slice(0, 10).map(([id, e], i) => ({ r: i + 1, name: e.name, nw: e[m].nw, you: id === myId }));
+    out[m + 'Total'] = l.length;
+    if (myId) { const i = l.findIndex(([id]) => id === myId); const mine = board.get(myId); out.me = out.me || {}; out.me[m] = i >= 0 ? { r: i + 1, nw: l[i][1][m].nw } : mine && mine[m] ? { r: 0, nw: mine[m].nw } : null; }
+  }
+  return out;
+}
+buildBoard();
+
+// ---------- achievements merge (union, earliest unlock time wins; counters keep the highest) ----------
+function mergeAch(a, b) {
+  const o = { a: {}, trades: 0, ticks: 0, best: 0 };
+  [a, b].forEach(x => {
+    if (!x || typeof x !== 'object') return;
+    for (const k in (x.a || {})) { const t = +x.a[k]; if (t > 0 && (!o.a[k] || t < o.a[k])) o.a[k] = t; }
+    ['trades', 'ticks', 'best'].forEach(k => { const v = +x[k]; if (v > o[k]) o[k] = v; });
+  });
+  return o;
+}
+
+// ---------- achievement stats: anonymous per-browser reports (works with or without cloud sign-in) ----------
+const ACH_FILE = path.join(DATA, 'achstats.json');
+let achRep = rj(ACH_FILE, {}), achDirty = false, achCache = { at: 0, v: null };
+setInterval(() => { if (achDirty) { achDirty = false; try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(ACH_FILE, JSON.stringify(achRep)); } catch (e) {} } }, 20000).unref();
+function achStats() {
+  if (achCache.v && Date.now() - achCache.at < 120e3) return achCache.v;
+  const c = {}; let n = 0;
+  for (const id in achRep) { n++; for (const k of achRep[id]) c[k] = (c[k] || 0) + 1; }
+  achCache = { at: Date.now(), v: { ok: true, n, c } };
+  return achCache.v;
+}
+async function achRoute(req, res, p, m, ip) {
+  if (p === '/api/ach-stats' && m === 'GET') return send(req, res, 200, achStats());
+  if (m !== 'POST' || limited('r:' + ip, 30, 60e3)) return send(req, res, 429, { ok: false });
+  const b = await readJson(req);
+  if (!b || !/^[a-z0-9]{8,40}$/.test(b.id || '') || !Array.isArray(b.a)) return send(req, res, 400, { ok: false });
+  if (!achRep[b.id] && Object.keys(achRep).length > 200000) return send(req, res, 200, { ok: true });
+  achRep[b.id] = [...new Set(b.a.filter(x => typeof x === 'string' && /^[a-z0-9]{1,12}$/.test(x)))].slice(0, 100);
+  achDirty = true;
+  return send(req, res, 200, { ok: true });
+}
+
+// ---------- daily bonus (Live mode): $500 every 24 real hours, per Google account AND per save slot ----------
+// Cheat resistance: the timer lives ONLY on the server, using the server's clock. The browser can neither choose the amount nor
+// the time. Claim state is stored outside users/<hash>/ so "Delete cloud data" cannot be used to reset the timer. A claim creates a
+// grant that stays "pending" until the browser acknowledges it, so a lost response never loses the money and never double-pays.
+// Each save slot has its own timer, so a second Live save can claim its own bonus. Older versions kept one timer per account in DATA/daily;
+// the new folder (daily-slots) starts empty on purpose, which resets every timer once when this update goes live.
+const DAILY_AMT = 500, DAILY_MS = 24 * 3600e3, DAILY_DIR = path.join(DATA, 'daily-slots');
+const dailyFile = (id, n) => path.join(DAILY_DIR, id + '.' + n + '.json');
+const dailySlot = req => { const n = +new URL(req.url, 'http://x').searchParams.get('s'); return Number.isInteger(n) && n >= 1 && n <= SLOTS ? n : 0; };
+function dailyGet(id, n) {
+  const d = rj(dailyFile(id, n), null);
+  return d && typeof d === 'object' ? { last: +d.last || 0, n: +d.n || 0, pending: Array.isArray(d.pending) ? d.pending : [] } : { last: 0, n: 0, pending: [] };
+}
+function dailyView(d, now) {
+  return { ok: true, now, amount: DAILY_AMT, periodMs: DAILY_MS, last: d.last, next: d.last ? d.last + DAILY_MS : 0, can: !d.last || now >= d.last + DAILY_MS, pending: d.pending.map(g => ({ id: g.id, amt: g.amt })) };
+}
+function dailyRoute(req, res, id, p, m) {
+  const n = dailySlot(req); if (!n) return send(req, res, 400, { ok: false, error: 'bad slot' });
+  // NOTE: no await between reading and writing the record: Node runs this block to completion, so two simultaneous claims can never both pass.
+  if (p === '/api/daily' && m === 'GET') return send(req, res, 200, dailyView(dailyGet(id, n), Date.now()));
+  if (p === '/api/daily/claim' && m === 'POST') {
+    const now = Date.now(), d = dailyGet(id, n);
+    if (d.last && now < d.last + DAILY_MS) return send(req, res, 200, Object.assign(dailyView(d, now), { ok: false, error: 'early' }));
+    d.last = now; d.n++;
+    d.pending.push({ id: crypto.randomBytes(12).toString('hex'), amt: DAILY_AMT, at: now });
+    if (d.pending.length > 5) d.pending = d.pending.slice(-5);
+    wj(dailyFile(id, n), d);
+    return send(req, res, 200, dailyView(d, now));
+  }
+  if (p === '/api/daily/ack' && m === 'POST') {
+    return readJson(req).then(b => {
+      const ids = new Set(Array.isArray(b.ids) ? b.ids.filter(x => typeof x === 'string').slice(0, 10) : []), d = dailyGet(id, n);
+      d.pending = d.pending.filter(g => !ids.has(g.id)); wj(dailyFile(id, n), d);
+      send(req, res, 200, dailyView(d, Date.now()));
+    });
+  }
+  return send(req, res, 405, { ok: false });
+}
+
+// ---------- goal cash (Live mode): challenge wins, win streaks and net worth milestones pay cash ----------
+// The server owns every amount (GOAL_PAY) and pays each goal ONCE: the browser only says "I earned goal g for period k". A paid key is
+// remembered outside users/<hash>/ (like the daily bonus), so deleting cloud data or using other save slots cannot pay a goal twice.
+// Payouts are tuned so a day above about $1000 is very hard: daily goals top out at $400 and weekly goals only pay on the day the week closes.
+// Grants stay "pending" until acknowledged, the same lost-response-safe pattern as the daily bonus.
+const GOAL_PAY = { d1: 150, d2: 250, w1: 200, w2: 300, s3: 75, s7: 150, n15: 250, n25: 400, n50: 500, n100: 750, n250: 1000 };
+const GOAL_DIR = path.join(DATA, 'goals'), GOAL_WIN = 14 * 864e5, DAY_MS = 864e5;
+const goalFile = id => path.join(GOAL_DIR, id + '.json');
+function goalGet(id) {
+  const d = rj(goalFile(id), null);
+  return d && typeof d === 'object' ? { done: d.done && typeof d.done === 'object' && !Array.isArray(d.done) ? d.done : {}, pending: Array.isArray(d.pending) ? d.pending : [] } : { done: {}, pending: [] };
+}
+// g = goal id, k = period key: "d1:2026-10-30" (day), "w1:2026-10-26" (the Monday of the week), "s3:2026-10-30" (day the streak hit), "n15" (one time ever)
+function goalOk(g, k, now) {
+  if (!Object.prototype.hasOwnProperty.call(GOAL_PAY, g)) return false;
+  if (g[0] === 'n') return k === g;
+  const m = /^(d1|d2|w1|w2|s3|s7):(\d{4})-(\d{2})-(\d{2})$/.exec(k);
+  if (!m || m[1] !== g) return false;
+  const t = Date.UTC(+m[2], +m[3] - 1, +m[4]);
+  if (!(t > 0) || new Date(t).getUTCDate() !== +m[4]) return false;      // reject dates like Feb 31
+  if (t < now - GOAL_WIN || t > now + 2 * DAY_MS) return false;           // only recent periods can be claimed
+  if (g[0] === 'w' && new Date(t).getUTCDay() !== 1) return false;       // a week key is always a Monday
+  return true;
+}
+// a win streak needs 3 (or 7) winning days, so the same streak bonus cannot be paid again sooner than that
+function goalGapOk(done, g, k) {
+  if (g !== 's3' && g !== 's7') return true;
+  const gap = (g === 's3' ? 3 : 7) * DAY_MS, t = Date.parse(k.slice(3) + 'T00:00:00Z');
+  return !Object.keys(done).some(o => o.startsWith(g + ':') && Math.abs(Date.parse(o.slice(3) + 'T00:00:00Z') - t) < gap);
+}
+function goalView(d, now) {
+  let day = 0;
+  for (const k in d.done) { const e = d.done[k]; if (e && now - e.at < DAY_MS) day += +e.amt || 0; }
+  return { ok: true, now, pay: GOAL_PAY, day, once: Object.keys(d.done).filter(k => /^n\d+$/.test(k)), pending: d.pending.map(g => ({ id: g.id, amt: g.amt })) };
+}
+function goalsRoute(req, res, id, p, m) {
+  // NOTE: no await between reading and writing the record (the body is read first), so two simultaneous claims can never both pass.
+  if (p === '/api/goals' && m === 'GET') return send(req, res, 200, goalView(goalGet(id), Date.now()));
+  if (p === '/api/goals/claim' && m === 'POST') {
+    return readJson(req).then(b => {
+      const now = Date.now(), d = goalGet(id), list = Array.isArray(b.claims) ? b.claims.slice(0, 12) : [], results = [];
+      for (const c of list) {
+        const g = c && typeof c.g === 'string' ? c.g : '', k = c && typeof c.k === 'string' ? c.k : '';
+        if (!goalOk(g, k, now)) { results.push('bad'); continue; }
+        if (d.done[k] || !goalGapOk(d.done, g, k)) { results.push('dup'); continue; }
+        const amt = GOAL_PAY[g];
+        d.done[k] = { at: now, amt };
+        d.pending.push({ id: crypto.randomBytes(12).toString('hex'), amt, at: now });
+        results.push('ok');
+      }
+      if (d.pending.length > 60) d.pending = d.pending.slice(-60);
+      for (const k of Object.keys(d.done)) if (k[0] !== 'n' && now - (d.done[k].at || 0) > 30 * DAY_MS) delete d.done[k]; // dated keys can no longer be claimed anyway
+      wj(goalFile(id), d);
+      send(req, res, 200, Object.assign(goalView(d, now), { results }));
+    });
+  }
+  if (p === '/api/goals/ack' && m === 'POST') {
+    return readJson(req).then(b => {
+      const ids = new Set(Array.isArray(b.ids) ? b.ids.filter(x => typeof x === 'string').slice(0, 30) : []), d = goalGet(id);
+      d.pending = d.pending.filter(g => !ids.has(g.id)); wj(goalFile(id), d);
+      send(req, res, 200, goalView(d, Date.now()));
+    });
+  }
+  return send(req, res, 405, { ok: false });
+}
+
+// ---------- offline earnings clock (Classic mode): the SERVER decides how long you were away ----------
+// The browser used to compute "time away" from its own clock (Date.now() - save time), so changing the device clock, or opening the same
+// save on two devices, paid the same away time again. Now the server keeps one "last seen" time per Google account, using the SERVER clock:
+//   POST /api/offline/seen   heartbeat while a game is open (moves "last seen" to now; the browser cannot choose the time)
+//   POST /api/offline/claim  returns the seconds away (capped at OFF_MAX) and resets "last seen" to now in the same step, so the same
+//                            away time can never be claimed twice, not from a second tab, a second device, or a clock change.
+// Stored outside users/<hash>/ (like the daily bonus), so "Delete cloud data" cannot be used to reset it.
+// First claim ever for an account (no record yet): the browser's own "since" is accepted ONCE, clamped to [now - OFF_MAX, now].
+const OFF_MAX = 18 * 3600e3, OFF_DIR = path.join(DATA, 'offline');
+try { fs.mkdirSync(OFF_DIR, { recursive: true }); } catch (e) {}
+const offFile = id => path.join(OFF_DIR, id + '.json');
+function offlineRoute(req, res, id, p, m) {
+  if (m !== 'POST') return send(req, res, 405, { ok: false });
+  // NOTE: the body is read first, then the record is read and written with no await in between, so two simultaneous claims cannot both pass.
+  return readJson(req).then(b => {
+    const now = Date.now(), d = rj(offFile(id), null), seen = d && +d.seen > 0 ? +d.seen : 0;
+    if (p === '/api/offline/seen') {
+      if (!seen || now - seen > 20e3) wj(offFile(id), { seen: now });   // do not rewrite the file on every beat
+      return send(req, res, 200, { ok: true, now });
+    }
+    let from = seen;
+    if (!from) { const since = +b.since; from = since > 0 && isFinite(since) ? Math.min(now, Math.max(now - OFF_MAX, since)) : now; }
+    from = Math.min(now, Math.max(now - OFF_MAX, from));   // a record from the future (never expected) or older than the cap is clamped
+    wj(offFile(id), { seen: now });
+    return send(req, res, 200, { ok: true, now, sec: Math.floor((now - from) / 1000) });
+  });
+}
+
+// ---------- admin tools ----------
+// Roles are looked up from disk on every request, so removing an admin takes effect immediately.
+//   owner  = the player whose verified Google email equals OWNER_EMAIL (remembered by hashed id in owner.json; ignored if OWNER_EMAIL is unset)
+//   admin  = anybody the owner promoted (admins.json)
+// A "wipe" deletes one player's cloud slots right away and leaves a marker wipes/<hash>.json { at }. The marker does two jobs:
+//   1. the player's devices see it on their next sync/poll and clear their LOCAL saves once (the browser remembers the marker it already handled);
+//   2. until a device has handled it, the server refuses its save uploads (409 "wiped"), so an old copy can never re-upload itself.
+// Daily bonus, goal cash and offline records are stored elsewhere and are NOT reset by a wipe (so a wipe cannot be used to farm them).
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').trim().toLowerCase();
+const OWNER_FILE = path.join(DATA, 'owner.json'), ADMINS_FILE = path.join(DATA, 'admins.json'), WIPE_DIR = path.join(DATA, 'wipes'), ADMIN_LOG = path.join(DATA, 'admin-log.jsonl');
+try { fs.mkdirSync(WIPE_DIR, { recursive: true }); } catch (e) {}
+const IDRE = /^[0-9a-f]{64}$/;
+const ownerId = () => OWNER_EMAIL ? String(rj(OWNER_FILE, {}).id || '') : '';
+const adminMap = () => { const a = rj(ADMINS_FILE, {}); return a && typeof a === 'object' && !Array.isArray(a) ? a : {}; };
+const roleOf = id => id && id === ownerId() ? 'owner' : Object.prototype.hasOwnProperty.call(adminMap(), id) ? 'admin' : '';
+const wipeFile = id => path.join(WIPE_DIR, id + '.json');
+const wipeAt = id => +rj(wipeFile(id), {}).at || 0;
+const adminLog = o => { try { fs.appendFileSync(ADMIN_LOG, JSON.stringify(Object.assign({ at: Date.now() }, o)) + '\n'); } catch (e) {} };
+const nameOf = id => rj(profFile(id), {}).name || 'Player';
+function slotSummary(id) {
+  const out = [];
+  for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) out.push({ n, mode: s.data.mode === 'live' ? 'live' : 'classic', nw: saveNW(s.data), at: s.at || 0 }); }
+  return out;
+}
+function adminUsers(q, sort, only, owner, admins) {
+  let ids = []; try { ids = fs.readdirSync(path.join(DATA, 'users')).filter(x => IDRE.test(x)); } catch (e) {}
+  q = String(q || '').trim().toLowerCase().slice(0, 40);
+  const rows = [], st = { players: ids.length, withSaves: 0, admins: Object.keys(admins).length + (owner ? 1 : 0), hidden: 0 };
+  for (const id of ids) {
+    const pr = rj(profFile(id), {}), name = pr.name || 'Player', slots = slotSummary(id);
+    if (slots.length) st.withSaves++;
+    if (pr.ban) st.hidden++;
+    if (q && !name.toLowerCase().includes(q) && !id.startsWith(q.replace(/^#/, ''))) continue;
+    const rl = id === owner ? 'owner' : Object.prototype.hasOwnProperty.call(admins, id) ? 'admin' : '';
+    if (only === 'staff' && !rl) continue;
+    rows.push({ id, name, ref: id.slice(0, 6), role: rl, ban: !!pr.ban, slots,
+      last: slots.reduce((a, x) => Math.max(a, x.at), 0), best: slots.reduce((a, x) => Math.max(a, x.nw), 0) });
+  }
+  const by = { recent: (a, b) => b.last - a.last, worth: (a, b) => b.best - a.best, name: (a, b) => 0 }[sort] || ((a, b) => b.last - a.last);
+  rows.sort((a, b) => by(a, b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  return { rows: rows.slice(0, 30), total: rows.length, stats: st };
+}
+function adminLogTail(n) {
+  try { return fs.readFileSync(ADMIN_LOG, 'utf8').trim().split('\n').slice(-n).reverse().map(l => { const o = JSON.parse(l); return { at: o.at, by: o.byName || 'Admin', action: o.action, target: o.targetName || '' }; }); } catch (e) { return []; }
+}
+async function adminRoute(req, res, id, p, m) {
+  const role = roleOf(id);
+  if (!role) return send(req, res, 403, { ok: false, error: 'not an admin' });
+  if (p === '/api/admin/users' && m === 'GET') {
+    const sp = new URL(req.url, 'http://x').searchParams;
+    return send(req, res, 200, Object.assign({ ok: true, role, me: id }, adminUsers(sp.get('q'), sp.get('sort'), sp.get('only'), ownerId(), adminMap())));
+  }
+  if (p === '/api/admin/log' && m === 'GET') return send(req, res, 200, { ok: true, log: adminLogTail(40) });
+  if (m !== 'POST') return send(req, res, 405, { ok: false });
+  if (limited('adm:' + id, 30, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+  const b = await readJson(req), t = typeof b.target === 'string' ? b.target : '';   // ONE target id (a string): lists are rejected, so there is no "everyone at once"
+  if (!IDRE.test(t)) return send(req, res, 400, { ok: false, error: 'pick one player' });
+  if (!fs.existsSync(udir(t))) return send(req, res, 404, { ok: false, error: 'player not found' });
+  const tr = roleOf(t), tname = nameOf(t);
+  if (p === '/api/admin/wipe') {
+    if (t === id) return send(req, res, 400, { ok: false, error: 'use Settings > Delete all saves for your own saves' });
+    if (tr === 'owner' || (tr === 'admin' && role !== 'owner')) return send(req, res, 403, { ok: false, error: 'only the owner can delete an admin\'s saves' });
+    for (let n = 1; n <= SLOTS; n++) { try { fs.unlinkSync(slotFile(t, n)); } catch (e) {} }
+    wj(wipeFile(t), { at: Math.max(Date.now(), wipeAt(t) + 1), by: id });
+    reindex(t);
+    adminLog({ by: id, byName: nameOf(id), action: 'wipe', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname });
+  }
+  if (p === '/api/admin/lbhide') {
+    if (tr === 'owner' || (tr === 'admin' && role !== 'owner')) return send(req, res, 403, { ok: false, error: 'only the owner can change an admin' });
+    const pf = rj(profFile(t), {}), ban = b.hide === true;
+    wj(profFile(t), { name: pf.name || 'Player', hide: !!pf.hide, ban }); reindex(t);
+    adminLog({ by: id, byName: nameOf(id), action: ban ? 'hide-leaderboard' : 'show-leaderboard', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname, ban });
+  }
+  if (p === '/api/admin/role') {
+    if (role !== 'owner') return send(req, res, 403, { ok: false, error: 'only the owner can assign admins' });
+    if (t === ownerId()) return send(req, res, 400, { ok: false, error: 'that is the owner' });
+    const a = adminMap();
+    if (b.admin === true) a[t] = { at: Date.now(), name: tname }; else delete a[t];
+    wj(ADMINS_FILE, a);
+    adminLog({ by: id, byName: nameOf(id), action: b.admin === true ? 'make-admin' : 'remove-admin', target: t, targetName: tname });
+    return send(req, res, 200, { ok: true, name: tname, role: b.admin === true ? 'admin' : '' });
+  }
+  return send(req, res, 404, { ok: false });
+}
+
+// ---------- social: friends + direct messages ----------
+// Friend code = first 10 hex chars of the account hash (shown as XXXXX-XXXXX). Nobody's email or Google id is ever exposed.
+//   social/<id>.json        { f: friends, in: incoming requests, out: outgoing requests, bl: blocked, rd: last-read time per chat }
+//   social/chat/<pair>.json [ { f: sender ref (16 chars), t: time, x: text } ] (last 200 kept)
+// Other players are only ever addressed by a 16-char "ref", which is resolved ONLY inside the caller's own lists, so a client cannot
+// message or inspect a stranger. Messages need an accepted friendship on both sides. Blocking removes the friendship and its chat.
+const SOC = path.join(DATA, 'social'), SOC_CHAT = path.join(SOC, 'chat');
+try { fs.mkdirSync(SOC_CHAT, { recursive: true }); } catch (e) {}
+const MAX_FRIENDS = 100, MAX_PENDING = 30, MAX_MSG = 500, KEEP_MSG = 200;
+const socFile = id => path.join(SOC, id + '.json');
+const socGet = id => { const d = rj(socFile(id), {}); return { f: d.f || {}, in: d.in || {}, out: d.out || {}, bl: d.bl || {}, rd: d.rd || {} }; };
+const socPut = (id, d) => wj(socFile(id), d);
+const pairFile = (a, b) => path.join(SOC_CHAT, crypto.createHash('sha256').update([a, b].sort().join('|')).digest('hex').slice(0, 40) + '.json');
+const refOf = id => id.slice(0, 16);
+const codeOf = id => (id.slice(0, 5) + '-' + id.slice(5, 10)).toUpperCase();
+const userExists = id => { try { return fs.statSync(udir(id)).isDirectory(); } catch (e) { return false; } };
+function findByCode(c) {
+  const h = String(c || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+  if (h.length !== 10) return '';
+  try { return fs.readdirSync(path.join(DATA, 'users')).find(x => x.startsWith(h)) || ''; } catch (e) { return ''; }
+}
+const inList = (list, ref) => { ref = String(ref || ''); return ref.length >= 12 ? Object.keys(list).find(k => k.startsWith(ref)) || '' : ''; };
+const cleanMsg = t => String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, MAX_MSG);
+function socUnlink(a, b) {   // remove every relation a<->b on both sides and delete their chat
+  const A = socGet(a), B = socGet(b);
+  for (const k of ['f', 'in', 'out']) { delete A[k][b]; delete B[k][a]; }
+  delete A.rd[b]; delete B.rd[a];
+  socPut(a, A); socPut(b, B);
+  try { fs.unlinkSync(pairFile(a, b)); } catch (e) {}
+}
+function socPurge(id) {   // account deleted: leave no dangling requests or chats behind
+  const me = socGet(id);
+  for (const o of new Set([...Object.keys(me.f), ...Object.keys(me.in), ...Object.keys(me.out)])) { try { socUnlink(id, o); } catch (e) {} }
+  try { fs.unlinkSync(socFile(id)); } catch (e) {}
+}
+function socialRoute(req, res, id, p, m) {
+  const act = p.replace('/api/social', '').replace(/^\//, '');
+  const bad = (code, error) => send(req, res, code, { ok: false, error });
+  const person = o => ({ ref: refOf(o), name: nameOf(o) });
+  const nwOf = o => { const e = board.get(o); return e && !e.hide ? Math.max(e.classic ? e.classic.nw : 0, e.live ? e.live.nw : 0) : 0; };
+  if (act === '' && m === 'GET') {
+    const me = socGet(id), friends = [];
+    for (const o of Object.keys(me.f)) {
+      if (!userExists(o)) continue;
+      const msgs = rj(pairFile(id, o), []), rd = +me.rd[o] || 0, last = msgs[msgs.length - 1];
+      friends.push({ ...person(o), nw: nwOf(o), unread: msgs.filter(x => x.f !== refOf(id) && x.t > rd).length, last: last ? { t: last.t, x: last.x.slice(0, 80), me: last.f === refOf(id) } : null });
+    }
+    friends.sort((a, b) => (b.last ? b.last.t : 0) - (a.last ? a.last.t : 0) || a.name.localeCompare(b.name));
+    return send(req, res, 200, { ok: true, code: codeOf(id), friends, incoming: Object.keys(me.in).filter(userExists).map(person), outgoing: Object.keys(me.out).filter(userExists).map(person), blocked: Object.keys(me.bl).map(person), max: { friends: MAX_FRIENDS, msg: MAX_MSG } });
+  }
+  if (act === 'msgs' && m === 'GET') {
+    const sp = new URL(req.url, 'http://x').searchParams, me = socGet(id), o = inList(me.f, sp.get('ref'));
+    if (!o) return bad(404, 'not friends');
+    const msgs = rj(pairFile(id, o), []), after = +sp.get('after') || 0, last = msgs[msgs.length - 1];
+    if (last && last.f !== refOf(id) && last.t > (+me.rd[o] || 0)) { me.rd[o] = last.t; socPut(id, me); }
+    return send(req, res, 200, { ok: true, msgs: msgs.filter(x => x.t > after).slice(-100).map(x => ({ t: x.t, x: x.x, me: x.f === refOf(id) })) });
+  }
+  if (m !== 'POST') return bad(405, 'method');
+  return readJson(req).then(b => {
+    const me = socGet(id);
+    if (act === 'add') {
+      if (limited('sa:' + id, 15, 60e3)) return bad(429, 'Slow down a little');
+      const o = findByCode(b.code);
+      if (!o || !userExists(o)) return bad(404, 'No player has that friend code');
+      if (o === id) return bad(400, 'That is your own code');
+      if (me.f[o]) return bad(400, 'You are already friends');
+      if (me.bl[o]) return bad(400, 'You blocked that player. Unblock them first');
+      const them = socGet(o);
+      if (them.bl[id]) return send(req, res, 200, { ok: true, state: 'sent', name: nameOf(o) });   // blocked players are not told
+      if (me.in[o]) {   // they already asked me: this is an accept
+        if (Object.keys(me.f).length >= MAX_FRIENDS || Object.keys(them.f).length >= MAX_FRIENDS) return bad(400, 'A friends list is full');
+        delete me.in[o]; delete them.out[id]; me.f[o] = them.f[id] = Date.now(); socPut(id, me); socPut(o, them);
+        return send(req, res, 200, { ok: true, state: 'friends', name: nameOf(o) });
+      }
+      if (me.out[o]) return bad(400, 'Request already sent');
+      if (Object.keys(me.out).length >= MAX_PENDING) return bad(400, 'Too many pending requests');
+      if (Object.keys(them.in).length >= MAX_PENDING) return bad(400, 'That player has too many requests waiting');
+      me.out[o] = them.in[id] = Date.now(); socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true, state: 'sent', name: nameOf(o) });
+    }
+    if (act === 'respond') {
+      const o = inList(me.in, b.ref); if (!o) return bad(404, 'No such request');
+      const them = socGet(o); delete me.in[o]; delete them.out[id];
+      if (b.accept === true) {
+        if (Object.keys(me.f).length >= MAX_FRIENDS || Object.keys(them.f).length >= MAX_FRIENDS) return bad(400, 'A friends list is full');
+        me.f[o] = them.f[id] = Date.now();
+      }
+      socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'cancel') {
+      const o = inList(me.out, b.ref); if (!o) return bad(404, 'No such request');
+      const them = socGet(o); delete me.out[o]; delete them.in[id]; socPut(id, me); socPut(o, them);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'remove') {
+      const o = inList(me.f, b.ref); if (!o) return bad(404, 'Not friends');
+      socUnlink(id, o); return send(req, res, 200, { ok: true });
+    }
+    if (act === 'block') {
+      const o = inList(me.f, b.ref) || inList(me.in, b.ref) || inList(me.out, b.ref); if (!o) return bad(404, 'Player not found');
+      socUnlink(id, o); const m2 = socGet(id); m2.bl[o] = Date.now(); socPut(id, m2);
+      return send(req, res, 200, { ok: true });
+    }
+    if (act === 'unblock') {
+      const o = inList(me.bl, b.ref); if (!o) return bad(404, 'Player not found');
+      delete me.bl[o]; socPut(id, me); return send(req, res, 200, { ok: true });
+    }
+    if (act === 'send') {
+      if (limited('ss:' + id, 20, 30e3)) return bad(429, 'You are sending messages too fast');
+      const o = inList(me.f, b.ref); if (!o) return bad(404, 'You are not friends with that player');
+      const x = cleanMsg(b.text); if (!x) return bad(400, 'Empty message');
+      const msgs = rj(pairFile(id, o), []), last = msgs[msgs.length - 1], t = Math.max(Date.now(), last ? last.t + 1 : 0);
+      msgs.push({ f: refOf(id), t, x }); wj(pairFile(id, o), msgs.slice(-KEEP_MSG));
+      return send(req, res, 200, { ok: true, msg: { t, x, me: true } });
+    }
+    return bad(404, 'unknown');
+  });
+}
+
+// ---------- routes ----------
+async function route(req, res, p) {
+  const m = req.method, ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (p === '/api/ach-stats' || p === '/api/ach-report') return achRoute(req, res, p, m, ip);
+  if (p === '/api/config' && m === 'GET') return send(req, res, 200, { cloud: enabled, clientId: enabled ? CLIENT_ID : '', slots: SLOTS });
+  if (!enabled) return send(req, res, 503, { ok: false, error: 'disabled' });
+
+  if (p === '/api/auth/google') {
+    if (m !== 'POST') return send(req, res, 405, { ok: false });
+    if (limited('a:' + ip, 20, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    const b = await readJson(req);
+    let u;
+    try { u = await verifyGoogle(b.credential); } catch (e) { return send(req, res, 401, { ok: false, error: 'invalid sign-in' }); }
+    const id0 = uid(u.sub), pf = rj(profFile(id0), {});
+    try { wj(profFile(id0), { name: shortName(u.name), hide: !!pf.hide, ban: !!pf.ban }); reindex(id0); } catch (e) {}
+    if (OWNER_EMAIL && u.email === OWNER_EMAIL) { try { wj(OWNER_FILE, { id: id0 }); } catch (e) {} }   // only the hashed id is kept, never the email
+    return send(req, res, 200, { ok: true, token: makeToken(u.sub), user: { name: u.name, picture: u.picture }, role: roleOf(id0), ref: id0.slice(0, 12) });
+  }
+
+  if (p === '/api/leaderboard' && m === 'GET') {
+    if (limited('l:' + ip, 60, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    const s0 = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
+    return send(req, res, 200, leaderboard(s0 ? uid(s0) : ''));
+  }
+
+  const sub = readToken((req.headers.authorization || '').replace(/^Bearer /i, ''));
+  if (!sub) return send(req, res, 401, { ok: false, error: 'unauthorized' });
+  const id = uid(sub);
+  if (limited('u:' + id, 120, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+  if (p.startsWith('/api/admin')) return adminRoute(req, res, id, p, m);
+  if (p.startsWith('/api/social')) return socialRoute(req, res, id, p, m);
+  if (p === '/api/wipe' && m === 'GET') return send(req, res, 200, { ok: true, wipe: wipeAt(id), ref: id.slice(0, 12) });
+  if (p.startsWith('/api/daily')) {
+    if (m === 'POST' && p === '/api/daily/claim' && limited('dc:' + id, 10, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return dailyRoute(req, res, id, p, m);
+  }
+
+  if (p.startsWith('/api/offline')) {
+    if (limited('of:' + id, 30, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return offlineRoute(req, res, id, p, m);
+  }
+
+  if (p.startsWith('/api/goals')) {
+    if (m === 'POST' && p === '/api/goals/claim' && limited('gc:' + id, 20, 60e3)) return send(req, res, 429, { ok: false, error: 'slow down' });
+    return goalsRoute(req, res, id, p, m);
+  }
+
+  if (p === '/api/saves' && m === 'GET') {
+    const slots = {};
+    for (let n = 1; n <= SLOTS; n++) { const s = rj(slotFile(id, n), null); if (s && s.data) slots[n] = s; }
+    return send(req, res, 200, { ok: true, role: roleOf(id), wipe: wipeAt(id), ref: id.slice(0, 12), hide: !!rj(profFile(id), {}).hide, slots, ach: rj(path.join(udir(id), 'ach.json'), { a: {}, trades: 0, ticks: 0, best: 0 }) });
+  }
+  let mm = /^\/api\/saves\/(\d+)$/.exec(p);
+  if (mm) {
+    const n = +mm[1]; if (n < 1 || n > SLOTS) return send(req, res, 400, { ok: false, error: 'bad slot' });
+    const f = slotFile(id, n), cur = rj(f, null), rev = cur ? cur.rev : 0;
+    if (m === 'PUT') {
+      const b = await readJson(req), d = b.data;
+      if (!d || typeof d !== 'object' || Array.isArray(d) || !d.p || typeof d.p !== 'object') return send(req, res, 400, { ok: false, error: 'bad save' });
+      const w = wipeAt(id);
+      if (w > (+b.wipe || 0)) return send(req, res, 409, { ok: false, error: 'wiped', wipe: w });   // this device has not cleared its old saves yet
+      if ((+b.baseRev || 0) !== rev) return send(req, res, 409, { ok: false, error: 'conflict', rev, at: cur ? cur.at : 0 });
+      const rec = { rev: rev + 1, at: Date.now(), data: d };
+      wj(f, rec); reindex(id);
+      return send(req, res, 200, { ok: true, rev: rec.rev, at: rec.at });
+    }
+    if (m === 'DELETE') { try { fs.unlinkSync(f); } catch (e) {} reindex(id); return send(req, res, 200, { ok: true }); }
+    return send(req, res, 405, { ok: false });
+  }
+  if (p === '/api/ach' && m === 'PUT') {
+    const b = await readJson(req), f = path.join(udir(id), 'ach.json'), merged = mergeAch(rj(f, null), b.ach);
+    wj(f, merged); return send(req, res, 200, { ok: true, ach: merged });
+  }
+  if (p === '/api/profile' && m === 'PUT') {
+    const b = await readJson(req), pf = rj(profFile(id), {});
+    wj(profFile(id), { name: pf.name || 'Player', hide: !!b.hide, ban: !!pf.ban }); reindex(id);
+    return send(req, res, 200, { ok: true, hide: !!b.hide });
+  }
+  if (p === '/api/account' && m === 'DELETE') {
+    try { socPurge(id); } catch (e) {}
+    try { fs.rmSync(udir(id), { recursive: true, force: true }); } catch (e) {}
+    board.delete(id); lbCache = { at: 0, v: null };
+    return send(req, res, 200, { ok: true });
+  }
+  return send(req, res, 404, { ok: false });
+}
+
+const PATHS = /^\/api\/(config|auth\/google|saves(\/\d+)?|ach|ach-stats|ach-report|account|leaderboard|profile|wipe|admin\/(users|wipe|role|lbhide|log)|daily(\/claim|\/ack)?|goals(\/claim|\/ack)?|offline(\/seen|\/claim)|social(\/(add|respond|cancel|remove|block|unblock|send|msgs))?)$/;
+function handle(req, res, p) {
+  if (!PATHS.test(p)) return false;
+  route(req, res, p).catch(e => {
+    if (!res.headersSent) send(req, res, e && e.code === 413 ? 413 : e && e.code === 400 ? 400 : 500, { ok: false, error: e && e.code ? e.message : 'server error' });
+    if (!e || !e.code) console.log('cloud error: ' + (e && e.stack || e));
+  });
   return true;
 }
 
-async function pollOne() {
-  const now = Date.now();
-  if (KEY && now >= backoff && newsQ.size && await newsOne()) return;   // a player's news request goes first (uses this tick's call)
-  if (!KEY || now < backoff || now - lastReq > 5 * 60e3) return;   // idle when nobody is playing Live
-  const syms = [...want.keys()].filter(s => now - want.get(s) < 5 * 60e3);
-  if (!syms.length) return;
-  const age = s => { const q = cache[s]; return !q ? 0 : q.none ? q.at + 3600e3 : q.at; }; // never fetched first; unpriceable ones retried hourly
-  const pf = prio.filter(s => want.has(s) && !cache[s]).slice(0, 1);   // on-screen / held stocks that have never loaded come first
-  const pool = pf.length ? pf : ((n++ % 3 === 0 && [...hot].some(s => syms.includes(s))) ? syms.filter(s => hot.has(s)) : syms);
-  const sym = pool.reduce((a, b) => age(b) < age(a) ? b : a);
-  try {
-    const r = await fetch(BASE + '/quote?symbol=' + encodeURIComponent(MAP[sym] || sym) + '&token=' + KEY, { signal: AbortSignal.timeout(8000) });
-    if (r.status === 429) { backoff = Date.now() + 20000; return; }
-    if (r.status === 401 || r.status === 403) { authErr = r.status; backoff = Date.now() + 15000; console.log('Finnhub rejected the API key (HTTP ' + r.status + '). Check FINNHUB_API_KEY.'); return; } // bad key: do NOT mark stocks as unpriceable
-    if (!r.ok) { cache[sym] = { c: 0, pc: 0, t: 0, at: Date.now(), none: true }; return; }
-    authErr = 0;
-    const j = await r.json();
-    cache[sym] = j && j.c > 0 ? { c: j.c, pc: j.pc || j.c, t: j.t || 0, at: Date.now() } : { c: 0, pc: 0, t: 0, at: Date.now(), none: true };
-    dirty = true;
-  } catch (e) { backoff = Date.now() + 5000; }
-}
-setInterval(pollOne, +process.env.POLL_MS || 1100);
-setInterval(() => { if (dirty) { dirty = false; try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache)); } catch (e) {} } }, 30000);
-
-// ---- History for Live mode charts: whole lifetime per stock = weekly closes for the old years + daily closes for the last year
-// (Yahoo Finance chart API, Stooq as fallback; no key needed) ----
-// Cached in memory + a temp file, refreshed every 12 h, and only fetched while somebody is playing a Live game.
-const HFILE = path.join(os.tmpdir(), 'idle-stocks-history.json');
-const YAHOO = process.env.YAHOO_BASE || 'https://query1.finance.yahoo.com';
-const STOOQ = process.env.STOOQ_BASE || 'https://stooq.com';
-const HMAP = { IDX:'SPY', TECH:'QQQ', DIV:'SCHD', BRKB:'BRK-B', SQ:'XYZ' };
-const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; IdleStocks/1.0)' };
-let hist = {};                        // game ticker -> { t:[days since epoch], c:[closes], at } or { none:true, at }
-try { hist = JSON.parse(fs.readFileSync(HFILE, 'utf8')) || {}; } catch (e) {}
-const hwant = new Map();              // game ticker -> last time a player asked for its history
-let hbusy = false, hback = 0, lastHReq = 0, hdirty = false;
-
-async function yahooSeries(sym, range, interval) {
-  const r = await fetch(YAHOO + '/v8/finance/chart/' + encodeURIComponent(HMAP[sym] || sym) + '?range=' + range + '&interval=' + interval, { headers: UA, signal: AbortSignal.timeout(15000) });
-  if (r.status === 404) return null;                 // unknown ticker
-  if (!r.ok) throw new Error('yahoo ' + r.status);   // rate limit / outage: retry later
-  const j = await r.json(), res = j && j.chart && j.chart.result && j.chart.result[0];
-  if (!res) return null;
-  const ts = res.timestamp || [], cl = ((res.indicators || {}).quote || [{}])[0].close || [], t = [], c = [];
-  ts.forEach((x, i) => { if (cl[i] > 0) { t.push(Math.round(x / 86400)); c.push(+cl[i].toFixed(2)); } });
-  return c.length > 1 ? { t, c } : null;
-}
-async function yahooHist(sym) {
-  const wk = await yahooSeries(sym, 'max', '1wk');   // since the first day it traded
-  if (!wk) return null;
-  let dy = null; try { dy = await yahooSeries(sym, '1y', '1d'); } catch (e) {}   // daily detail for the last year (optional)
-  if (!dy) return wk;
-  const i = wk.t.findIndex(x => x >= dy.t[0]), n = i < 0 ? wk.t.length : i;
-  return { t: wk.t.slice(0, n).concat(dy.t), c: wk.c.slice(0, n).concat(dy.c) };
-}
-async function stooqHist(sym) {
-  const r = await fetch(STOOQ + '/q/d/l/?s=' + encodeURIComponent((HMAP[sym] || sym).toLowerCase()) + '.us&i=d', { headers: UA, signal: AbortSignal.timeout(10000) });
-  if (!r.ok) throw new Error('stooq ' + r.status);
-  const txt = await r.text();
-  if (!/^Date,/i.test(txt)) return null;
-  const all = txt.trim().split('\n').slice(1), cut = Math.max(0, all.length - 252), t = [], c = [];
-  const rows = all.filter((_, i) => i >= cut || i % 5 === 0);   // daily for the last year, every 5th day (about weekly) before that
-  rows.forEach(l => { const f = l.split(','), d = Date.parse(f[0] + 'T00:00:00Z'), v = parseFloat(f[4]); if (d && v > 0) { t.push(Math.round(d / 86400e3)); c.push(+v.toFixed(2)); } });
-  return c.length > 1 ? { t, c } : null;
-}
-async function histOne() {
-  const now = Date.now();
-  if (hbusy || now < hback || now - lastHReq > 5 * 60e3) return;
-  const age = s => { const q = hist[s]; return !q ? 0 : q.at + (q.none ? 3600e3 : 12 * 3600e3); };   // missing first; stale ones refreshed; unpriceable retried hourly
-  const due = [...hwant.keys()].filter(s => now - hwant.get(s) < 5 * 60e3 && age(s) <= now);
-  if (!due.length) return;
-  const pd = prio.filter(s => due.includes(s) && !hist[s]).slice(0, 1);
-  const src = pd.length ? pd : due;
-  const sym = src.reduce((a, b) => age(b) < age(a) ? b : a);
-  hbusy = true;
-  try {
-    let d = null, failed = false;
-    try { d = await yahooHist(sym); } catch (e) { failed = true; }
-    if (!d) { try { d = await stooqHist(sym); failed = false; } catch (e) { failed = true; } }
-    if (d) { hist[sym] = { t: d.t, c: d.c, at: Date.now() }; hdirty = true; }
-    else if (failed) hback = Date.now() + 15000;      // sources unreachable: do not mark the stock as having no data
-    else { hist[sym] = { none: true, at: Date.now() }; hdirty = true; }
-  } finally { hbusy = false; }
-}
-setInterval(histOne, +process.env.HPOLL_MS || 700);
-setInterval(() => { if (hdirty) { hdirty = false; try { fs.writeFileSync(HFILE, JSON.stringify(hist)); } catch (e) {} } }, 30000);
-
-function history(req, res) {
-  const u = new URL(req.url, 'http://x');
-  const ok = s => /^[A-Z0-9]{1,6}$/.test(s) && !NOQUOTE.has(s);
-  const s = (u.searchParams.get('s') || '').split(',').filter(ok).slice(0, 150);
-  prio = (u.searchParams.get('p') || '').split(',').filter(ok).slice(0, 60);
-  const have = new Set((u.searchParams.get('have') || '').split(','));   // the browser already has these: do not resend
-  const now = Date.now(); lastHReq = now;
-  const out = {}; let pending = 0;
-  s.forEach(x => { hwant.set(x, now); const q = hist[x];
-    if (q && q.c) { if (!have.has(x)) out[x] = { t: q.t, c: q.c }; } else if (!q) pending++; });
-  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify({ ok: true, pending, hist: out }));
-}
-
-function newsApi(req, res) {
-  const u = new URL(req.url, 'http://x');
-  const sym = (u.searchParams.get('s') || '').toUpperCase();
-  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  if (!KEY) return res.end(JSON.stringify({ ok: false, error: 'nokey' }));
-  if (!/^[A-Z0-9]{1,6}$/.test(sym) || NOQUOTE.has(sym)) return res.end(JSON.stringify({ ok: true, ready: true, items: [] }));
-  lastReq = Date.now();
-  const c = news[sym];
-  if ((!c || Date.now() - c.at > NEWS_TTL) && newsQ.size < 30) newsQ.add(sym);
-  res.end(JSON.stringify({ ok: true, ready: !!c, items: c ? c.items : [], at: c ? c.at : 0 }));
-}
-
-function quotes(req, res) {
-  const u = new URL(req.url, 'http://x');
-  const ok = s => /^[A-Z0-9]{1,6}$/.test(s) && !NOQUOTE.has(s);
-  const s = (u.searchParams.get('s') || '').split(',').filter(ok).slice(0, 150);
-  const h = (u.searchParams.get('h') || '').split(',').filter(ok).slice(0, 50);
-  prio = (u.searchParams.get('p') || '').split(',').filter(ok).slice(0, 60);
-  const now = Date.now(); lastReq = now; hot = new Set(h);
-  s.forEach(x => want.set(x, now));
-  const out = {}; let ready = 0;
-  s.forEach(x => { const q = cache[x]; if (q && q.c > 0) { out[x] = { c: q.c, pc: q.pc, t: q.t }; ready++; } });
-  const dead = s.filter(x => cache[x] && cache[x].none);
-  const body = !KEY ? { ok: false, error: 'nokey', now, quotes: {} }
-    : (authErr && !ready) ? { ok: false, error: 'badkey', now, quotes: {} }
-    : { ok: true, now, total: s.length, ready, dead, quotes: out };
-  res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-  res.end(JSON.stringify(body));
-}
-
-http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]);
-  if (cloud.handle(req, res, p)) return;
-  if (p === '/api/quotes') return quotes(req, res);
-  if (p === '/api/history') return history(req, res);
-  if (p === '/api/news') return newsApi(req, res);
-  if (p === '/') p = '/index.html';
-  const f = path.normalize(path.join(PUB, p));
-  if (!f.startsWith(PUB)) { res.writeHead(403); return res.end('Forbidden'); }
-  fs.readFile(f, (e, d) => {
-    if (e) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
-    res.end(d);
-  });
-}).listen(process.env.PORT || 3000, '0.0.0.0', () => console.log('Running on ' + (process.env.PORT || 3000) + (KEY ? '' : ' (no FINNHUB_API_KEY set: Live Market mode is disabled)')
-  + (cloud.enabled ? ' | cloud saves ON, data in ' + cloud.DATA + (process.env.DATA_DIR ? '' : ' (set DATA_DIR to a Railway Volume or saves vanish on redeploy)') : ' | cloud saves off (set GOOGLE_CLIENT_ID)')));
+module.exports = { handle, enabled, DATA, mergeAch };
