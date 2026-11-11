@@ -176,9 +176,10 @@ function quotes(req, res) {
   s.forEach(x => want.set(x, now));
   const out = {}; let ready = 0;
   s.forEach(x => { const q = cache[x]; if (q && q.c > 0) { out[x] = { c: q.c, pc: q.pc, t: q.t }; ready++; } });
+  const dead = s.filter(x => cache[x] && cache[x].none);
   const body = !KEY ? { ok: false, error: 'nokey', now, quotes: {} }
     : (authErr && !ready) ? { ok: false, error: 'badkey', now, quotes: {} }
-    : { ok: true, now, total: s.length, ready, quotes: out };
+    : { ok: true, now, total: s.length, ready, dead, quotes: out };
   res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
